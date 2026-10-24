@@ -10,6 +10,8 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../../components/ui/DraftBanner'
 import clsx from 'clsx'
 
 type View = 'list' | 'edit'
@@ -36,6 +38,20 @@ export function AdminVideosPanel() {
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   // Covers the exits the confirmation above cannot see: a refresh, a closed tab
   useUnsavedChangesWarning(isDirty)
+  const draft = useDraft({
+    scope: editingVideo ? `video:${editingVideo.id}` : null,
+    value: { title: formTitle, excerpt: formExcerpt, content: formContent, youtubeUrl: formYoutubeUrl },
+    dirty: isDirty,
+    baseline: editingVideo?.updatedAt ?? null,
+  })
+  const restoreDraft = () => {
+    const data = draft.restore()
+    if (!data) return
+    setFormTitle(data.title)
+    setFormExcerpt(data.excerpt)
+    setFormContent(data.content)
+    setFormYoutubeUrl(data.youtubeUrl)
+  }
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; video: VideoAdmin | null }>({
     open: false,
@@ -202,6 +218,8 @@ export function AdminVideosPanel() {
           )}
         </div>
 
+        <DraftBanner offer={draft.offer} onRestore={restoreDraft} onDiscard={draft.discard} className="mb-6" />
+
         {/* Form */}
         <div className="space-y-6">
           {/* Title */}
@@ -318,7 +336,12 @@ export function AdminVideosPanel() {
         <ConfirmModal
           isOpen={showExitConfirm}
           onClose={() => setShowExitConfirm(false)}
-          onConfirm={leaveEditor}
+          onConfirm={() => {
+            // Only a confirmed discard forgets the draft. A clean "back" must not: a draft still
+            // waiting on the banner's answer would go with it, unasked.
+            draft.discard()
+            leaveEditor()
+          }}
           title={t('videos.exitConfirmTitle')}
           message={t('videos.exitConfirmMessage')}
           confirmText={t('videos.exitConfirm')}

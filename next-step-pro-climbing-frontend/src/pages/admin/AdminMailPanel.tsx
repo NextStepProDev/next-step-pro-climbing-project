@@ -10,6 +10,8 @@ import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../../components/ui/DraftBanner'
 
 type RecipientType = 'ALL' | 'NEWSLETTER' | 'SELECTED'
 
@@ -49,11 +51,22 @@ export function AdminMailPanel() {
   // A long announcement lives only in this component until it is sent; a refresh or a closed tab
   // used to take it along without a word, while the CMS editors next door asked first.
   // A successful send clears both fields, which switches this off by itself.
-  useUnsavedChangesWarning(subject.trim() !== '' || body.trim() !== '')
+  const hasWriting = subject.trim() !== '' || body.trim() !== ''
+  useUnsavedChangesWarning(hasWriting)
+  // Recipients are left out on purpose: they are chosen per send, and a restored "everyone"
+  // sitting under an old announcement is the wrong default to inherit.
+  const draft = useDraft({ scope: 'mail', value: { subject, body }, dirty: hasWriting })
+  const restoreDraft = () => {
+    const data = draft.restore()
+    if (!data) return
+    setSubject(data.subject)
+    setBody(data.body)
+  }
 
   const sendMutation = useMutation({
     mutationFn: adminApi.sendMail,
     onSuccess: (data) => {
+      draft.clear()
       showToast(t('mail.successMessage', { count: data.recipientCount }))
       setSubject('')
       setBody('')
@@ -107,6 +120,7 @@ export function AdminMailPanel() {
         <p className="text-surface-400 text-sm mt-1">{t('mail.subtitle')}</p>
       </div>
 
+      <DraftBanner offer={draft.offer} onRestore={restoreDraft} onDiscard={draft.discard} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Recipients */}

@@ -12,6 +12,8 @@ import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { useDirty } from '../../hooks/useDirty'
 import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../ui/DraftBanner'
 import type { AttachmentInput, SaveTrainingTemplate, TrainingKind, TrainingTemplate } from '../../types'
 
 const DEFAULT_DURATION = 90
@@ -29,6 +31,16 @@ export interface TemplateDraft {
   defaultDurationMinutes?: number | null
   targetCalories?: number | null
   attachments: AttachmentInput[]
+}
+
+interface TemplateEditorDraft {
+  kind: TrainingKind
+  title: string
+  description: string
+  duration: number
+  calories: string
+  attachments: AttachmentInput[]
+  droppedFiles: number
 }
 
 /**
@@ -72,12 +84,42 @@ export function TrainingTemplateForm({ onDirtyChange, template, draft, onDone, o
   onDirtyChange(isDirty)  // during render on purpose — see useChildDirty
   useUnsavedChangesWarning(isDirty)
 
+  // Kept for the exits nothing above sees (a navbar click, a dropped tab) and for "Cancel", which
+  // returns to the list without asking. "Save as template" gets none: its text is a copy of an entry.
+  // Only links and files the template already had come back — a fresh upload never saved is an
+  // orphan the sweeper removes.
+  const savedFiles = new Set(template?.attachments.map((a) => a.filename).filter(Boolean))
+  const keptAttachments = attachments.filter((a) => a.kind === 'LINK' || (a.filename != null && savedFiles.has(a.filename)))
+  const editorDraft = useDraft<TemplateEditorDraft>({
+    scope: template ? `template:${template.id}` : draft ? null : 'template:new',
+    value: {
+      kind, title, description, duration, calories,
+      attachments: keptAttachments,
+      droppedFiles: attachments.length - keptAttachments.length,
+    },
+    dirty: isDirty,
+    baseline: template?.updatedAt ?? null,
+  })
+  const restoreDraft = () => {
+    const data = editorDraft.restore()
+    if (!data) return
+    setKind(data.kind)
+    setTitle(data.title)
+    setDescription(data.description)
+    setDuration(data.duration)
+    setCalories(data.calories)
+    setAttachments(data.attachments)
+  }
+
   const isTask = kind === 'TASK'
 
   const saveMutation = useMutation({
     mutationFn: (data: SaveTrainingTemplate) =>
       template ? adminTrainingCalendarApi.updateTemplate(template.id, data) : adminTrainingCalendarApi.createTemplate(data),
-    onSuccess: onDone,
+    onSuccess: () => {
+      editorDraft.clear()
+      onDone()
+    },
     onError: (err) => setError(getErrorMessage(err)),
   })
 
@@ -115,6 +157,12 @@ export function TrainingTemplateForm({ onDirtyChange, template, draft, onDone, o
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      <DraftBanner
+        offer={editorDraft.offer}
+        onRestore={restoreDraft}
+        onDiscard={editorDraft.discard}
+        droppedFiles={editorDraft.offer?.data.droppedFiles}
+      />
       <div>
         <span className="block text-sm text-surface-400 mb-1">{t('form.kindLabel')}</span>
         <div className="flex gap-1" role="group" aria-label={t('form.kindLabel')}>

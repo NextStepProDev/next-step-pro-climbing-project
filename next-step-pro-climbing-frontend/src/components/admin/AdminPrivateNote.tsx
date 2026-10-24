@@ -9,6 +9,8 @@ import { RichTextEditor } from '../ui/RichTextEditor'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { renderRichText } from '../../utils/renderRichText'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../ui/DraftBanner'
 import type { AdminNoteTarget } from '../../types'
 
 const MAX_BODY_LENGTH = 4000
@@ -62,6 +64,21 @@ export function AdminPrivateNote({ target, targetId, onDirtyChange }: AdminPriva
   // Baseline is the loaded note, which arrives after mount — hence a plain comparison rather than
   // useDirty, whose snapshot would freeze on the empty first render and call everything dirty.
   const isDirty = draft.trim() !== (body ?? '')
+
+  // Kept while the editor is open and differs; Cancel, Save and Delete all close the editor,
+  // which is what removes it. What survives is only a note lost to a navbar click or a crash.
+  const noteDraft = useDraft({
+    scope: `note:${target}:${targetId}`,
+    value: draft,
+    dirty: editing && isDirty,
+    baseline: data?.updatedAt ?? null,
+  })
+  const restoreDraft = () => {
+    const text = noteDraft.restore()
+    if (text === null) return
+    setDraft(text)
+    setEditing(true)
+  }
 
   const saveMutation = useMutation({
     mutationFn: () => adminApi.savePrivateNote(target, targetId, draft.trim()),
@@ -133,6 +150,8 @@ export function AdminPrivateNote({ target, targetId, onDirtyChange }: AdminPriva
         <Lock className="w-3 h-3 mt-0.5 shrink-0" />
         {t('privateNote.onlyYouHint')}
       </p>
+
+      <DraftBanner offer={noteDraft.offer} onRestore={restoreDraft} onDiscard={noteDraft.discard} />
 
       {editing ? (
         <div className="space-y-2">

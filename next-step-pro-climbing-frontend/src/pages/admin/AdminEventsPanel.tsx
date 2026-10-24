@@ -13,6 +13,8 @@ import { DayAgendaPreview } from '../../components/calendar/DayAgendaPreview'
 import { WaitlistEntryList } from './AdminReservationsPanel'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../../components/ui/DraftBanner'
 import { useEditSavedToast } from '../../hooks/useEditSavedToast'
 import { useInviteSentToast } from '../../hooks/useInviteSentToast'
 import { useDateLocale } from '../../utils/dateFnsLocale'
@@ -517,6 +519,38 @@ function LocationField({
   )
 }
 
+/* =============================== Event text draft =============================== */
+
+/**
+ * What an event form keeps as a draft: the writing. Dates, times, seats and invitations are
+ * decisions taken in a few clicks, and bringing back yesterday's would quietly re-decide them.
+ */
+interface EventTextDraft {
+  title: string
+  description: string
+  location: string
+}
+
+/**
+ * With a course linked the title is the course's (the form copies it in on pick), so it is not
+ * writing: kept, it would come back later without the link, as a free-text copy of the name.
+ */
+function eventText(
+  e: { title?: string | null; description?: string | null; location?: string | null },
+  courseLinked: boolean,
+): EventTextDraft {
+  return { title: courseLinked ? '' : e.title ?? '', description: e.description ?? '', location: e.location ?? '' }
+}
+
+/** A restored draft without a title leaves the current one alone (a course's, typically). */
+function applyEventText(form: CreateEventRequest, data: EventTextDraft): CreateEventRequest {
+  return { ...form, description: data.description, location: data.location, title: data.title || form.title }
+}
+
+function eventTextChanged(a: EventTextDraft, b: EventTextDraft): boolean {
+  return a.title !== b.title || a.description !== b.description || a.location !== b.location
+}
+
 /* =============================== Edit Event Modal =============================== */
 
 // The minimal event shape needed for editing — satisfied both by EventDetail (admin
@@ -582,6 +616,7 @@ export function EditEventModal({
       return { result, notified }
     },
     onSuccess: ({ result, notified }) => {
+      eventDraft.clear()
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
@@ -596,6 +631,19 @@ export function EditEventModal({
   })
 
   const isDirty = useDirty({ form, courseId, allDay }) || invitedDirty
+
+  // The writing only (see EventTextDraft). The saved text is its own baseline: the event carries
+  // no version, and "the saved words changed since" is exactly what makes restoring overwrite.
+  const eventDraft = useDraft<EventTextDraft>({
+    scope: event ? `event:${event.id}` : null,
+    value: eventText(form, !!courseId),
+    dirty: !!event && eventTextChanged(eventText(form, !!courseId), eventText(event, !!event.courseId)),
+    baseline: event ? JSON.stringify(eventText(event, !!event.courseId)) : null,
+  })
+  const restoreDraft = () => {
+    const data = eventDraft.restore()
+    if (data) setForm((f) => applyEventText(f, data))
+  }
 
   if (!event) return null
 
@@ -639,6 +687,7 @@ export function EditEventModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('events.editTitle')} confirmClose={isDirty}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <DraftBanner offer={eventDraft.offer} onRestore={restoreDraft} onDiscard={eventDraft.discard} />
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('events.selectCourse')}</label>
           <select
@@ -876,6 +925,7 @@ export function CreateEventModal({
       return { created, invites }
     },
     onSuccess: ({ created, invites }) => {
+      eventDraft.clear()
       if (invites) showInviteSent(invites)
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
@@ -903,6 +953,18 @@ export function CreateEventModal({
 
   const isDirty = useDirty({ form, courseId, allDay, invited })
 
+  // A plain create only: answering a proposal starts from that request, and an older draft
+  // offered over it would muddle which event is being made.
+  const eventDraft = useDraft<EventTextDraft>({
+    scope: initial?.trainingRequestId ? null : 'event:new',
+    value: eventText(form, !!courseId),
+    dirty: eventTextChanged(eventText(form, !!courseId), { title: '', description: '', location: '' }),
+  })
+  const restoreDraft = () => {
+    const data = eventDraft.restore()
+    if (data) setForm((f) => applyEventText(f, data))
+  }
+
   // ⚠️ Answering a proposal at other hours — see the same guard in CreateSlotModal. The proposal is
   // always one day with hours, so a range is a change too, and so is "all day" (ticking it clears
   // the times, which the comparison below then sees).
@@ -928,6 +990,7 @@ export function CreateEventModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('events.addTitle')} confirmClose={isDirty}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <DraftBanner offer={eventDraft.offer} onRestore={restoreDraft} onDiscard={eventDraft.discard} />
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('events.selectCourse')}</label>
           <select

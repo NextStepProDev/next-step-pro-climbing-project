@@ -40,6 +40,9 @@ import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import { COURSE_CONTENT_LANGUAGES } from '../../constants/courseLanguages'
 import clsx from 'clsx'
 import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../../components/ui/DraftBanner'
+import { keepablePendingBlocks } from '../../utils/pendingBlockDraft'
 
 type View = 'list' | 'edit'
 
@@ -62,6 +65,40 @@ type PendingImageBlock = {
 }
 
 type PendingBlock = PendingTextBlock | PendingImageBlock
+
+type BlockEdit = { content?: string; caption?: string }
+
+interface CourseDraft {
+  title: string
+  price: string
+  blockEdits: Record<string, BlockEdit>
+  pendingBlocks: PendingBlock[]
+  thumbnailFromLibrary: string | null
+  focalPoint: { x: number; y: number }
+  /** Device images (new blocks + a new thumbnail) the draft could not keep. */
+  droppedFiles: number
+}
+
+function toCourseDraft(s: {
+  title: string
+  price: string
+  blockEdits: Record<string, BlockEdit>
+  pendingBlocks: PendingBlock[]
+  thumbnailFile: File | null
+  thumbnailFromLibrary: string | null
+  focalPoint: { x: number; y: number }
+}): CourseDraft {
+  const { kept, dropped } = keepablePendingBlocks(s.pendingBlocks)
+  return {
+    title: s.title,
+    price: s.price,
+    blockEdits: s.blockEdits,
+    pendingBlocks: kept,
+    thumbnailFromLibrary: s.thumbnailFromLibrary,
+    focalPoint: s.focalPoint,
+    droppedFiles: dropped + (s.thumbnailFile ? 1 : 0),
+  }
+}
 
 // ---------- Main panel ----------
 
@@ -504,6 +541,29 @@ function EditView({
   // The editor's own "back to list" already confirms; this covers a refresh or a closed tab
   useUnsavedChangesWarning(isDirty)
 
+  // ---------- Draft (survives a navbar click, a back gesture, a crash) ----------
+  const draft = useDraft<CourseDraft>({
+    scope: `course:${courseId}`,
+    value: toCourseDraft({ title, price, blockEdits, pendingBlocks, thumbnailFile, thumbnailFromLibrary, focalPoint }),
+    dirty: isDirty,
+    baseline: detail.updatedAt,
+  })
+  const restoreDraft = () => {
+    const data = draft.restore()
+    if (!data) return
+    setTitle(data.title)
+    setPrice(data.price)
+    // Only blocks the course still has: one deleted since the draft has nothing to edit.
+    setBlockEdits((prev) => {
+      const next = { ...prev }
+      for (const [id, edit] of Object.entries(data.blockEdits)) if (id in next) next[id] = edit
+      return next
+    })
+    setPendingBlocks(data.pendingBlocks)
+    setThumbnailFromLibrary(data.thumbnailFromLibrary)
+    setFocalPoint(data.focalPoint)
+  }
+
   // ---------- Preview ----------
   const [showPreview, setShowPreview] = useState(false)
 
@@ -605,6 +665,7 @@ function EditView({
     setSaveError(null)
     try {
       await performSave(syncMedia)
+      draft.clear()
       if (pendingSyncAction === 'publish') {
         await publishMutation.mutateAsync()
       }
@@ -630,6 +691,7 @@ function EditView({
     setSaveError(null)
     try {
       await performSave(false)
+      draft.clear()
       if (goBack) onBack()
     } catch (err) {
       setSaveError(getErrorMessage(err))
@@ -650,7 +712,10 @@ function EditView({
     setIsSaving(true)
     setSaveError(null)
     try {
-      if (isDirty) await performSave(false)
+      if (isDirty) {
+        await performSave(false)
+        draft.clear()
+      }
       await publishMutation.mutateAsync()
       onBack()
     } catch (err) {
@@ -771,6 +836,7 @@ function EditView({
   const deleteSingleMutation = useMutation({
     mutationFn: () => adminCoursesApi.delete(courseId),
     onSuccess: () => {
+      draft.discard()
       invalidate()
       onBack()
     },
@@ -787,6 +853,13 @@ function EditView({
         <ArrowLeft className="h-4 w-4" />
         {t('courses.backToList')}
       </button>
+
+      <DraftBanner
+        offer={draft.offer}
+        onRestore={restoreDraft}
+        onDiscard={draft.discard}
+        droppedFiles={draft.offer?.data.droppedFiles}
+      />
 
       {/* Sekcja 1: Metadane */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
@@ -1171,7 +1244,10 @@ function EditView({
         title={t('courses.exitConfirmTitle')}
         message={t('courses.exitConfirmMessage')}
         confirmText={t('courses.exitConfirm')}
-        onConfirm={() => onBack()}
+        onConfirm={() => {
+          draft.discard()
+          onBack()
+        }}
         onClose={() => setShowExitConfirm(false)}
       />
 
