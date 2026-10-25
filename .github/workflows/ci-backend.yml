@@ -24,12 +24,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Read-only by default (audit, 2026-10-26): the test job runs code from pull requests and has
+# no business with the registry or the Security tab. The docker job below gets what it needs.
 permissions:
   contents: read
-  packages: write
-  # Pozwala wgrać wynik skanu do zakładki Security. Bez tego upload-sarif
-  # kończy się 403, a skan znów jest widoczny wyłącznie w logu.
-  security-events: write
 
 jobs:
   build-and-test:
@@ -42,14 +40,14 @@ jobs:
         working-directory: next-step-pro-climbing-backend
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-java@v6.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
       - run: ./gradlew classes
 
@@ -70,7 +68,7 @@ jobs:
           mkdir -p build/artifact
           cp build/libs/*.jar build/artifact/app.jar
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: backend-jar
@@ -85,7 +83,7 @@ jobs:
           # with "artifact not found" — a failure two jobs away from its cause.
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-reports
@@ -97,9 +95,15 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+      # Pozwala wgrać wynik skanu do zakładki Security. Bez tego upload-sarif
+      # kończy się 403, a skan znów jest widoczny wyłącznie w logu.
+      security-events: write
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read version and image owner
         id: version
@@ -113,22 +117,22 @@ jobs:
           echo "owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       # The jar the previous job built and tested. The Dockerfile only copies it in.
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: backend-jar
           path: next-step-pro-climbing-backend
 
-      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/metadata-action@v6
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         id: meta
         with:
           images: ghcr.io/${{ github.repository_owner }}/nextsteppro-backend
@@ -140,7 +144,7 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref == 'refs/heads/main' }}
 
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: next-step-pro-climbing-backend
           platforms: linux/amd64,linux/arm64
@@ -165,7 +169,7 @@ jobs:
       # do którego GitHub sam kieruje — i działa niezależnie od grafu zależności, który dla
       # Javy w tym repo bywa ślepy.
       - name: Trivy image scan (SARIF do zakładki Security)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ghcr.io/${{ steps.version.outputs.owner }}/nextsteppro-backend:${{ steps.version.outputs.version }}
           format: sarif
@@ -179,7 +183,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Wgraj wynik do zakładki Security
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         # Wgraj także wtedy, gdy bramka niżej wywali build — inaczej dokładnie w sytuacji,
         # w której raport jest najbardziej potrzebny, nie ma go nigdzie.
         # ⚠️ ...ale TYLKO gdy plik naprawdę powstał. Samo `always()` obejmuje również przypadek,
@@ -200,7 +204,7 @@ jobs:
       # dziś czyste — po naprawie tomcata app.jar zgłasza zero — więc ta bramka od pierwszego
       # dnia znaczy "coś się właśnie zepsuło", a nie "znowu to samo".
       - name: Bramka CVE (CRITICAL blokuje)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ghcr.io/${{ steps.version.outputs.owner }}/nextsteppro-backend:${{ steps.version.outputs.version }}
           format: table

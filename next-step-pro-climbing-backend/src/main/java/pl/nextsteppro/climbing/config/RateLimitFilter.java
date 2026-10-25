@@ -15,6 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -163,7 +164,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        Rule rule = enabled ? resolveRule(request.getRequestURI()) : null;
+        // The path as Spring matches it — decoded, `;params` dropped — not the raw URI. (It also
+        // collapses `//`, which Spring would not route at all: such a request only spends a limit.)
+        // On the raw one, `/%61pi/auth/login` reached the login controller while counting in the
+        // default bucket (120/min instead of 15): eight times the password guesses (audit,
+        // 2026-10-26; shouldCountAPathInTheBucketSpringRoutesItTo). Cloudflare normalises such
+        // URLs before the firewalled origin sees them, so this is the second line, not the first.
+        Rule rule = enabled ? resolveRule(UrlPathHelper.defaultInstance.getPathWithinApplication(request)) : null;
 
         if (rule == null) {
             filterChain.doFilter(request, response);
