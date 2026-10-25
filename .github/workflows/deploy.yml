@@ -17,16 +17,27 @@ on:
         required: false
         default: ''
 
+# The job token reads the repository and nothing else (audit, 2026-10-26): the server pulls
+# the images itself, and a workflow with no `permissions` gets whatever the repository
+# default allows.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read VERSION file
         id: version
+        # Through the environment, not `${{ }}` in the script: an expression is pasted into the
+        # shell before it runs, so a quote or `$(…)` typed in the field would run as code — here
+        # and, through the output, in the script on the server. The tag pattern below stops it.
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           if [ -f VERSION ]; then
             VERSION=$(cat VERSION)
@@ -35,10 +46,14 @@ jobs:
           fi
           # Use input version if provided, otherwise use VERSION file. This branch was dead until
           # the input lost its `main` default — see the note on the input above.
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if [[ ! "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]; then
+            echo "ERROR: not an image tag: letters, digits, dot, dash, underscore only." >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Deploying version: $VERSION"
           # Deploying the floating tag is still allowed - it is the honest answer when you want
           # whatever is newest - but it costs traceability, so name that here instead of letting
@@ -49,22 +64,22 @@ jobs:
 
       - name: Encode docker-compose.prod.yml
         id: compose
-        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/docker-compose.prod.yml)" >> $GITHUB_OUTPUT
+        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/docker-compose.prod.yml)" >> "$GITHUB_OUTPUT"
 
       - name: Encode setup-swap.sh
         id: swap
-        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/setup-swap.sh)" >> $GITHUB_OUTPUT
+        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/setup-swap.sh)" >> "$GITHUB_OUTPUT"
 
       - name: Encode nsp-backup.sh
         id: backup
-        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/nsp-backup.sh)" >> $GITHUB_OUTPUT
+        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/nsp-backup.sh)" >> "$GITHUB_OUTPUT"
 
       - name: Encode nsp-backup logrotate config
         id: backuprotate
-        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/nsp-backup.logrotate)" >> $GITHUB_OUTPUT
+        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/nsp-backup.logrotate)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to production VM
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         env:
           COMPOSE_B64: ${{ steps.compose.outputs.content }}
           SWAP_B64: ${{ steps.swap.outputs.content }}
@@ -96,7 +111,7 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d
 
       - name: Verify deployment health
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
