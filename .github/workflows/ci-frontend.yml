@@ -115,6 +115,9 @@ jobs:
           # Default is `warn`, which would upload nothing and let the docker job fail later
           # with "artifact not found" — a failure two jobs away from its cause.
           if-no-files-found: error
+          # Default `false` skips dot-directories, so dist/.well-known/security.txt would silently
+          # never reach the image (the build passes, the URL serves index.html).
+          include-hidden-files: true
 
   docker:
     needs: lint-typecheck-build
