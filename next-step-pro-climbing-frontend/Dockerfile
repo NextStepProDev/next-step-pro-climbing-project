@@ -8,7 +8,7 @@
 # (~11 minutes of the docker job).
 #
 # The node version that builds this now lives only in .nvmrc + ci-frontend.yml — see the note
-# there about why it is 24 and not 26.
+# there about what has to pass before that number moves.
 #
 # Building locally: run `npm run build` BEFORE `docker build .`.
 FROM nginx:alpine
