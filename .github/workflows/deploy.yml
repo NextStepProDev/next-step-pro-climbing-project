@@ -108,10 +108,10 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             export VERSION=${{ steps.version.outputs.version }}
             # Old app images go BEFORE the pull. `compose pull` keeps every tag it ever pulled (by
-            # 4.75.5 that was 38 versions per repo, ~22 GB of a 45 GB disk), and a pull stopped by a
-            # full disk ends the deploy red before any later cleanup step could run. Keeps whatever
-            # a container uses plus the two newest images per repo: today's release and the
-            # previous one, the quick rollback; with the new pull that is at most three on disk.
+            # 4.75.5 that was 38 versions per repo, ~12 GB reclaimable on a 45 GB disk), and a pull
+            # stopped by a full disk ends the deploy red before any later cleanup step could run.
+            # Keeps whatever a container uses plus the two newest images per repo: today's release
+            # and the previous one, the quick rollback; with the new pull that is at most three.
             # Counted by image ID, not by tag: `main` and `4.75.5` can name one image, and counting
             # rows would keep one image and delete the rollback. Scoped to the app images on
             # purpose: postgres is the database and alpine runs nsp-backup.sh. `|| echo`
