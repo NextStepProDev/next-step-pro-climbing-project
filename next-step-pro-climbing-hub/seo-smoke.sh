@@ -105,6 +105,16 @@ else
   fi
 fi
 
+# Retired header stays retired ------------------------------------------------
+# X-XSS-Protection is ignored by every current browser and its legacy filter could be abused to
+# blank out parts of a page; CSP is the control. Lives in nginx, so only a live request can see it.
+echo "---"
+if curl -sSI -m 15 "${BASE}/" | tr -d '\r' | grep -qi '^x-xss-protection:'; then
+  fail "X-XSS-Protection is back on the SPA shell (retired header, CSP is the control)"
+else
+  pass "no X-XSS-Protection header on the SPA shell"
+fi
+
 echo "---"
 if [ "$FAILED" -ne 0 ]; then
   echo "SEO smoke FAILED — see FAIL lines above."
