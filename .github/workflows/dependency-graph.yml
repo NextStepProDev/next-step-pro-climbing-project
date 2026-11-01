@@ -40,7 +40,7 @@ jobs:
           # Ta sama wersja co toolchain w build.gradle — inaczej Gradle szuka JDK, którego tu nie ma.
           java-version: 25
 
-      - uses: gradle/actions/dependency-submission@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           # Projekt Gradle'a nie leży w korzeniu repozytorium.
           build-root-directory: next-step-pro-climbing-backend
