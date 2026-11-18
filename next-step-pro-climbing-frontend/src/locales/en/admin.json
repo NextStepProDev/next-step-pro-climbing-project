@@ -1027,6 +1027,9 @@
       "statusPaid": "✓ paid {{date}}",
       "statusPaidNoDate": "✓ paid",
       "statusFree": "✓ free",
+      "freeOff": "free?",
+      "freeOn": "free · undo",
+      "freeToggle": "Free for: {{name}}",
       "statusShort": "{{amount}} short",
       "statusUnpaid": "unpaid",
       "otherDebt": "owes {{amount}} for other sessions — a payment covers the oldest first",
@@ -1051,6 +1054,13 @@
       "title": "Delete the payment?",
       "message": "{{name}}: {{amount}} on {{date}}. Payments are never edited — if the amount was wrong, delete it and enter the right one. Sessions it was covering become unpaid again.",
       "done": "Payment deleted."
+    },
+    "split": {
+      "label": "Received in total",
+      "placeholder": "received",
+      "action": "Split evenly",
+      "hint": "Fills in each person's charge and payment — an equal share per head, skipping anyone marked free. Check the amounts, then click Save.",
+      "nobody": "There is nobody to split between — everyone is marked free or has a cancelled booking."
     },
     "actions": {
       "setAll": "Apply to all",

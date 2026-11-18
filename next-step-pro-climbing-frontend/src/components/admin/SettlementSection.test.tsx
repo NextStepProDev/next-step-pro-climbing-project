@@ -395,6 +395,108 @@ describe('SettlementSection', () => {
     expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-2', 600)
   })
 
+  it('splits what was received evenly per head, charge and payment both, skipping the free one', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [
+        line({ payerId: 'user-1', name: 'Anna Kowalska' }),
+        line({ payerId: 'user-2', name: 'Piotr Nowak', participants: 2 }),
+        line({ payerId: 'user-3', name: 'Ola Gratis' }),
+        line({ payerId: 'user-4', name: 'Odwołany', orphaned: true }),
+      ],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    const freeToggles = await screen.findAllByRole('button', { name: 'settlements.line.freeToggle' })
+    // The cancelled booking has no toggle: nobody was there to be let in for free.
+    expect(freeToggles).toHaveLength(3)
+    await user.click(freeToggles[2])
+    expect(freeToggles[2]).toHaveAttribute('aria-pressed', 'true')
+
+    await user.type(screen.getByLabelText('settlements.split.label'), '300')
+    await user.click(screen.getByRole('button', { name: 'settlements.split.action' }))
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() => expect(addPayment).toHaveBeenCalledTimes(2))
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 100)
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-2', 200)
+    // Free is a charge of zero, and nothing is received from them.
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-3', 0)
+    expect(save).not.toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-4', expect.anything())
+    expect(addPayment).toHaveBeenCalledWith('user', 'user-1', 100, TARGET_DATE, HERE)
+    expect(addPayment).toHaveBeenCalledWith('user', 'user-2', 200, TARGET_DATE, HERE)
+  })
+
+  it('does not record again money already handed over at this session when splitting', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [
+        line({ payerId: 'user-1', name: 'Anna Kowalska', amount: 100, payments: [payment({ amount: 100 })] }),
+        line({ payerId: 'user-2', name: 'Piotr Nowak' }),
+      ],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.split.label'), '200')
+    await user.click(screen.getByRole('button', { name: 'settlements.split.action' }))
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() => expect(addPayment).toHaveBeenCalledTimes(1))
+    expect(addPayment).toHaveBeenCalledWith('user', 'user-2', 100, TARGET_DATE, HERE)
+    // Anna's charge is already 100, so there is nothing to write for her.
+    expect(save).toHaveBeenCalledTimes(1)
+  })
+
+  it('takes a saved free charge back to "not priced" when the toggle is undone', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 0 })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    const toggle = await screen.findByRole('button', { name: 'settlements.line.freeToggle' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await user.click(toggle)
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    // Undoing "free" must not save the same zero again — it clears the charge.
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1'))
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('leaves the free one alone when applying one amount to all', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [
+        line({ payerId: 'user-1', name: 'Anna Kowalska' }),
+        line({ payerId: 'user-2', name: 'Piotr Nowak' }),
+      ],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    const freeToggles = await screen.findAllByRole('button', { name: 'settlements.line.freeToggle' })
+    await user.click(freeToggles[1])
+    await user.type(screen.getByLabelText('settlements.actions.setAll'), '80')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.setAll' }))
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(2))
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 80)
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-2', 0)
+  })
+
   it('says so plainly when nobody is booked yet', async () => {
     getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [] })
 

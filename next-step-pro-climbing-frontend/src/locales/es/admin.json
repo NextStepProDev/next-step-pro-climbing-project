@@ -1032,6 +1032,9 @@
       "statusPaid": "✓ pagado {{date}}",
       "statusPaidNoDate": "✓ pagado",
       "statusFree": "✓ gratis",
+      "freeOff": "¿gratis?",
+      "freeOn": "gratis · deshacer",
+      "freeToggle": "Gratis para: {{name}}",
       "statusShort": "faltan {{amount}}",
       "statusUnpaid": "sin pagar",
       "otherDebt": "debe {{amount}} de otras sesiones — un pago cubre primero la más antigua",
@@ -1056,6 +1059,13 @@
       "title": "¿Eliminar el pago?",
       "message": "{{name}}: {{amount}} del {{date}}. Los pagos no se editan: si el importe era incorrecto, elimínalo y registra el correcto. Las sesiones que cubría vuelven a quedar pendientes.",
       "done": "Pago eliminado."
+    },
+    "split": {
+      "label": "Recibido en total",
+      "placeholder": "recibido",
+      "action": "Repartir a partes iguales",
+      "hint": "Rellena el importe y el pago de cada persona — una parte igual por cabeza, sin contar a quien esté marcado como gratis. Revisa los importes y pulsa Guardar.",
+      "nobody": "No hay entre quién repartir — cada persona está marcada como gratis o tiene la reserva cancelada."
     },
     "actions": {
       "setAll": "Aplicar a todos",

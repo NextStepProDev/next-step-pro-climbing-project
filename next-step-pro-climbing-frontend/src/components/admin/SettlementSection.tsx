@@ -11,6 +11,7 @@ import { useToast } from '../../context/ToastContext'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseAmount } from '../../utils/money'
+import { splitReceived } from '../../utils/splitReceived'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useMoney } from './useMoney'
@@ -112,6 +113,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   const { showToast } = useToast()
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
   const [bulkAmount, setBulkAmount] = useState('')
+  const [receivedTotal, setReceivedTotal] = useState('')
   const [invalidKeys, setInvalidKeys] = useState<string[]>([])
   // Apart from the charge's, so the field that is actually wrong is the one that turns red.
   const [invalidPaymentKeys, setInvalidPaymentKeys] = useState<string[]>([])
@@ -314,9 +316,31 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   })
 
   /**
-   * Writes the same amount into EVERY row, not only the blank ones — which is what the button says
-   * and what pricing a course actually is: one number, not one per head. A per-person discount is
-   * then re-typed on that one line, which is rarer than the uniform case.
+   * "Free" for ONE person is a charge of 0 — the state the ledger has always had for it — so the
+   * toggle is only a way of typing that zero, and a zero typed by hand counts the same. It is not the
+   * session-wide "free" mark: that one takes the whole session out of pricing, this one keeps the
+   * others paying.
+   */
+  const isFree = (line: SettlementLine) => parseAmount(draftFor(line).amount) === 0
+
+  const toggleFree = (line: SettlementLine) => {
+    if (isFree(line)) {
+      // Back to whatever was saved, unless what was saved IS the zero — then to "not priced yet".
+      const savedAmount = saved[payerKey(line)].amount
+      patch(line, { amount: parseAmount(savedAmount) === 0 ? '' : savedAmount, payment: '' })
+    } else {
+      // Nothing is received from somebody who did not pay, so a payment typed beside them goes too.
+      patch(line, { amount: '0', payment: '' })
+    }
+  }
+
+  // A cancelled booking's row keeps its old money on screen, but nobody was there to split with.
+  const splittable = lines.filter((line) => !line.orphaned && !isFree(line))
+
+  /**
+   * Writes the same amount into every row that is not marked free — which is what pricing a course
+   * actually is: one number, not one per head. A per-person discount is then re-typed on that one
+   * line. Free rows are skipped, or the toggle would be undone by the button beside it.
    */
   const applyToAll = () => {
     const amount = parseAmount(bulkAmount)
@@ -324,6 +348,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
     setDrafts((prev) => {
       const next = { ...prev }
       for (const line of lines) {
+        if (isFree(line)) continue
         const key = payerKey(line)
         next[key] = { ...(next[key] ?? saved[key]), amount: String(amount) }
       }
@@ -331,6 +356,45 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
     })
     setBulkAmount('')
   }
+
+  /**
+   * The other direction: the admin knows what the GROUP paid, not what each person costs. Fills
+   * both halves of every row — the charge and the money handed over — so after Save everybody reads
+   * "paid". It only fills the fields; nothing is written until Save, so the shares can be checked
+   * (and one corrected) first. Rounding, heads and money already entered here: `splitReceived`.
+   */
+  const splitTotal = () => {
+    const total = parseAmount(receivedTotal)
+    if (total === null) return
+    const shares = splitReceived(
+      total,
+      splittable.map((line) => ({
+        key: payerKey(line),
+        heads: line.participants,
+        alreadyReceived: line.payments
+          .filter((payment) => payment.enteredHere)
+          .reduce((sum, payment) => sum + payment.amount, 0),
+      })),
+    )
+    if (shares === null) return
+    setInvalidKeys([])
+    setInvalidPaymentKeys([])
+    setDrafts((prev) => {
+      const next = { ...prev }
+      for (const share of shares) {
+        next[share.key] = {
+          ...(next[share.key] ?? saved[share.key]),
+          amount: String(share.amount),
+          payment: share.payment > 0 ? String(share.payment) : '',
+        }
+      }
+      return next
+    })
+    setReceivedTotal('')
+  }
+
+  const receivedValue = parseAmount(receivedTotal)
+  const canSplit = receivedValue !== null && receivedValue > 0 && splittable.length > 0
 
   const totals = useMemo(() => {
     let total = 0
@@ -380,7 +444,9 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   // return, so a refetch that flips `isLoading` cannot leave the host holding a stale `true`.
   // The bulk field counts even before it is applied: a price typed there and nowhere else is the
   // whole of what the admin has done so far.
-  onDirtyChange?.(dirtyLines.length > 0 || bulkAmount.trim() !== '')
+  onDirtyChange?.(
+    dirtyLines.length > 0 || bulkAmount.trim() !== '' || receivedTotal.trim() !== '',
+  )
 
   if (isLoading) return null
 
@@ -513,23 +579,45 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
       ) : (
         <>
           {lines.length > 1 && (
-            <div className="flex items-center gap-2">
-              <input
-                inputMode="decimal"
-                value={bulkAmount}
-                onChange={(e) => setBulkAmount(e.target.value)}
-                placeholder={t('settlements.line.amountPlaceholder')}
-                aria-label={t('settlements.actions.setAll')}
-                className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={applyToAll}
-                disabled={parseAmount(bulkAmount) === null}
-              >
-                {t('settlements.actions.setAll')}
-              </Button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  inputMode="decimal"
+                  value={bulkAmount}
+                  onChange={(e) => setBulkAmount(e.target.value)}
+                  placeholder={t('settlements.line.amountPlaceholder')}
+                  aria-label={t('settlements.actions.setAll')}
+                  className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={applyToAll}
+                  disabled={parseAmount(bulkAmount) === null}
+                >
+                  {t('settlements.actions.setAll')}
+                </Button>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <input
+                    inputMode="decimal"
+                    value={receivedTotal}
+                    onChange={(e) => setReceivedTotal(e.target.value)}
+                    placeholder={t('settlements.split.placeholder')}
+                    aria-label={t('settlements.split.label')}
+                    className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+                  />
+                  <Button size="sm" variant="ghost" onClick={splitTotal} disabled={!canSplit}>
+                    {t('settlements.split.action')}
+                  </Button>
+                </div>
+                <p className="mt-0.5 text-[11px] text-surface-500">
+                  {splittable.length === 0
+                    ? t('settlements.split.nobody')
+                    : t('settlements.split.hint')}
+                </p>
+              </div>
             </div>
           )}
 
@@ -564,6 +652,24 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                       <span className="block text-xs text-amber-500">
                         {t('settlements.line.orphaned')}
                       </span>
+                    )}
+                    {/* In the name block rather than as a fourth control in the fields' grid: that
+                        grid's tracks are measured to the modal's width (see below). */}
+                    {!line.orphaned && (
+                      <button
+                        type="button"
+                        onClick={() => toggleFree(line)}
+                        aria-pressed={isFree(line)}
+                        aria-label={t('settlements.line.freeToggle', { name: line.name })}
+                        className={`mt-0.5 flex items-center gap-1 text-[11px] transition-colors ${
+                          isFree(line)
+                            ? 'text-emerald-400 hover:text-emerald-300'
+                            : 'text-surface-400 hover:text-surface-200'
+                        }`}
+                      >
+                        <Gift className="w-3 h-3" />
+                        {isFree(line) ? t('settlements.line.freeOn') : t('settlements.line.freeOff')}
+                      </button>
                     )}
                     {/* Where this charge stands, as the SERVER worked it out from all of this
                         person's payments. Nothing on this screen can set it.

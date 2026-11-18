@@ -1044,6 +1044,9 @@
       "statusPaid": "✓ opłacone {{date}}",
       "statusPaidNoDate": "✓ opłacone",
       "statusFree": "✓ gratis",
+      "freeOff": "gratis?",
+      "freeOn": "gratis · cofnij",
+      "freeToggle": "Gratis dla: {{name}}",
       "statusShort": "brakuje {{amount}}",
       "statusUnpaid": "nieopłacone",
       "otherDebt": "zaległość z innych terminów {{amount}} — wpłata najpierw pokryje najstarszą",
@@ -1068,6 +1071,13 @@
       "title": "Usunąć wpłatę?",
       "message": "{{name}}: {{amount}} z {{date}}. Wpłat się nie edytuje — jeśli kwota była zła, usuń ją i wpisz poprawną. Zajęcia, które pokrywała, wrócą do zapłaty.",
       "done": "Usunięto wpłatę."
+    },
+    "split": {
+      "label": "Otrzymano łącznie",
+      "placeholder": "otrzymano",
+      "action": "Podziel po równo",
+      "hint": "Wpisuje każdemu należność i wpłatę — po równo na osobę, z pominięciem oznaczonych „gratis”. Sprawdź kwoty i kliknij Zapisz.",
+      "nobody": "Nie ma między kogo podzielić — każda osoba jest oznaczona „gratis” albo ma anulowaną rezerwację."
     },
     "actions": {
       "setAll": "Ustaw wszystkim",
