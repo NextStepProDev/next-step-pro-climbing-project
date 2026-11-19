@@ -23,6 +23,13 @@ on:
 permissions:
   contents: read
 
+# One Deploy at a time (audit, 2026-11-19). Two runs started together would race on the same
+# server: one prunes images the other is about to start, and both rewrite compose and nginx.
+# Not cancelled — a deploy stopped halfway leaves the server between two versions.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

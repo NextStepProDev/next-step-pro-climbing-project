@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom'
 import { useThemeLogo } from '../hooks/useThemeLogo'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '13 października 2026'
-const LAST_UPDATED_EN = '13 October 2026'
+const LAST_UPDATED_PL = '19 listopada 2026'
+const LAST_UPDATED_EN = '19 November 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -180,6 +180,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
 
           <p className="text-surface-500 text-sm mt-4">
             Nie korzystamy z plików cookies śledzących, Google Analytics, Facebook Pixel ani żadnych innych narzędzi analitycznych.
+            Filmy z YouTube i posty z Instagrama osadzone na stronie mogą zapisać ciasteczka tych serwisów — na ich zasadach.
           </p>
           <p className="text-surface-500 text-sm mt-2">
             Niezapisany tekst — np. rozpoczętą wiadomość do trenera albo opis treningu — aplikacja przechowuje
@@ -491,6 +492,13 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               description="Ruch do serwisu przechodzi przez sieć Cloudflare, która chroni go przed atakami i przyspiesza ładowanie strony. Cloudflare przetwarza przy tym techniczne dane połączenia, w tym adres IP; nie dostaje dostępu do bazy danych."
             />
           </div>
+          <p className="text-surface-400 leading-relaxed mt-4">
+            W aktualnościach, na stronie z filmami i w materiałach treningowych pokazuję filmy z YouTube i posty
+            z Instagrama. Miniatury i odtwarzacze wczytują się z serwerów Google (YouTube) i Meta (Instagram),
+            które — jak przy każdym wyświetleniu strony — otrzymują przy tym standardowe informacje techniczne,
+            np. adres IP. Korzystają z nich na zasadach opisanych w swoich politykach prywatności. Podstawą jest
+            mój uzasadniony interes: pokazanie filmów i ćwiczeń (art. 6 ust. 1 lit. f RODO).
+          </p>
           <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
             <p className="text-surface-200 font-medium text-sm mb-1">Przekazywanie danych poza EOG</p>
             <p className="text-surface-500 text-sm leading-relaxed">
@@ -699,6 +707,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           </SubSection>
           <p className="text-surface-500 text-sm mt-4">
             We do not use tracking cookies, Google Analytics, Facebook Pixel, or any other analytics tools.
+            YouTube videos and Instagram posts embedded on the site may set those services' own cookies, on their terms.
           </p>
           <p className="text-surface-500 text-sm mt-2">
             Unsaved text — such as a message to your coach you have started or a training description — is kept
@@ -1009,6 +1018,13 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               description="Traffic to the service passes through the Cloudflare network, which protects it from attacks and speeds up page loading. In doing so Cloudflare processes technical connection data, including your IP address; it has no access to the database."
             />
           </div>
+          <p className="text-surface-400 leading-relaxed mt-4">
+            In the news, on the videos page and in training materials I show YouTube videos and Instagram posts.
+            Thumbnails and players load from the servers of Google (YouTube) and Meta (Instagram), which — as with
+            any page view — receive standard technical information such as your IP address. They use it under
+            their own privacy policies. The legal basis is my legitimate interest in showing videos and exercises
+            (Art. 6(1)(f) GDPR).
+          </p>
           <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
             <p className="text-surface-200 font-medium text-sm mb-1">Transfers outside the EEA</p>
             <p className="text-surface-500 text-sm leading-relaxed">
