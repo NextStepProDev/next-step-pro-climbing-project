@@ -593,6 +593,16 @@ Frontend: Vitest (najgęściej w `components/training/`), TypeScript i ESLint mu
 
 ---
 
+## Język komentarzy: angielski
+
+**Każdy komentarz w repo jest po angielsku** — Java, TS/TSX, CSS, Gradle, Dockerfile, compose, workflowy, skrypty, `loadtest/`, nagłówki sekcji w `messages*.properties` (we wszystkich trzech pakietach) i nowe migracje. Po polsku zostaje tylko to, co czyta użytkownik (tłumaczenia, maile, polityka), a w angielskim komentarzu wolno **cytować** polski tekst z UI w cudzysłowie albo backtickach. Do 19.11.2026 tej reguły nie było i repo się rozjechało (około 300 polskich linii w kilkudziesięciu plikach, obok angielskich w tych samych plikach).
+
+- Pilnują tego dwa testy: `CommentLanguageTest` (backend + `.github/` + hub; dlatego `ci-backend.yml` odpala się też na zmiany w tych katalogach, a `build.gradle` deklaruje je jako wejścia `test`, bo inaczej Gradle uznałby test za aktualny) i `src/__architecture__/commentLanguage.test.ts` (front). Heurystyka: zdejmuje tekst w cudzysłowie, a flaguje linię bez angielskiego słowa funkcyjnego, która ma polską literę albo dwa polskie słowa funkcyjne. **Fałszywy alarm → przeredaguj komentarz albo weź cytat w cudzysłów, nie dopisuj wyjątku.**
+- ⚠️ **Wyjątek: migracje do V106 włącznie** zostają po polsku. Są zastosowane na produkcji, a zmiana nawet komentarza zmienia checksum i Flyway nie wstaje (patrz „Baza danych — Flyway”). Test pomija je po numerze (`LAST_POLISH_MIGRATION`); **każda nowsza migracja jest sprawdzana**.
+- Dokumentacja `.md` (ten plik, `hub/*.md`) nie jest objęta regułą.
+
+---
+
 ## Utrzymanie tego pliku
 
 Plik jest śledzony w gicie — tak jak w Fire Academy. Nie niesie sekretów: wrażliwa połowa (adresy IP, ścieżka klucza SSH) mieszka w gitignorowanym `docs/OPERATIONS.md`.

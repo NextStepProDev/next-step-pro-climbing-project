@@ -700,8 +700,8 @@ export function CalendarPage() {
           </div>
         )}
 
-        {/* Motto nad kalendarzem — celowo ciche: cienka kreska + kursywa, bez ramki i tła,
-            żeby nie konkurowało z plakietką promocji ani z samym kalendarzem. */}
+        {/* The motto above the calendar — deliberately quiet: a thin rule + italics, no border or
+            background, so it does not compete with the promo badge or the calendar itself. */}
         <figure className="calendar-quote mt-5 max-w-xl border-l-2 border-surface-700 pl-4">
           <blockquote className="text-surface-400 text-sm italic leading-relaxed whitespace-pre-line">
             {t('quote.text')}

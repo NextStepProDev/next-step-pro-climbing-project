@@ -5,9 +5,9 @@ const BASE = __ENV.BASE_URL || 'http://host.docker.internal:8081';
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
-// Losowy dzień z zakresu 2018-2030 => ~4400 różnych URL-i.
-// Tak duża pula sprawia, że cache (TTL 15 min) prawie nigdy nie trafia
-// => prawie każde żądanie MUSI iść do bazy danych.
+// A random day in 2018-2030 => ~4400 different URLs.
+// A pool this large means the cache (TTL 15 min) almost never hits
+// => almost every request MUST go to the database.
 function randomDay() {
   const y = 2018 + Math.floor(Math.random() * 13);
   const m = 1 + Math.floor(Math.random() * 12);
@@ -39,7 +39,7 @@ export const options = {
 };
 
 export default function () {
-  // 50/50 dzień vs miesiąc, zawsze inna data => pudło cache => zapytanie do bazy.
+  // 50/50 day vs month, always a different date => cache miss => a database query.
   const url = Math.random() < 0.5
     ? `${BASE}/api/calendar/day/${randomDay()}`
     : `${BASE}/api/calendar/month/${randomMonth()}`;

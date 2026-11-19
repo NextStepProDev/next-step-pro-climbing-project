@@ -9,13 +9,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # ⚠️ ŚCIEŻKA I NAZWA ZMIENIONE RAZEM Z OBRAZEM 18 — jedno bez drugiego traci dane.
-      # Obraz postgres:18 przeniósł PGDATA na /var/lib/postgresql/18/docker, a deklarowany
-      # VOLUME z /var/lib/postgresql/data na /var/lib/postgresql. Wolumen zamontowany pod
-      # starą ścieżką nie jest więc już katalogiem danych: kontener WSTAJE, initdb tworzy
-      # pusty klaster obok, Flyway przelatuje migracje od zera i aplikacja odpowiada 200 na
-      # pustej bazie — awaria wyglądająca na zdrowie. Nowa nazwa wolumenu jest celowa:
-      # postgres_data_dev ze starym klastrem 17 zostaje nietknięty i JEST planem wycofania.
+      # ⚠️ PATH AND NAME CHANGED TOGETHER WITH IMAGE 18 — one without the other loses data.
+      # The postgres:18 image moved PGDATA to /var/lib/postgresql/18/docker, and the declared
+      # VOLUME from /var/lib/postgresql/data to /var/lib/postgresql. A volume mounted at the
+      # old path is therefore no longer the data directory: the container COMES UP, initdb
+      # creates an empty cluster next to it, Flyway runs the migrations from zero and the
+      # application answers 200 on an empty database — a failure that looks like health. The
+      # new volume name is deliberate: postgres_data_dev with the old 17 cluster stays
+      # untouched and IS the rollback plan.
       - postgres_data_dev_pg18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nextsteppro}"]

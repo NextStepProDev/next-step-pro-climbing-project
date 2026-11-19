@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
-/* Kroje hostowane u NAS, nie z Google Fonts — i to nie jest optymalizacja, tylko warunek
-   działania. Produkcyjny CSP (nginx.conf) ma `style-src 'self' 'unsafe-inline'` i
-   `font-src 'self' data:`, więc <link> do fonts.googleapis.com był po cichu blokowany:
-   nic nie pada, tekst renderuje się zapasowym krojem systemowym i wszystko wygląda na
-   działające. Lokalnie CSP nie ma, więc dev pokazywał właściwe kroje, a produkcja od
-   zawsze stała na systemowych. Pliki są wariantowe (jedna oś wagi), podzbiory
-   latin + latin-ext — latin-ext niesie polskie i hiszpańskie znaki diakrytyczne,
-   więc wyrzucenie go psuje dwie z trzech wersji językowych. */
+/* Typefaces hosted by US, not by Google Fonts — and that is not an optimisation, it is
+   what makes them work. The production CSP (nginx.conf) has `style-src 'self' 'unsafe-inline'`
+   and `font-src 'self' data:`, so a <link> to fonts.googleapis.com was silently blocked:
+   nothing fails, the text renders in a fallback system face and everything looks like it
+   works. Locally there is no CSP, so dev showed the right faces, while production had always
+   been on system ones. The files are variable (one weight axis), subsets latin + latin-ext —
+   latin-ext carries the Polish and Spanish diacritics, so dropping it breaks two of the
+   three language versions. */
 @font-face {
   font-family: 'Caveat';
   font-style: normal;
@@ -76,7 +76,7 @@
   --color-primary-800: #0f172a;
   --color-primary-900: #020617;
 
-  /* Warm sage green — stonowany, ciepły, pasujący do palety */
+  /* Warm sage green — muted, warm, matching the palette */
   --color-green-100: #e2edd6;
   --color-green-300: #a3b893;
   --color-green-400: #87a572;
@@ -109,28 +109,29 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* ⚠️ Na dotyku pola formularza NIE MOGĄ mieć mniej niż 16 px — inaczej iOS sam przybliża stronę
-   i nigdy jej nie oddala.
+/* ⚠️ On touch screens form fields MUST NOT be smaller than 16 px — otherwise iOS zooms the page
+   in by itself and never zooms back out.
 
-   Safari na iOS powiększa widok przy wejściu w dowolne `input`/`select`/`textarea` o czcionce
-   poniżej 16 px. Powrotu nie ma: po opuszczeniu pola, po zamknięciu modala i po przejściu na inny
-   ekran strona zostaje przybliżona, aż użytkownik ręcznie ją uszczypnie. Objawem nie jest błąd,
-   tylko „aplikacja mi się rozjechała" — zgłoszone po serii rozliczeń, gdzie każdy zapis kończył
-   się szczypaniem ekranu. Cała aplikacja pisze pola jako `text-sm`/`text-xs` (45 plików), więc to
-   nie jest usterka jednego ekranu.
+   Safari on iOS zooms the view on entering any `input`/`select`/`textarea` with a font below
+   16 px. There is no way back: after leaving the field, closing the modal or going to another
+   screen the page stays zoomed until the user pinches it by hand. The symptom is not an error
+   but "the app fell apart on me" — reported after a series of settlements, where every save
+   ended with pinching the screen. The whole application writes fields as `text-sm`/`text-xs`
+   (45 files), so this is not a bug of one screen.
 
-   Trzy decyzje, każda z powodem:
-   - `pointer: coarse`, a nie szerokość ekranu — problem dotyczy dotyku, nie wąskiego okna, więc
-     gęstość na desktopie zostaje nietknięta.
-   - **Nie** `maximum-scale=1` w meta viewport: to odbiera szczypanie do powiększenia, czyli psuje
-     dostępność, żeby naprawić wygodę. Od iOS 10 Safari i tak to ignoruje — wyglądałoby na
-     naprawione i nie działało.
-   - Reguła stoi POZA warstwami Tailwinda i to jest warunek jej działania: `.text-sm` z warstwy
-     `utilities` ma wyższą specyficzność niż selektor elementu, ale styl bez warstwy wygrywa
-     z warstwowym niezależnie od specyficzności. Wersja wewnątrz `@layer` po cichu nic nie robi.
+   Three decisions, each with a reason:
+   - `pointer: coarse`, not screen width — the problem is touch, not a narrow window, so the
+     density on desktop stays untouched.
+   - **No** `maximum-scale=1` in the meta viewport: it takes away pinch-to-zoom, i.e. breaks
+     accessibility to fix convenience. Since iOS 10 Safari ignores it anyway — it would look
+     fixed and not work.
+   - The rule sits OUTSIDE Tailwind's layers, and that is what makes it work: `.text-sm` from
+     the `utilities` layer has higher specificity than an element selector, but an unlayered
+     style beats a layered one regardless of specificity. A version inside `@layer` silently
+     does nothing.
 
-   Checkbox i radio wyłączone — czcionka nie ma tam wpływu na przybliżanie, a bywa jednostką
-   rozmiaru samego pola. */
+   Checkbox and radio are excluded — the font has no effect on zooming there, and sometimes is
+   the size unit of the control itself. */
 @media (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]),
   select,
@@ -139,24 +140,24 @@ body {
   }
 }
 
-/* Space Grotesk dla nagłówków (+ .font-display); tekst pozostaje na Inter */
+/* Space Grotesk for headings (+ .font-display); body text stays on Inter */
 h1, h2, h3, h4, h5, h6, .font-display {
   font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   letter-spacing: -0.01em;
 }
 
-/* Odręczny krój motta w hero. BEZ `italic` na wywołaniu: Caveat nie ma odmiany
-   pochylonej, więc przeglądarka dorobiłaby ją pochyleniem syntetycznym — pismo
-   odręczne pochylone drugi raz robi się nieczytelne. Kreski są cieńsze niż w Inter,
-   więc rozmiar tej klasy jest dobrany do CZYTELNOŚCI na zdjęciu, nie do wysokości
-   liter: Caveat ma niski x-height, więc 40 px optycznie odpowiada mniej więcej 26 px
-   Intera i poniżej tego zaczyna się gubić na fakturze skały. */
+/* The handwritten face of the hero motto. NO `italic` where it is used: Caveat has no
+   italic style, so the browser would fake one with a synthetic slant — handwriting
+   slanted a second time becomes unreadable. Its strokes are thinner than Inter's, so
+   this class's size is chosen for LEGIBILITY on the photo, not for letter height:
+   Caveat has a low x-height, so 40 px looks roughly like 26 px of Inter, and below that
+   it starts to get lost in the rock texture. */
 .font-hand {
   font-family: 'Caveat', 'Inter', system-ui, cursive;
-  /* 600 należy do rodziny, nie do wywołania: z Google Fonts ciągniemy WYŁĄCZNIE tę odmianę
-     (`family=Caveat:wght@600`), więc klasa bez tej deklaracji renderuje się jako 400 i pismo
-     robi się cieńsze, niż wygląda w podglądzie — a przy jednej wgranej odmianie nic tego
-     nie zgłasza: przeglądarka po cichu podstawia najbliższą wagę i wszystko wygląda na działające. */
+  /* 600 belongs to the family, not to the place of use: we ship ONLY this weight
+     (`family=Caveat:wght@600`), so without this declaration the class renders as 400 and the
+     writing gets thinner than in the preview — and with a single weight loaded nothing reports
+     it: the browser silently substitutes the nearest weight and everything looks like it works. */
   font-weight: 600;
 }
 
@@ -243,7 +244,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
   50%      { box-shadow: 0 0 20px 2px rgba(251, 191, 36, 0.38), 0 8px 24px rgba(0, 0, 0, 0.35); }
 }
 
-/* diagonal light sweep — the "błyśnięcie": one quick pass, then a long pause, on loop */
+/* diagonal light sweep — the "glint": one quick pass, then a long pause, on loop */
 @keyframes location-badge-shine {
   0%   { transform: translateX(-160%) skewX(-22deg); }
   16%  { transform: translateX(260%) skewX(-22deg); }
@@ -423,7 +424,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .calendar-promo-desc  { animation-delay: 0.68s; }
 .calendar-promo-cta   { animation-delay: 0.82s; }
 
-/* === Motto nad kalendarzem — wchodzi cicho, jako ostatnie w nagłówku === */
+/* === The motto above the calendar — comes in quietly, last in the header === */
 @keyframes calendar-quote-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -432,20 +433,20 @@ h1, h2, h3, h4, h5, h6, .font-display {
   opacity: 0;
   animation: calendar-quote-in 0.9s ease-out 0.5s both;
 }
-/* Bez ruchu: cytat po prostu jest (inaczej zostałby niewidoczny — opacity: 0). */
+/* Reduced motion: the quote is simply there (otherwise it would stay invisible — opacity: 0). */
 @media (prefers-reduced-motion: reduce) {
   .calendar-quote { opacity: 1; animation: none; }
 }
 
-/* === "Twoja strefa" w nawigacji — jedyna zakładka, której nie widzi gość ===
-   Wyróżnia ją WYŁĄCZNIE tekst: żadnego tła, ramki ani ikony. Pigułka istniała
-   i została odrzucona — czytała się jak drugi egzemplarz bursztynowego badge'a
-   „Gdzie teraz szkolę", a pasek nawigacji nie może cytować elementu ze strony.
-   Zostaje światło przemykające po samych literach (background-clip: text).
+/* === "Twoja strefa" in the navigation — the only tab a guest does not see ===
+   It stands out by its TEXT alone: no background, border or icon. A pill existed
+   and was rejected — it read like a second copy of the amber "Gdzie teraz szkolę"
+   badge, and the navigation bar must not quote an element from the page.
+   What stays is light gliding over the letters themselves (background-clip: text).
 
-   Malowane tutaj, a nie klasami Tailwinda, bo gradient klipowany do tekstu ma
-   trzy warianty koloru (ciemny, jasny, na zdjęciu hero) — w utility byłyby to
-   trzy zestawy klas bijące się o kolejność w arkuszu, nie w liście klas. */
+   Painted here rather than with Tailwind classes, because the text-clipped gradient has
+   three colour variants (dark, light, on the hero photo) — as utilities these would be
+   three class sets fighting over their order in the stylesheet, not in the class list. */
 .nav-shine {
   --nav-shine-base: #d9a441;
   --nav-shine-glint: #fffaf0;
@@ -463,15 +464,15 @@ h1, h2, h3, h4, h5, h6, .font-display {
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  /* Jeden przelot raz na 7 s: dość, żeby oko go złapało, za rzadko, żeby męczyć
-     w pasku obecnym na każdej stronie. */
+  /* One pass every 7 s: enough for the eye to catch it, rare enough not to tire
+     in a bar present on every page. */
   animation: nav-shine 7s ease-in-out 1.4s infinite;
 }
-/* ⚠️ Pozycja NIE MOŻE wyjechać poza 0–100%. Gradient jest jedynym źródłem koloru
-   liter (text-fill-color: transparent), a przy `background-position: -80%` jego
-   obraz schodzi z napisu i tekst robi się PRZEZROCZYSTY — zakładka znikała na
-   ~80% cyklu. W zakresie 0–100% widoczny wycinek zawsze zawiera kolor bazowy,
-   bo glint siedzi w środku obrazu, a oba jego krańce to baza. */
+/* ⚠️ The position MUST NOT leave 0–100%. The gradient is the only source of the letters'
+   colour (text-fill-color: transparent), and at `background-position: -80%` its image
+   slides off the text and the text turns TRANSPARENT — the tab vanished for ~80% of the
+   cycle. Within 0–100% the visible slice always contains the base colour, because the
+   glint sits in the middle of the image and both its ends are the base. */
 @keyframes nav-shine {
   0%   { background-position: 0% 0; }
   18%  { background-position: 100% 0; }
@@ -482,10 +483,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
   --nav-shine-base: #f0c060;
 }
 
-/* Bez ruchu litery muszą zostać WIDOCZNE — samo `animation: none` zostawiłoby
-   je na pozycji startowej gradientu, czyli w kolorze bazowym, ale przez
-   text-fill-color: transparent zależą od tego, że gradient w ogóle się rysuje.
-   Najprościej wyłączyć klipowanie i pomalować tekst wprost. */
+/* With reduced motion the letters must stay VISIBLE — `animation: none` alone would
+   leave them at the gradient's start position, i.e. in the base colour, but through
+   text-fill-color: transparent they depend on the gradient being drawn at all.
+   Simplest is to turn the clipping off and paint the text directly. */
 @media (prefers-reduced-motion: reduce) {
   .nav-shine {
     animation: none;
@@ -495,11 +496,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
 }
 
-/* Motyw jasny: jasne złoto na kremowym pasku jest nieczytelne, więc baza ciemnieje,
-   a rolę światła przejmuje nasycony bursztyn. Bez wyjątku dla paska na zdjęciu hero
-   — .location-badge takiego wyjątku potrzebuje, bo leży na samej fotografii, ale
-   navbar w trybie szkła ma pod sobą własne, JASNE tło (surface-950 jest w tym
-   motywie kremowe), więc dotyczy go dokładnie ta sama reguła co reszty. */
+/* Light theme: pale gold on the cream bar is unreadable, so the base darkens and a
+   saturated amber takes over the role of the light. No exception for the bar over the
+   hero photo — .location-badge needs one, because it sits on the photograph itself, but
+   the navbar in glass mode has its own LIGHT background beneath (surface-950 is cream in
+   this theme), so exactly the same rule applies to it as to the rest. */
 [data-theme="light"] .nav-shine {
   --nav-shine-base: #9a6a12;
   --nav-shine-glint: #e0a92a;
@@ -626,10 +627,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 /* Hero location badge sits on the hero photo. In the light theme that photo is veiled
-   towards the cream page background, so the badge is NOT on a dark ground — jasny bursztyn
-   (#fbbf24), którym świeci w motywie ciemnym, znikał na tej mgle. Ciemny bursztyn na gęściej
-   wypełnionym polu: ten sam kolor marki, przeciwny kierunek kontrastu — dokładnie jak reszta
-   tekstu hero. */
+   towards the cream page background, so the badge is NOT on a dark ground — the light amber
+   (#fbbf24) it shines with in the dark theme vanished in that haze. Dark amber on a denser
+   fill: the same brand colour, the opposite direction of contrast — exactly like the rest of
+   the hero text. */
 [data-theme="light"] .location-badge {
   background-color: color-mix(in srgb, #f59e0b 22%, rgba(255, 255, 255, 0.65));
   border-color: color-mix(in srgb, #b45309 45%, transparent);
@@ -640,11 +641,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
    it reads as a smudge under the text. */
 [data-theme="light"] .calendar-promo { text-shadow: none; }
 
-/* Hero headline/subtitle nad zdjęciem (desktop): halo obejmujące SAME litery (kształt
-   glifów, nie prostokąt) — ciasny ciemny kontur + miękka poświata. Dynamicznie przylega
-   do tekstu, więc pojedyncze słowo nie ciągnie efektu na całą szerokość linii i nie tworzy
-   widocznego boxa. Daje czytelność niezależną od kolorów zdjęcia. Tylko ≥640px, bo na mobile
-   tekst leży na tle strony, nie na zdjęciu. */
+/* Hero headline/subtitle over the photo (desktop): a halo around the letters ONLY (the shape
+   of the glyphs, not a rectangle) — a tight dark outline + a soft glow. It hugs the text, so a
+   single word does not drag the effect across the whole line width and creates no visible
+   box. Gives legibility regardless of the photo's colours. Only ≥640px, because on mobile the
+   text sits on the page background, not on the photo. */
 @media (min-width: 640px) {
   .hero-over-photo {
     text-shadow:
@@ -654,11 +655,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
       0 0 14px rgba(0, 0, 0, 0.4);
   }
 
-  /* Motyw jasny odwraca CAŁY ten zestaw, a nie tylko kolor liter. Halo jest jedynym,
-     co trzyma tekst nad ciemnymi fragmentami zdjęcia (sylwetka, zieleń) — ciemna
-     poświata pod prawie czarnym tekstem zlewa się z literami i robi z nich plamę,
-     zamiast je odciąć od tła. Jaśniej i szerzej niż w ciemnym motywie, bo litery są
-     tu cieńsze optycznie: ciemny glif na jasnym tle „chudnie". */
+  /* The light theme inverts this WHOLE set, not just the letter colour. The halo is the only
+     thing holding the text above the dark parts of the photo (the figure, greenery) — a dark
+     glow under nearly black text merges with the letters and turns them into a smudge instead
+     of cutting them off the background. Lighter and wider than in the dark theme, because the
+     letters look thinner here: a dark glyph on a light background "slims down". */
   [data-theme="light"] .hero-over-photo {
     text-shadow:
       0 0 2px rgba(255, 255, 255, 0.95),
@@ -667,47 +668,47 @@ h1, h2, h3, h4, h5, h6, .font-display {
       0 0 18px rgba(255, 255, 255, 0.6);
   }
 
-  /* ⚠️ Zasięg halo musi być proporcjonalny do STOPNIA PISMA, nie wspólny dla całego hero.
-     Poświata 18 px jest tłem dla 48 px nagłówka, ale dla 18 px akapitu jest szersza niż
-     światła wewnątrz liter: wlewa się w oczka „e"/„o" i w odstępy międzywyrazowe, więc
-     tekst przestaje mieć krawędź i czyta się jak zza mlecznej szyby — a wygląda to na
-     rozmycie renderu, nie na cień, bo żadnej ramki widać nie ma. Mały tekst dostaje więc
-     sam ciasny kontur (1–3 px), bez bloomu. Selektor jest podwójny (0,3,0), żeby wygrywał
-     z regułą wyżej niezależnie od kolejności w arkuszu. */
+  /* ⚠️ The halo's reach must be proportional to the TYPE SIZE, not shared by the whole hero.
+     An 18 px glow is a backdrop for a 48 px heading, but for an 18 px paragraph it is wider
+     than the counters inside the letters: it floods the eyes of "e"/"o" and the word spaces,
+     so the text loses its edge and reads as if behind frosted glass — and it looks like a
+     render blur, not a shadow, because no frame is visible. Small text therefore gets only a
+     tight outline (1–3 px), no bloom. The selector is doubled (0,3,0) so it beats the rule
+     above regardless of the order in the stylesheet. */
   [data-theme="light"] .hero-over-photo.hero-over-photo-sm {
-    /* Kontur ciasny (2–5 px), ale KRYJĄCY: tłem jest drobnoziarnista faktura skały o niemal tej
-       samej jasności co tekst, więc miękka poświata nic nie odcina — potrzebna jest krawędź,
-       która obrysuje glif i odsunie od niego szum. */
+    /* A tight outline (2–5 px), but OPAQUE: the background is a fine-grained rock texture of
+       almost the same brightness as the text, so a soft glow cuts nothing off — what is needed
+       is an edge that outlines the glyph and pushes the noise away from it. */
     text-shadow:
       0 0 2px rgba(255, 255, 255, 1),
       0 1px 2px rgba(255, 255, 255, 0.95),
       0 0 5px rgba(255, 255, 255, 0.7);
-    /* 18 px w regularnej grubości daje na takim tle za mało tuszu na literę. 500 tylko tutaj —
-       w ciemnym motywie biały tekst na ciemnym zdjęciu ma kontrast z zapasem i regular wystarcza. */
+    /* 18 px at regular weight gives too little ink per letter on such a background. 500 only
+       here — in the dark theme white text on a dark photo has contrast to spare and regular is enough. */
     font-weight: 500;
-    /* Pełne krycie zamiast /90 z utility. Przygaszona BIEL na ciemnym zdjęciu czyta się jako
-       „ciszej niż nagłówek", ale przygaszona CZERŃ na jasnym po prostu szarzeje — traci
-       kontrast dokładnie tam, gdzie jest go najmniej. Hierarchię niesie stopień pisma, nie
-       krycie. Tylko w jasnym, żeby ciemny motyw został co do piksela taki jak był. */
+    /* Full opacity instead of the utility's /90. Dimmed WHITE on a dark photo reads as "quieter
+       than the heading", but dimmed BLACK on a light one just turns grey — losing contrast
+       exactly where there is least of it. The hierarchy is carried by type size, not opacity.
+       Only in the light theme, so the dark theme stays pixel for pixel as it was. */
     color: var(--color-surface-100);
   }
 }
 
-/* Podkład pod treścią hero (desktop). Ciemny motyw przygasza zdjęcie pod białym
-   tekstem, jasny je ROZJAŚNIA pod czarnym — ten sam gest, przeciwny znak. Malowane
-   tutaj, a nie utility `bg-[radial-gradient(…)]`, bo warianty motywu w klasie
-   arbitralnej to dwa zestawy bijące się o kolejność w arkuszu. */
+/* The underlay beneath the hero content (desktop). The dark theme dims the photo under white
+   text, the light one BRIGHTENS it under black text — the same gesture, the opposite sign.
+   Painted here rather than with a `bg-[radial-gradient(…)]` utility, because theme variants
+   of an arbitrary class are two sets fighting over their order in the stylesheet. */
 .hero-underlay {
   background: radial-gradient(ellipse 75% 70% at 50% 50%,
     rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.04) 60%, transparent 80%);
 }
-/* W jasnym motywie ta sama plama musi być WĘŻSZA i MOCNIEJSZA niż w ciemnym, nie odwrotnie.
-   Szeroka (75%×70%) i słaba rozkładała mgiełkę na całym kadrze: zdjęcie bladło wszędzie, a pod
-   samym tekstem i tak nie było kontrastu — najgorszy z obu światów. Wąska elipsa siada dokładnie
-   na bloku treści (to samo, co na mobile robi kremowa karta, tylko bez krawędzi), więc rogi i
-   brzegi zdjęcia zostają nasycone. Wysokie krycie w środku jest tu bezpieczne właśnie dlatego,
-   że zasięg jest mały — a wtapia się miękko, więc czyta się jak światło padające na skałę, nie
-   jak prostokąt pod napisem. */
+/* In the light theme the same patch must be NARROWER and STRONGER than in the dark one, not the
+   other way round. Wide (75%×70%) and weak, it spread haze over the whole frame: the photo paled
+   everywhere, and under the text itself there was still no contrast — the worst of both worlds.
+   A narrow ellipse sits exactly on the content block (what the cream card does on mobile, only
+   without an edge), so the corners and edges of the photo stay saturated. High opacity in the
+   centre is safe precisely because the reach is small — and it blends in softly, so it reads
+   like light falling on the rock, not like a rectangle under the text. */
 [data-theme="light"] .hero-underlay {
   background: radial-gradient(ellipse 46% 50% at 50% 56%,
     rgba(255, 255, 255, 0.68),
@@ -716,13 +717,14 @@ h1, h2, h3, h4, h5, h6, .font-display {
     transparent 86%);
 }
 
-/* Gradient wtapiający zdjęcie w tło strony. W motywie ciemnym stopnie stawia utility Tailwinda
-   na elemencie (`to-surface-950` z `via` w połowie wysokości) i tam zostają — tutaj tylko motyw
-   jasny, gdzie surface-950 jest KREMOWY: ta sama rampa nie „sadza" zdjęcia, tylko bieli je od
-   połowy w górę i zdejmuje mu kontrast. Rozwiązanie: to samo domknięcie na krawędzi, ale zjazd
-   zaczyna się dopiero pod treścią (~60%), więc kadr zostaje nasycony tam, gdzie się na niego
-   patrzy. ⚠️ Reguła nadpisuje CAŁE `background-image` utility, więc oba warianty (mobile i sm)
-   muszą być tu wypisane — wersja desktopowa niżej, w media query, żeby wygrała kolejnością. */
+/* The gradient blending the photo into the page background. In the dark theme the stops are set
+   by Tailwind utilities on the element (`to-surface-950` with `via` at half height) and stay
+   there — this is only the light theme, where surface-950 is CREAM: the same ramp does not
+   "seat" the photo, it whitens it from the middle up and strips its contrast. The fix: the same
+   closing at the edge, but the fade starts only below the content (~60%), so the frame stays
+   saturated where people look at it. ⚠️ The rule overrides the utility's WHOLE
+   `background-image`, so both variants (mobile and sm) must be written out here — the desktop
+   one below, in a media query, so it wins by order. */
 [data-theme="light"] .hero-fade {
   background-image: linear-gradient(to bottom,
     color-mix(in srgb, var(--color-surface-950) 20%, transparent) 0%,
@@ -741,10 +743,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
 }
 
-/* Mobilna szklana karta hero (poniżej sm — wyżej karta jest przezroczysta i tekst
-   leży wprost na zdjęciu). W motywie jasnym surface-950 jest kremowy, więc przy 30%
-   zdjęcie przebija na wylot i czarny tekst nie ma na czym stanąć — karta gęstnieje,
-   a biała obwódka ciemnieje, bo na kremie jest niewidoczna. */
+/* The mobile glass hero card (below sm — above it the card is transparent and the text sits
+   directly on the photo). In the light theme surface-950 is cream, so at 30% the photo shows
+   straight through and the black text has nothing to stand on — the card gets denser, and the
+   white border darkens, because on cream it is invisible. */
 @media (max-width: 639px) {
   [data-theme="light"] .hero-card {
     background-color: color-mix(in srgb, var(--color-surface-950) 72%, transparent);
@@ -754,59 +756,57 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 /* === HERO — cinematic entrance ============================================
-   Robi ze ŚCIĄGANIA zdjęcia z dysku gwóźdź programu, nie zacinkę.
+   Turns the DOWNLOAD of the photo into the highlight of the show, not a stall.
 
-   Faza 0 (ładowanie): treść (logo → nagłówek → podtytuł → CTA) montuje się
-   kaskadą nad oddychającą poświatą — czekanie wygląda jak plansza tytułowa,
-   nie jak zawieszenie.
-   Faza 1 (onLoad): zdjęcie ROZKWITA — schodzi ze scale 1.12, rozjaśnia się
-   z mroku i wchodzi w ostrość z miękkiego blura, po czym płynnie przejmuje
-   to powolny ken-burns. Reveal + ken-burns żyją w JEDNYM keyframie, żeby dwa
-   transformy się nie biły. */
+   Phase 0 (loading): the content (logo → heading → subtitle → CTA) assembles in a
+   cascade over a breathing glow — the wait looks like a title card, not a hang.
+   Phase 1 (onLoad): the photo BLOOMS — comes down from scale 1.12, brightens out of
+   the dark and comes into focus from a soft blur, then a slow ken-burns smoothly takes
+   over. Reveal + ken-burns live in ONE keyframe so the two transforms do not fight. */
 
 @keyframes hero-cinematic {
-  /* Ken-burns „oddalający": reveal siada na lekko przybliżonym kadrze (1.06) i powoli pełza
-     w TYŁ do scale(1) = pełne pokrycie (object-cover) bez brzegów. Poniżej 1 nie schodzimy,
-     bo wyszłyby puste krawędzie, więc scale(1) to docelowy „najbardziej oddalony" kadr. */
+  /* A "zooming-out" ken-burns: the reveal lands on a slightly zoomed frame (1.06) and slowly
+     creeps BACK to scale(1) = full coverage (object-cover) without edges. We never go below 1,
+     as empty edges would show, so scale(1) is the final "most zoomed-out" frame. */
   0%   { opacity: 0; transform: scale(1.10); filter: brightness(0.45) saturate(0.85) blur(10px); }
   6%   { opacity: 1; transform: scale(1.07); filter: brightness(1)    saturate(1)    blur(0); }
   100% { opacity: 1; transform: scale(1);    filter: brightness(1)    saturate(1)    blur(0); }
 }
 .hero-cinematic {
   will-change: transform, opacity, filter;
-  /* 6% z 28s ≈ 1.68s na sam reveal; reszta (~26s) to spokojny dryf ken-burns.
-     zakres 1.07→1 przy 28s daje ~tę samą prędkość co wcześniej 1.06→1 przy 24s */
+  /* 6% of 28s ≈ 1.68s for the reveal itself; the rest (~26s) is a calm ken-burns drift.
+     The range 1.07→1 over 28s gives ~the same speed as the earlier 1.06→1 over 24s */
   animation: hero-cinematic 28s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
-/* treść hero wjeżdża z dołu, z blura do ostrości — kaskada przez --hero-delay */
+/* the hero content rises from below, from blur to sharp — cascaded through --hero-delay */
 @keyframes hero-rise {
   0%   { opacity: 0; transform: translateY(20px); filter: blur(10px); }
   100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
-/* ⚠️ `backwards`, NIE `both` — i bez `will-change` po wjeździe. Oba zostawiały na elemencie
-   `filter: blur(0)` i deklarację `will-change` NA ZAWSZE, a to trzyma tekst na własnej warstwie
-   kompozytora: przeglądarka renderuje go wtedy antyaliasingiem szarościowym zamiast subpikselowego.
-   Litery robią się cieńsze i miękkie — wygląda to jak nałożona poświata rozmywająca tekst, choć
-   żadnego efektu tam nie ma. Na białym tekście na ciemnym zdjęciu prawie nie widać; na ciemnym
-   18-pikselowym akapicie na jasnym tle widać od razu.
-   `backwards` daje stan sprzed animacji (klatka 0% w trakcie `--hero-delay`, czyli brak mignięcia),
-   a po jej końcu element wraca do zwykłych stylów — bez filtra, bez transformu, bez warstwy.
-   Dlatego bazowego `opacity: 0` już tu nie ma: po animacji zostałby na stałe i schowałby treść. */
+/* ⚠️ `backwards`, NOT `both` — and no `will-change` after the entrance. Both left
+   `filter: blur(0)` and the `will-change` declaration on the element FOREVER, which keeps the text
+   on its own compositor layer: the browser then renders it with greyscale antialiasing instead of
+   subpixel. The letters get thinner and soft — it looks like a glow blurring the text, although
+   there is no effect there. On white text over a dark photo it is barely visible; on a dark 18 px
+   paragraph on a light background it shows at once.
+   `backwards` gives the pre-animation state (the 0% frame during `--hero-delay`, i.e. no flash),
+   and after the end the element returns to its ordinary styles — no filter, no transform, no layer.
+   That is why the base `opacity: 0` is gone from here: after the animation it would stay for good
+   and hide the content. */
 .hero-rise {
   animation: hero-rise 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
   animation-delay: var(--hero-delay, 0ms);
 }
 
-/* Logo hero materializuje się „z niczego" zsynchronizowane z wjazdem tekstu (bramka
-   heroReady w JSX): z rozmycia i lekko mniejszego rozmiaru wyostrza się i dorasta
-   MONOTONICZNIE do docelowego (nigdy większe niż finał — żadnego overshoot/kurczenia),
-   z miękkim narastaniem niebieskiej poświaty. Kończy na spoczynkowym glow (== drop-shadow
-   utility), więc przejście jest bezszwowe. */
+/* The hero logo materialises "out of nothing" in sync with the text entrance (the heroReady
+   gate in JSX): from a blur and a slightly smaller size it sharpens and grows MONOTONICALLY to
+   the final size (never larger than the end — no overshoot/shrinking), with a soft build-up of
+   blue glow. It ends on the resting glow (== the drop-shadow utility), so the handover is seamless. */
 @keyframes hero-logo-in {
-  /* „Wbija się" ze skali (0.7 → 1, MONOTONICZNIE — nigdy >1, więc bez overshoot/kurczenia)
-     z miękkim bloomem niebieskiej poświaty i krótkim rozjaśnieniem, lądując na spoczynkowym
-     glow (== drop-shadow utility). Naturalne wyhamowanie sprawia, że logo „siada" na miejscu. */
+  /* "Punches in" from scale (0.7 → 1, MONOTONIC — never >1, so no overshoot/shrinking) with a
+     soft bloom of blue glow and a short brightening, landing on the resting glow (== the
+     drop-shadow utility). The natural easing makes the logo "settle" into place. */
   0%   { opacity: 0; transform: scale(0.7);
          filter: blur(8px) brightness(1.25) drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
   55%  { opacity: 1;
@@ -820,30 +820,31 @@ h1, h2, h3, h4, h5, h6, .font-display {
   animation: hero-logo-in 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Słowo kluczowe w nagłówku hero (wspinaczce/climbing/escalada) — wypełnione chłodnym
-   gradientem; „zapala się" bloomem niebieskiej poświaty w chwili, gdy nagłówek zostanie
-   wystukany i słowo wchodzi na scenę. Gradient zostaje też przy prefers-reduced-motion. */
+/* The keyword in the hero heading (wspinaczce/climbing/escalada) — filled with a cool gradient;
+   it "lights up" with a bloom of blue glow the moment the heading has been typed out and the
+   word enters the stage. The gradient stays with prefers-reduced-motion too. */
 .hero-keyword {
-  /* litery jako KONTUR: przezroczyste wypełnienie + obrys w kolorze tekstu nagłówka
-     (widać tło w środku), więc kontur odwraca się razem z motywem — biały obrys na
-     rozjaśnionym zdjęciu znikał, zostawiając w środku zdania dziurę bez słowa. */
+  /* letters as an OUTLINE: a transparent fill + a stroke in the heading's text colour (the
+     background shows inside), so the outline flips with the theme — a white stroke on the
+     brightened photo vanished, leaving a wordless hole in the middle of the sentence. */
   color: transparent;
   -webkit-text-fill-color: transparent;
   -webkit-text-stroke: 1.5px #fff;
 }
-/* ⚠️ W motywie jasnym sama zamiana koloru kreski NIE wystarcza i to jest sedno tego efektu:
-   litera rysowana wyłącznie konturem czerpie kontrast z WNĘTRZA, a wnętrze to zdjęcie. Na
-   ciemnym kadrze biała nitka świeci, bo w środku jest mrok; na rozjaśnionym ciemna nitka 1,5 px
-   leży na skale i koszulce o podobnej jasności i słowo blednie obok pełnych, czarnych liter
-   obok — w jednym zdaniu dwa różne poziomy widoczności. Wnętrze dostaje więc jasne wypełnienie:
-   kontur dalej rysuje kształt (efekt zostaje), ale litera sama wycina się z tła zamiast liczyć
-   na to, co akurat za nią jest. Kreska grubsza, bo musi utrzymać krawędź na tym wypełnieniu. */
+/* ⚠️ In the light theme swapping the stroke colour alone is NOT enough, and that is the crux of
+   this effect: a letter drawn only as an outline takes its contrast from the INSIDE, and the
+   inside is the photo. On a dark frame the white thread glows because there is darkness inside;
+   on the brightened one a dark 1.5 px thread lies on rock and a T-shirt of similar brightness,
+   and the word fades next to the solid black letters beside it — two levels of visibility in one
+   sentence. So the inside gets a light fill: the outline still draws the shape (the effect
+   stays), but the letter cuts itself out of the background instead of relying on whatever is
+   behind it. The stroke is thicker, as it has to hold an edge on that fill. */
 [data-theme="light"] .hero-keyword {
   -webkit-text-stroke: 2px var(--color-surface-100);
   -webkit-text-fill-color: rgba(255, 255, 255, 0.62);
 }
 
-/* migający kursor maszyny do pisania (Typewriter) — dziedziczy kolor tekstu */
+/* the blinking typewriter caret (Typewriter) — inherits the text colour */
 @keyframes tw-caret-blink {
   0%, 49%   { opacity: 1; }
   50%, 100% { opacity: 0; }
@@ -856,8 +857,8 @@ h1, h2, h3, h4, h5, h6, .font-display {
   animation: tw-caret-blink 1s step-end infinite;
 }
 
-/* oddychający reflektor pod logo, póki zdjęcie leci z dysku — ciemne tło
-   ożywa jak rozgrzewające się światło sceny zamiast pustej klatki */
+/* a breathing spotlight under the logo while the photo loads from disk — the dark
+   background comes alive like stage lights warming up instead of an empty frame */
 @keyframes hero-glow-breathe {
   0%, 100% { opacity: 0.35; transform: scale(0.92); }
   50%      { opacity: 0.7;  transform: scale(1.05); }

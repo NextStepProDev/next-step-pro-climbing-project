@@ -1,15 +1,15 @@
-# Wersje zależności backendu — jedno miejsce, i to takie, które GitHub potrafi przeczytać.
+# Backend dependency versions — one place, and one GitHub can read.
 #
-# ⚠️ Powód istnienia tego pliku jest inny niż porządek. Wcześniej wersje siedziały w
-# gradle.properties i wchodziły do build.gradle przez "${springdocVersion}". Parser grafu
-# zależności GitHuba nie umie rozwiązać takiej zmiennej, więc widział w tym repo **zero**
-# zależności Javy (352 pakiety npm, 12 akcji, 0 mavenowych). Skutek był podwójny i cichy:
-# Dependabot przez cały czas nie zaproponował ani jednej aktualizacji backendu, a alerty
-# bezpieczeństwa dla Spring Boota czy jjwt nie miały jak do Was dotrzeć — bo dla GitHuba te
-# biblioteki nie istniały. Brak PR-ów wygląda dokładnie tak samo jak "wszystko aktualne".
+# ⚠️ This file exists for a reason other than tidiness. Versions used to sit in
+# gradle.properties and reached build.gradle through "${springdocVersion}". GitHub's
+# dependency graph parser cannot resolve such a variable, so it saw **zero** Java
+# dependencies in this repo (352 npm packages, 12 actions, 0 maven). The effect was double
+# and silent: Dependabot never proposed a single backend update, and security alerts for
+# Spring Boot or jjwt had no way to reach us — for GitHub those libraries did not exist.
+# No PRs looks exactly the same as "everything up to date".
 #
-# Format katalogu wersji Gradle jest wspierany przez Dependabota wprost, więc wersje nadal są
-# w jednym pliku, a narzędzia je widzą. Nie wracać do "${...}" w build.gradle.
+# Dependabot supports the Gradle version catalog format directly, so versions are still in
+# one file and the tools can see them. Do not go back to "${...}" in build.gradle.
 [versions]
 spring-boot = "4.1.2"
 dependency-management = "1.1.7"
@@ -18,7 +18,7 @@ springdoc = "3.2.0"
 jjwt = "0.13.0"
 testcontainers = "1.21.4"
 thumbnailator = "0.4.21"
-# Nie zależność, tylko wersja narzędzia dla wtyczki jacoco — stąd odczyt przez libs.versions.
+# Not a dependency, just the tool version for the jacoco plugin — hence read through libs.versions.
 jacoco = "0.8.15"
 
 [libraries]

@@ -87,7 +87,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </div>
 
-        {/* 1. Administrator danych */}
+        {/* 1. Data controller */}
         <Section title="1. Administrator danych osobowych">
           <p className="text-surface-300 leading-relaxed">
             Administratorem Twoich danych osobowych jest:
@@ -110,7 +110,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 2. Jakie dane zbieramy */}
+        {/* 2. What data we collect */}
         <Section title="2. Jakie dane zbieramy">
           <p className="text-surface-400 leading-relaxed mb-4">
             Zbieramy wyłącznie dane niezbędne do świadczenia usług szkoły wspinaczkowej. Nie zbieramy nic ponad to.
@@ -189,7 +189,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 3. Cel i podstawa prawna */}
+        {/* 3. Purpose and legal basis */}
         <Section title="3. Cel i podstawa prawna przetwarzania">
           <div className="space-y-4">
             <LegalBasis
@@ -514,7 +514,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </div>
         </Section>
 
-        {/* 7. Twoje prawa */}
+        {/* 7. Your rights */}
         <Section title="8. Twoje prawa">
           <p className="text-surface-400 leading-relaxed mb-4">
             Na podstawie RODO przysługują Ci następujące prawa:
@@ -551,7 +551,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           ]} />
         </Section>
 
-        {/* 9. Zmiany polityki */}
+        {/* 9. Policy changes */}
         <Section title="10. Zmiany polityki prywatności">
           <p className="text-surface-400 leading-relaxed">
             W przypadku istotnych zmian w polityce prywatności poinformuję Cię o tym z wyprzedzeniem —
@@ -560,7 +560,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 10. Kontakt */}
+        {/* 10. Contact */}
         <Section title="11. Kontakt w sprawach danych osobowych">
           <p className="text-surface-400 leading-relaxed">
             Jeśli masz pytania dotyczące przetwarzania Twoich danych osobowych, chcesz skorzystać z przysługujących
