@@ -69,12 +69,12 @@ export function SlotKindPicker<T extends CreateSlotKind = SlotKind>({
               )}
             >
               <Icon className="w-4 h-4" />
-              <span className="text-center leading-tight">{t(`slotKind.${kind}`)}</span>
+              <span className="text-center leading-tight">{t(`slotKind.${kind}` as string)}</span>
             </button>
           )
         })}
       </div>
-      <p className="text-xs text-surface-400 mt-1.5">{t(`slotKind.${value}Hint`)}</p>
+      <p className="text-xs text-surface-400 mt-1.5">{t(`slotKind.${value}Hint` as string)}</p>
     </fieldset>
   )
 }

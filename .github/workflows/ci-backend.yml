@@ -69,7 +69,9 @@ jobs:
           # Pin the name instead of globbing. bootJar leaves climbing-backend-<VERSION>.jar, but
           # the `jar` task would drop a -plain.jar beside it and the old `COPY *.jar` said nothing
           # about which one it meant. Fail loudly here rather than ship the wrong one.
-          test "$(ls build/libs/*.jar | wc -l)" -eq 1
+          shopt -s nullglob  # no jar at all must count as 0, not as the literal pattern
+          jars=(build/libs/*.jar)
+          test "${#jars[@]}" -eq 1
           mkdir -p build/artifact
           cp build/libs/*.jar build/artifact/app.jar
 

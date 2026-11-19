@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { TFunction } from 'i18next'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -389,7 +390,7 @@ function ArchivedEventRow({
   locale,
 }: {
   event: EventDetail
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: TFunction<'admin'>
   locale: Locale
 }) {
   const multiDay = event.endDate > event.startDate
