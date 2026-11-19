@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: 25
@@ -69,7 +69,9 @@ jobs:
           # Pin the name instead of globbing. bootJar leaves climbing-backend-<VERSION>.jar, but
           # the `jar` task would drop a -plain.jar beside it and the old `COPY *.jar` said nothing
           # about which one it meant. Fail loudly here rather than ship the wrong one.
-          test "$(ls build/libs/*.jar | wc -l)" -eq 1
+          shopt -s nullglob  # no jar at all must count as 0, not as the literal pattern
+          jars=(build/libs/*.jar)
+          test "${#jars[@]}" -eq 1
           mkdir -p build/artifact
           cp build/libs/*.jar build/artifact/app.jar
 
@@ -131,7 +133,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -188,7 +190,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload the result to the Security tab
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         # Upload even when the gate below fails the build — otherwise, exactly when the
         # report is needed most, it is nowhere.
         # ⚠️ ...but ONLY when the file was actually created. `always()` alone also covers the

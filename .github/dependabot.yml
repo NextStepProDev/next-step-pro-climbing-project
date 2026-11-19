@@ -1,7 +1,8 @@
 version: 2
 # Monthly rhythm + strong grouping, so the first run does not bury us in an avalanche of PRs.
 # Small ones (minor/patch) go grouped into one PR per ecosystem; majors separately,
-# so the incompatible ones (e.g. pinned by a framework) can be rejected.
+# so the incompatible ones (e.g. pinned by a framework) can be rejected — except packages
+# that must move together, which have their own groups (see the frontend entry).
 updates:
   # Frontend (npm)
   - package-ecosystem: npm
@@ -9,7 +10,26 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    # Packages that only work at matching versions come as ONE PR, majors included. Dependabot
+    # puts an update into the first group that matches, so these sit above minor-and-patch.
+    # Without them a coupled major arrives as two PRs that each fail on their own: on
+    # 2026-11-19 react-i18next 18 needed i18next 27 (ERESOLVE in npm ci), and i18next 27 alone
+    # broke the types under react-i18next 17.
     groups:
+      i18n:
+        patterns: ["i18next", "i18next-*", "react-i18next"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      tailwind:
+        patterns: ["tailwindcss", "@tailwindcss/*"]
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+      eslint:
+        patterns: ["eslint", "@eslint/*", "eslint-plugin-*", "typescript-eslint", "globals"]
+      jspdf:
+        patterns: ["jspdf", "jspdf-autotable"]
+      zxcvbn:
+        patterns: ["@zxcvbn-ts/*"]
       minor-and-patch:
         update-types:
           - minor
