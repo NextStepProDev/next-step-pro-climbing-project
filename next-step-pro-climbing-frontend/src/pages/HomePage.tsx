@@ -260,10 +260,10 @@ export function HomePage() {
               style={{ animationDelay: '1100ms' }}
               className={`h-20 sm:h-36 lg:h-40 mx-auto mb-4 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)] ${titleTyped ? 'hero-logo-in' : 'opacity-0'}`}
             />
-            {/* text-surface-100, nie text-white: w motywie jasnym spód kadru gaśnie do kremowego tła
-                strony (to-surface-950), więc biel traci kontrast dokładnie tam, gdzie stoi tekst.
-                Token obraca się razem z motywem — biały w ciemnym, prawie czarny w jasnym — a halo
-                (.hero-over-photo) odwraca się w tę samą stronę. */}
+            {/* text-surface-100, not text-white: in the light theme the bottom of the frame fades
+                into the cream page background (to-surface-950), so white loses contrast exactly
+                where the text stands. The token flips with the theme — white in dark, nearly black
+                in light — and the halo (.hero-over-photo) flips the same way. */}
             <h1 style={{ '--hero-delay': '240ms' } as CSSProperties} className="hero-rise text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-surface-100 sm:hero-over-photo">
               <Typewriter
                 text={heroTagline}

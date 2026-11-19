@@ -1,19 +1,19 @@
-# Wysyła graf zależności backendu do GitHuba, żeby alerty bezpieczeństwa w ogóle miały co
-# analizować.
+# Sends the backend's dependency graph to GitHub, so that security alerts have anything to
+# analyse at all.
 #
-# ⚠️ Powód istnienia tego pliku: aktualizacje wersji i alerty CVE to DWA RÓŻNE mechanizmy.
-# Updater Dependabota czyta gradle/libs.versions.toml i działa (dowód: pierwsze PR-y backendowe).
-# Alerty zasila natomiast graf zależności, budowany osobnym, statycznym parserem — a ten w
-# build.gradle nie widzi już nawet współrzędnych, bo po przejściu na katalog wersji stoi tam
-# `implementation libs.springdoc.openapi`. Efekt: graf raportował npm 352, githubactions 13
-# i maven **0**, czyli dla GitHuba backend nie miał ani jednej zależności i żadne CVE nie miało
-# jak do nas trafić. Trzy krytyczne podatności w tomcat-embed-core wisiały tygodniami i wyszły
-# dopiero ze skanu obrazu.
+# ⚠️ Why this file exists: version updates and CVE alerts are TWO DIFFERENT mechanisms.
+# Dependabot's updater reads gradle/libs.versions.toml and works (proof: the first backend PRs).
+# Alerts, however, are fed by the dependency graph, built by a separate static parser — and in
+# build.gradle it no longer sees even the coordinates, because after the move to the version
+# catalog it says `implementation libs.springdoc.openapi`. Result: the graph reported npm 352,
+# githubactions 13 and maven **0**, i.e. for GitHub the backend had not a single dependency and
+# no CVE could ever reach us. Three critical vulnerabilities in tomcat-embed-core hung around
+# for weeks and only surfaced from the image scan.
 #
-# Ta akcja nie parsuje plików — URUCHAMIA Gradle'a i wysyła graf, który on sam rozwiązał. Dlatego
-# obejmuje też zależności zarządzane przez BOM Spring Boota (tomcat-embed-core, sterownik
-# Postgresa, Hibernate), których żadna analiza statyczna build.gradle nie zobaczy, bo nie ma ich
-# tam wypisanych.
+# This action does not parse files — it RUNS Gradle and sends the graph Gradle itself resolved.
+# So it also covers dependencies managed by the Spring Boot BOM (tomcat-embed-core, the Postgres
+# driver, Hibernate), which no static analysis of build.gradle will see, because they are not
+# listed there.
 name: Dependency Graph
 
 on:
@@ -23,13 +23,13 @@ on:
       - next-step-pro-climbing-backend/**
       - .github/workflows/dependency-graph.yml
 
-# Wymagane przez API grafu zależności: akcja zapisuje snapshot do repozytorium.
+# Required by the dependency graph API: the action writes a snapshot to the repository.
 permissions:
   contents: write
 
 jobs:
   submit:
-    name: Zgłoś graf zależności backendu
+    name: Submit the backend dependency graph
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,21 +37,21 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          # Ta sama wersja co toolchain w build.gradle — inaczej Gradle szuka JDK, którego tu nie ma.
+          # The same version as the toolchain in build.gradle — otherwise Gradle looks for a JDK that is not here.
           java-version: 25
 
       - uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
-          # Projekt Gradle'a nie leży w korzeniu repozytorium.
+          # The Gradle project is not at the repository root.
           build-root-directory: next-step-pro-climbing-backend
-          # ⚠️ Bez tego graf opisuje też biblioteki, których używają WTYCZKI Gradle'a przy
-          # budowaniu — a te nie trafiają ani do jara, ani na serwer. Pierwszy przebieg zgłosił
-          # w ten sposób commons-lang3 3.16.0 z classpathu wtyczek (aplikacja używa 3.20.0, czyli
-          # nowszej niż łatka) i wygenerował alert o czymś, co nigdy nie opuszcza runnera CI.
-          # Dependabot próbował potem otworzyć PR naprawczy, nie znalazł tej biblioteki w żadnym
-          # pliku do edycji i wywalał przebieg z `security_update_dependency_not_found`.
+          # ⚠️ Without this the graph also describes the libraries Gradle PLUGINS use while
+          # building — and those reach neither the jar nor the server. The first run reported
+          # commons-lang3 3.16.0 from the plugin classpath this way (the application uses 3.20.0,
+          # newer than the patch) and raised an alert about something that never leaves the CI
+          # runner. Dependabot then tried to open a fix PR, found the library in no file to edit
+          # and failed the run with `security_update_dependency_not_found`.
           #
-          # Alert o narzędziu budującym to szum, a szum zabija alerty — ta sama zasada, dla której
-          # bramka Trivy blokuje CRITICAL, a nie HIGH. Wersji samych wtyczek to nie osłabia:
-          # pilnuje ich ekosystem `gradle`, bo siedzą w gradle/libs.versions.toml.
+          # An alert about a build tool is noise, and noise kills alerts — the same principle
+          # that makes the Trivy gate block CRITICAL, not HIGH. It does not weaken the plugins'
+          # own versions: the `gradle` ecosystem watches them, as they sit in gradle/libs.versions.toml.
           dependency-graph-exclude-configurations: classpath

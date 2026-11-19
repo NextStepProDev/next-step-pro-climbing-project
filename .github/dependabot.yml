@@ -1,7 +1,7 @@
 version: 2
-# Miesięczny rytm + mocne grupowanie, żeby pierwszy run nie zasypał lawiną PR-ów.
-# Drobne (minor/patch) lecą zgrupowane w jeden PR na ekosystem; majory osobno,
-# żeby dało się odrzucić te niekompatybilne (np. przypięte przez framework).
+# Monthly rhythm + strong grouping, so the first run does not bury us in an avalanche of PRs.
+# Small ones (minor/patch) go grouped into one PR per ecosystem; majors separately,
+# so the incompatible ones (e.g. pinned by a framework) can be rejected.
 updates:
   # Frontend (npm)
   - package-ecosystem: npm
@@ -27,7 +27,7 @@ updates:
           - minor
           - patch
 
-  # Akcje GitHub w workflowach CI/CD
+  # GitHub Actions in the CI/CD workflows
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -37,7 +37,7 @@ updates:
         patterns:
           - "*"
 
-  # Obrazy bazowe w Dockerfile'ach
+  # Base images in the Dockerfiles
   - package-ecosystem: docker
     directory: /next-step-pro-climbing-frontend
     schedule:
@@ -54,27 +54,27 @@ updates:
     directory: /next-step-pro-climbing-backend
     schedule:
       interval: monthly
-    # ⚠️ Major obrazu JDK to zmiana skoordynowana, nie podbitka tagu: build.gradle ma
-    # `toolchain { languageVersion = 25 }`, więc obraz z samym JDK 26 zostawia Gradle'a szukającego
-    # dwudziestki piątki, której tam nie ma. Obie liczby zmienia się razem albo wcale.
+    # ⚠️ A JDK image major is a coordinated change, not a tag bump: build.gradle has
+    # `toolchain { languageVersion = 25 }`, so an image with only JDK 26 leaves Gradle looking
+    # for a 25 that is not there. Both numbers change together or not at all.
     ignore:
       - dependency-name: eclipse-temurin
         update-types: ["version-update:semver-major"]
 
-  # ⚠️ Compose produkcyjny, a nie kolejny Dockerfile — i dlatego ekosystem jest inny.
-  # Stoi tu postgres:18-alpine, czyli baza z danymi klientów, i do tej pory nie pilnował jej
-  # nikt: dependabot.yml wymieniał wyłącznie dwa katalogi z Dockerfile'ami.
-  # ⚠️ MUSI być `docker-compose`, nie `docker`. Ten drugi szuka wyłącznie Dockerfile'ów i na
-  # katalogu z samym compose przerywa zadanie błędem "No Dockerfiles" — czyli nie tylko nie
-  # pilnuje tych obrazów, ale wywala cały przebieg Dependabota dla tego wpisu.
+  # ⚠️ The production compose file, not another Dockerfile — hence a different ecosystem.
+  # postgres:18-alpine lives here, i.e. the database with client data, and until now nobody
+  # watched it: dependabot.yml listed only the two directories with Dockerfiles.
+  # ⚠️ It MUST be `docker-compose`, not `docker`. The latter looks only for Dockerfiles and on
+  # a directory with compose alone aborts with "No Dockerfiles" — so it not only fails to
+  # watch these images, it breaks the whole Dependabot run for this entry.
   - package-ecosystem: docker-compose
     directory: /next-step-pro-climbing-hub
     schedule:
       interval: monthly
-    # ⚠️ Major Postgresa NIE jest podbitką tagu — to migracja danych, i ta blokada powstała po
-    # tym, jak 17 → 18 wjechało tu jako zwykły PR i zostało zmergowane. Katalog danych z jednego
-    # majora nie startuje pod następnym, a w 18 doszła zmiana ścieżki PGDATA, przez którą kontener
-    # wstaje na PUSTEJ bazie zamiast odmówić. Procedura przejścia: hub/RESTORE.md (zrzut + odtworzenie).
+    # ⚠️ A Postgres major is NOT a tag bump — it is a data migration, and this block exists
+    # because 17 → 18 came in here as an ordinary PR and got merged. A data directory from one
+    # major does not start under the next, and 18 also moved PGDATA, so the container comes up
+    # on an EMPTY database instead of refusing. Procedure: hub/RESTORE.md (dump + restore).
     ignore:
       - dependency-name: postgres
         update-types: ["version-update:semver-major"]

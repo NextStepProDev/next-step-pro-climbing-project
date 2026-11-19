@@ -19,18 +19,20 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      # ⚠️ ŚCIEŻKA I NAZWA ZMIENIONE RAZEM Z OBRAZEM 18 — jedno bez drugiego traci dane.
-      # Obraz postgres:18 przeniósł PGDATA na /var/lib/postgresql/18/docker, a deklarowany
-      # VOLUME z /var/lib/postgresql/data na /var/lib/postgresql. Wolumen zamontowany pod
-      # starą ścieżką nie jest więc już katalogiem danych: kontener WSTAJE, initdb tworzy
-      # pusty klaster obok, Flyway przelatuje migracje od zera i aplikacja odpowiada 200 na
-      # pustej bazie — awaria wyglądająca na zdrowie. Nowa nazwa wolumenu jest celowa: stary
-      # postgres_data_prod zostawał obok jako plan wycofania.
-      # ⚠️ Tego wolumenu NA PRODUKCJI JUŻ NIE MA (sprawdzone 2026-09-12: `docker volume ls`
-      # zna tylko *_pg18 i uploads). Wycofaniem jest dziś WYŁĄCZNIE zrzut sprzed migracji,
-      # a ten leży w /backups/milestones — czyli w jedynym katalogu, którego retencja nie
-      # przycina. Nie pisać tu ponownie o wolumenie 17: przy kolejnym majorze plan wycofania
-      # trzeba ZAŁOŻYĆ od nowa, a nie odziedziczyć po tym komentarzu.
+      # ⚠️ PATH AND NAME CHANGED TOGETHER WITH IMAGE 18 — one without the other loses data.
+      # The postgres:18 image moved PGDATA to /var/lib/postgresql/18/docker, and the declared
+      # VOLUME from /var/lib/postgresql/data to /var/lib/postgresql. A volume mounted at the
+      # old path is therefore no longer the data directory: the container COMES UP, initdb
+      # creates an empty cluster next to it, Flyway runs the migrations from zero and the
+      # application answers 200 on an empty database — a failure that looks like health. The
+      # new volume name is deliberate: the old postgres_data_prod stayed alongside as the
+      # rollback plan.
+      # ⚠️ That volume is NO LONGER ON PRODUCTION (checked 2026-09-12: `docker volume ls`
+      # knows only *_pg18 and uploads). The only rollback today is the dump taken before the
+      # migration, in /backups/milestones — and that directory is pruned after 90 days
+      # (nsp-backup.sh); after that there is no way back to 17 at all. Do not write about the
+      # 17 volume here again: for the next major the rollback plan has to be SET UP from
+      # scratch, not inherited from this comment.
       - postgres_data_prod_pg18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]

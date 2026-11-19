@@ -1,33 +1,33 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-// Adres lokalnej apki. Z wnętrza kontenera Dockera "localhost" oznaczałby
-// sam kontener, dlatego do hosta (Twojego Maca) odwołujemy się specjalną
-// nazwą host.docker.internal. Można nadpisać przez BASE_URL.
+// The local app's address. From inside a Docker container "localhost" would mean
+// the container itself, so the host (your Mac) is reached through the special
+// name host.docker.internal. Can be overridden with BASE_URL.
 const BASE = __ENV.BASE_URL || 'http://host.docker.internal:8080';
 
 export const options = {
-  // "stages" = scenariusz natężenia ruchu w czasie.
-  // target = ilu wirtualnych użytkowników (VU) ma być w danym momencie.
+  // "stages" = the traffic intensity scenario over time.
+  // target = how many virtual users (VUs) there should be at a given moment.
   stages: [
-    { duration: '30s', target: 5 }, // przez 30s rośnij od 0 do 5 VU
-    { duration: '30s', target: 5 }, // trzymaj 5 VU przez 30s
-    { duration: '10s', target: 0 }, // łagodnie zejdź do 0
+    { duration: '30s', target: 5 }, // ramp from 0 to 5 VUs over 30s
+    { duration: '30s', target: 5 }, // hold 5 VUs for 30s
+    { duration: '10s', target: 0 }, // ease down to 0
   ],
 
-  // "thresholds" = progi zaliczenia. Jeśli przekroczone, k6 oznaczy test
-  // jako FAILED — to nasze automatyczne "czy apka się trzyma".
+  // "thresholds" = pass criteria. If exceeded, k6 marks the test
+  // as FAILED — our automatic "is the app holding up".
   thresholds: {
-    http_req_failed: ['rate<0.01'],   // mniej niż 1% błędów
-    http_req_duration: ['p(95)<500'], // 95% odpowiedzi szybciej niż 500 ms
+    http_req_failed: ['rate<0.01'],   // fewer than 1% errors
+    http_req_duration: ['p(95)<500'], // 95% of responses faster than 500 ms
   },
 };
 
-// Tę funkcję każdy wirtualny użytkownik wykonuje w kółko, przez cały test.
+// Every virtual user runs this function over and over, for the whole test.
 export default function () {
-  const res = http.get(`${BASE}/api/courses`); // jedno żądanie
+  const res = http.get(`${BASE}/api/courses`); // one request
   check(res, {
-    'status 200': (r) => r.status === 200,      // sprawdź, czy odpowiedź OK
+    'status 200': (r) => r.status === 200,      // check the response is OK
   });
-  sleep(1); // poczekaj 1s — udajemy człowieka, nie karabin maszynowy
+  sleep(1); // wait 1s — we imitate a person, not a machine gun
 }

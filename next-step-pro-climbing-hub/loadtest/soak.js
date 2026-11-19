@@ -3,7 +3,7 @@ import { check } from 'k6';
 
 const BASE = __ENV.BASE_URL || 'http://host.docker.internal:8081';
 
-// Popularne, cache'owane strony — to co klika tłum prawdziwych gości.
+// Popular, cached pages — what a crowd of real visitors clicks.
 const CACHED = [
   '/api/courses',
   '/api/news?page=0&size=12',
@@ -22,12 +22,12 @@ function randomDay() {
 export const options = {
   scenarios: {
     soak: {
-      executor: 'constant-arrival-rate', // trzymaj stałe TEMPO żądań
-      rate: 200,                         // 200 żądań na sekundę
+      executor: 'constant-arrival-rate', // hold a constant request RATE
+      rate: 200,                         // 200 requests per second
       timeUnit: '1s',
-      duration: '10m',                   // przez 10 minut
+      duration: '10m',                   // for 10 minutes
       preAllocatedVUs: 100,
-      maxVUs: 400,                       // tylu userów MOŻE zaprząc, by utrzymać tempo
+      maxVUs: 400,                       // how many users it MAY enlist to hold the rate
     },
   },
   thresholds: {
@@ -37,11 +37,11 @@ export const options = {
 };
 
 export default function () {
-  // 70% ruchu = popularne (cache), 30% = losowa data (baza). Realna mieszanka.
+  // 70% of traffic = popular (cache), 30% = a random date (database). A realistic mix.
   const url = Math.random() < 0.7
     ? BASE + CACHED[Math.floor(Math.random() * CACHED.length)]
     : `${BASE}/api/calendar/day/${randomDay()}`;
   const res = http.get(url);
   check(res, { 'status 200': (r) => r.status === 200 });
-  // brak sleep — tempo kontroluje constant-arrival-rate
+  // no sleep — constant-arrival-rate controls the pace
 }

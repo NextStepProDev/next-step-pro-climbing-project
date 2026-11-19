@@ -45,10 +45,10 @@ COPY app.jar app.jar
 # (SecurityConfig, DevAuthController, DevDataSeeder), so `prod` changes no code path.
 ENV SPRING_PROFILES_ACTIVE=prod
 
-# Uruchamiaj jako nieuprzywilejowany użytkownik (pinned uid 1001 → deterministyczny
-# chown wolumenu). /app/uploads jest pre-tworzony i nadany userowi: ŚWIEŻY named volume
-# dziedziczy tę własność, więc nowe wdrożenia działają bez ręcznego chown. ISTNIEJĄCY
-# (rootowy) wolumen wymaga jednorazowo, przed startem tego obrazu:
+# Run as an unprivileged user (pinned uid 1001 → a deterministic volume chown).
+# /app/uploads is pre-created and owned by the user: a FRESH named volume inherits that
+# ownership, so new deployments work without a manual chown. An EXISTING (root-owned)
+# volume needs this once, before this image starts:
 #   docker run --rm -v uploads_data_prod:/u alpine chown -R 1001:1001 /u
 RUN addgroup -S -g 1001 app && adduser -S -u 1001 -G app app \
     && mkdir -p /app/uploads && chown -R app:app /app

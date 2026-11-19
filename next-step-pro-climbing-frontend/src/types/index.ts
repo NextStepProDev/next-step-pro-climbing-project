@@ -1818,7 +1818,7 @@ export interface LocationActiveStateDto {
 }
 
 // Calendar promo. Required: title + description.
-// Opcjonalne: badge (plakietka) i przycisk CTA (ctaLabel + ctaUrl).
+// Optional: a badge and a CTA button (ctaLabel + ctaUrl).
 export interface CalendarPromoContentDto {
   badge: string
   title: string

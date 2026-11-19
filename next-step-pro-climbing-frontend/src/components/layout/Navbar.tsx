@@ -249,9 +249,10 @@ export function Navbar() {
       const activeRect = active.getBoundingClientRect();
       const left = activeRect.left - containerRect.left;
       const width = activeRect.width;
-      // ⚠️ Wyjście przez `prev`, nie `setIndicator({left, width})`: literał obiektu jest za każdym
-      // razem nową referencją, więc React nigdy nie umorzyłby renderu — a pomiar biegnie po KAŻDYM
-      // commicie (patrz efekt niżej) i bez tej bramki zapętliłby się na pierwszym renderze.
+      // ⚠️ Exit through `prev`, not `setIndicator({left, width})`: an object literal is a new
+      // reference every time, so React would never bail out of the render — and the measurement
+      // runs after EVERY commit (see the effect below), so without this gate it would loop on the
+      // first render.
       setIndicator((prev) => (prev.left === left && prev.width === width ? prev : { left, width }));
       setIndicatorPremium(active.dataset.navPremium === "true");
       setHasIndicator(true);
@@ -260,22 +261,24 @@ export function Navbar() {
     }
   }, []);
 
-  // ⚠️ Podkreślenie jest MIERZONE, więc musi się przeliczać po każdej zmianie geometrii paska,
-  // a nie tylko po nawigacji — dlatego efekt jest BEZ tablicy zależności. Lista zależności byłaby
-  // tu drugim, ręcznie utrzymywanym spisem wszystkiego, co rusza szerokość zakładki: etykiety
-  // (`i18n.language`), plakietki powiadomień, zalogowanie (dochodzi „Twoja strefa"). Zapomniana
-  // pozycja nie psuje się głośno, tylko zostawia kreskę pod sąsiednią zakładką aż do przeładowania
-  // — i dokładnie tak przeżyła tu zmiana języka, mierzona wyłącznie po `location.pathname`.
-  // Pętli nie ma, bo `updateIndicator` umarza render przy niezmienionym pomiarze.
+  // ⚠️ The underline is MEASURED, so it must be recomputed after every change to the bar's
+  // geometry, not only after navigation — hence the effect has NO dependency array. A dependency
+  // list would be a second, hand-maintained inventory of everything that moves a tab's width:
+  // the labels (`i18n.language`), notification badges, logging in ("Twoja strefa" appears). A
+  // forgotten item does not break loudly — it leaves the line under the neighbouring tab until a
+  // reload, and that is exactly how a language change survived here, measured only on
+  // `location.pathname`. There is no loop, because `updateIndicator` bails out of the render when
+  // the measurement is unchanged.
   useLayoutEffect(() => {
     updateIndicator();
   });
 
-  // Reszta to zmiany geometrii, o których React nie wie, bo nie stoi za nimi żaden render:
-  // zawinięcie rzędu poniżej `xl` przy zmianie szerokości okna i doładowanie fontu.
-  // ⚠️ ResizeObserver łapie je jako JEDYNY, ale nie zastępuje efektu wyżej — dostarczanie jego
-  // callbacków jest wstrzymane w karcie w tle (zero klatek renderu), więc oparcie na nim
-  // przypadków sterowanych React-em przeniosłoby cały pomiar na mechanizm, który akurat śpi.
+  // The rest are geometry changes React does not know about, because no render is behind them:
+  // the row wrapping below `xl` when the window width changes, and a font finishing loading.
+  // ⚠️ ResizeObserver is the ONLY thing that catches them, but it does not replace the effect
+  // above — delivery of its callbacks is paused in a background tab (zero render frames), so
+  // relying on it for React-driven cases would move the whole measurement onto a mechanism that
+  // happens to be asleep.
   useLayoutEffect(() => {
     const container = navContainerRef.current;
     if (!container) return;
@@ -319,11 +322,11 @@ export function Navbar() {
         data-nav-active={active || undefined}
         data-nav-premium={link.premium || undefined}
         className={clsx(
-          // ⚠️ `xl:whitespace-nowrap`, nie `whitespace-nowrap`: zakaz łamania jest bezpieczny
-          // dopiero tam, gdzie rząd ma się w co rozłożyć. Poniżej xl pełny pasek (10 zakładek
-          // + logo + prawy klaster) i tak nie mieści się w oknie — bezwarunkowy nowrap zamieniłby
-          // wtedy zawijanie na WYJEŻDŻANIE zakładek pod prawy klaster, czyli nakładanie się
-          // elementów zamiast brzydkiego, ale czytelnego łamania.
+          // ⚠️ `xl:whitespace-nowrap`, not `whitespace-nowrap`: forbidding line breaks is safe
+          // only where the row has room to spread out. Below xl the full bar (10 tabs + logo +
+          // the right cluster) does not fit in the window anyway — an unconditional nowrap would
+          // then turn wrapping into tabs SLIDING under the right cluster, i.e. overlapping
+          // elements instead of an ugly but readable break.
           "px-2.5 xl:px-3 xl:whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
           link.premium
             ? "hover:bg-surface-800/60"
@@ -348,11 +351,11 @@ export function Navbar() {
         ? "bg-transparent border-b border-transparent"
         : "bg-surface-900/80 backdrop-blur-sm border-b border-surface-800",
     )}>
-      {/* Szerszy niż max-w-7xl treści stron i to jest świadome: pasek ma dziś do 10 zakładek,
-          a zalogowanemu dochodzi jeszcze „Twoja strefa" z plakietką. Przy 80rem etykieta nie
-          mieściła się w swoim kaflu i ŁAMAŁA SIĘ NA DWIE LINIE (a za nią „Zaloguj się"),
-          co rozpychało pasek w pionie. Zmierzone: zalogowany admin potrzebuje ~1236 px na
-          zawartość, 80rem z paddingami dawało ~1166 px. */}
+      {/* Wider than the pages' max-w-7xl content, and deliberately so: the bar has up to 10 tabs
+          today, and a logged-in user also gets "Twoja strefa" with a badge. At 80rem the label did
+          not fit its tile and BROKE ONTO TWO LINES (and "Zaloguj się" after it), which stretched
+          the bar vertically. Measured: a logged-in admin needs ~1236 px for the content, 80rem
+          with padding gave ~1166 px. */}
       <div className={clsx("max-w-[88rem] mx-auto px-4 sm:px-6 lg:px-8", heroOverlay && "py-2")}>
         {/* In glass mode (top of home) the navbar becomes a floating pill with rounded
             ends, offset from the edges. In normal mode it is a full bar (h-18). */}
@@ -538,9 +541,9 @@ export function Navbar() {
             ) : (
               <div className="flex items-center gap-2">
                 <Link to="/login">
-                  {/* Bezwarunkowy nowrap, w odróżnieniu od zakładek: „Zaloguj się" łamało się
-                      na dwie linie razem z nimi, a to jest przycisk-CTA o stałej treści —
-                      niech raczej ścisną się zakładki obok, które i tak są tylko etykietami. */}
+                  {/* An unconditional nowrap, unlike the tabs: "Zaloguj się" broke onto two lines
+                      together with them, and this is a CTA button with fixed text — better that
+                      the tabs beside it squeeze, as they are only labels anyway. */}
                   <Button size="sm" className="px-4 whitespace-nowrap">
                     {t('nav.login')}
                   </Button>

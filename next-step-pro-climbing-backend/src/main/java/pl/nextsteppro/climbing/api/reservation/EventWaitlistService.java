@@ -147,7 +147,7 @@ public class EventWaitlistService {
     }
 
     // Removes ALL of the user's active event waitlist entries (on account deletion).
-    // Analogicznie do removeUserFromAllWaitlists w WaitlistService.
+    // The same as removeUserFromAllWaitlists in WaitlistService.
     public void removeUserFromAllWaitlists(UUID userId) {
         List<EventWaitlist> entries = eventWaitlistRepository.findActiveByUserId(userId);
         for (EventWaitlist entry : entries) {

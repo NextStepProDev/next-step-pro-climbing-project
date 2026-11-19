@@ -254,7 +254,7 @@ class WaitlistServiceTest {
 
         // Then
         verify(waitlistRepository).delete(entry);
-        // WAITING — nie triggeruje offerToNext
+        // WAITING — does not trigger offerToNext
         verify(waitlistRepository, never()).findWaitingBySlotIdOrdered(any());
     }
 
