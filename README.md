@@ -21,10 +21,22 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Completion tracking** — athletes check off trainings with feedback and a mandatory RPE (1-10) effort rating; "missed" status is derived, never stored
 - **Goals and a trophy chest** — training and weight goals across three horizons, at most one active per slot. A weight goal closes *itself* from the measured trend, and only a self-closed goal can be reopened by the coach — a manually awarded trophy can be removed from the chest, but never quietly un-awarded
 - **Body weight tracking** — morning readings with an application-side trend (the database keeps raw measurements only), a rapid-loss flag visible to the coach alone, and backfill for a forgotten weigh-in. Only the athlete can write a reading; deleting one never takes back an earned goal
-- **Training materials & template library** — up to three links or uploaded files per entry, with YouTube/Instagram embedded inline; files are reference-counted, so duplicating an entry or applying a template shares one file on disk. The coach's template library carries both kinds of entry and copies content at the point of use
+- **Training materials & template library** — up to six links or uploaded files per entry, with YouTube/Instagram embedded inline; files are reference-counted, so duplicating an entry or applying a template shares one file on disk. The coach's template library carries both kinds of entry and copies content at the point of use
 - **Duplicate, drag & drop, and a calendar clipboard** — copy/cut/paste that survives navigation and can paste into *another athlete's* calendar. A copy travels; a cut does not, because moving a row would drag its comment thread and completion into someone else's plan
 - **Training statistics** — live-derived stats under the calendar: monthly counts with trend, week streaks, a GitHub-style 12-month activity heatmap, type breakdown, attendance rate, average RPE with an intensity distribution, and milestone badges. Tasks are counted apart from every training number, and every task count ships its denominator. Always computed from current data, never cached
 - **Unread counters both ways** — per-viewer read markers drive "new from coach" / "new from athlete" badges, including alerts for deleted future trainings
+- **Conversation threads** — a private chat under each training and under each booked date from the general calendar, with photo and PDF attachments (EXIF stripped, kept for 12 months) and editing of one's own messages; an edit lights the other side's badge again
+- **Climbing logbook** — every account keeps its own list of completed ascents (sport, trad and bouldering, on rock or in the mountains) with grade pyramids, statistics and export; the newest ascents appear in a public list on the news page, which each user can switch off
+
+### Bookings after the fact
+- **Reschedule requests** — a booked client asks to move a date; the coach accepts or declines. Accepting moves the whole slot with everyone on it, and the request is checked against the live date first, so it can never move a date the coach has already changed
+- **Private admin notes** — a notebook per slot, event or training, private to its author (not to the admin role) and served by its own endpoint, never inside a shared DTO
+
+### Payments
+- **Settlements per participant** — what someone owes for a date and what they actually paid are two separate facts; payments are allocated oldest-debt-first, so debt and overpayment never coexist for one person
+- **Monthly subscriptions and bulk payouts** — a subscription is a third kind of billing target, and a school paying for a group is settled in one payout with an hourly rate
+- **Isolated by construction** — no money field lives on the slot or event shapes served to anonymous visitors and cached; an architecture gate fails the build if any other package touches the money types
+- **Money outlives a deleted account** — a database trigger moves its charges and payments to an anonymous placeholder, so revenue stays right without keeping the person
 
 ### Content Management (CMS)
 - **Block-based editor** for news articles and courses — TEXT and IMAGE blocks, plus VIDEO_EMBED in news, reordered block by block
@@ -38,7 +50,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 ### Authentication & Security
 - **Email / password + Google OAuth2** — an existing account is linked only when the provider asserts a verified email
 - **Strong-password policy** at every entry point (registration, reset, change) — length rules, rejection of passwords containing the user's own personal data, and a Have I Been Pwned breach check that fails open, so an unreachable third party can never block a signup. The frontend strength meter is a hint; the backend decides
-- **Per-endpoint rate limiting** — separate Caffeine-backed IP buckets for auth, reservations, user, admin, training-calendar, and upload routes
+- **Per-endpoint rate limiting** — every `/api` route falls into a Caffeine-backed IP bucket, from 15/min on auth to 120/min by default; behind Cloudflare the key is `CF-Connecting-IP`
 - **Account lockout** after repeated failed login attempts (brute-force protection)
 - **Zero-copy file streaming** — `InputStreamResource` serving (0 MB RAM), UUID filenames, strict regex to block path traversal
 
@@ -48,6 +60,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Isolated mail campaigns** — mass mail runs as a single sequential job on its own executor, so a 100-recipient campaign cannot starve transactional mail
 - **A single "already happened" predicate** — no email is ever sent about a date that is over, and every mail decision in the admin panel asks the same question in the same timezone
 - **Activity audit log** — tracks reservations, admin operations, athlete-plan changes, and user lifecycle events
+- **GDPR data export** — the admin exports everything the system holds about one person in one go
 - **Admin notification badges** — per-admin "seen" markers drive the pending-proposal and new-reservation counters; seats the admin booked themselves never light the dot
 
 ### Performance
@@ -64,21 +77,21 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Backend** — unit tests plus integration tests on Testcontainers (real PostgreSQL), covering booking concurrency, waitlist promotion, mail decisions, and the athlete calendar's authorization
 - **Frontend** — Vitest unit tests (densest around the training calendar) with TypeScript and ESLint required to be clean
 - **End-to-end** — Playwright golden path in CI; it drives the frontend alone, so it needs neither a database nor an API
-- **Architecture gates** — tests that read the source tree and fail the build on whole classes of mistake rather than single bugs: a bare `now()` outside the project timezone, an admin endpoint without `@PreAuthorize`, `@Transactional` or `@CacheEvict` on a non-public method (which silently does nothing while looking like it works), an activity type the admin panel cannot render, a translation key present in one language and missing in another, a raw `fetch` bypassing the API client, or a cache invalidation aimed at a key nobody queries.
+- **Architecture gates** — tests that read the source tree and fail the build on whole classes of mistake rather than single bugs: a bare `now()` outside the project timezone, an admin endpoint without `@PreAuthorize`, `@Transactional` or `@CacheEvict` on a non-public method (which silently does nothing while looking like it works), an activity type the admin panel cannot render, a translation key present in one language and missing in another, a raw `fetch` bypassing the API client, a cache invalidation aimed at a key nobody queries, money or private-note types reached from outside their packages, or a comment that is not in English.
 
   These exist because an audit is sampling, not a scan — each of these had already survived at least one review before its gate was written.
 
 ## Tech Stack
 
 ### Backend
-- **Java 25** + **Spring Boot 4.1.1**
+- **Java 25** + **Spring Boot 4.1**
 - Spring Security + JWT + OAuth2 (Google)
 - Spring Data JPA + **PostgreSQL 18**
 - **Flyway** (versioned migrations)
 - SpringDoc OpenAPI (Swagger UI)
 - Caffeine Cache (multi-tier TTL)
 - Spring Boot Starter Mail
-- JSpecify 1.0.1 (null-safety)
+- JSpecify (null-safety)
 - Testcontainers + JUnit 5
 
 ### Frontend
@@ -96,7 +109,9 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - GitHub Actions (CI/CD)
 - GitHub Container Registry (GHCR)
 - Cloud VM (production)
+- Cloudflare in front (proxy and DNS); the origin firewall accepts 443 only from Cloudflare's ranges
 - Nginx Proxy Manager + Let's Encrypt SSL
+- Trivy image scans in CI (results in the GitHub Security tab; CRITICAL blocks the build)
 
 ## Project Structure
 
@@ -106,14 +121,13 @@ next-step-pro-climbing-project/
 ├── next-step-pro-climbing-frontend/   # React SPA
 ├── next-step-pro-climbing-hub/        # Docker Compose (dev/prod), .env, provisioning, load tests
 ├── .github/workflows/                 # CI/CD pipelines
-├── docs/                              # Working notes (git workflow)
 └── VERSION                            # Application version
 ```
 
 ## Prerequisites
 
 - Java 25 (JDK)
-- Node.js 24+
+- Node.js 26 (`.nvmrc`; `package.json` requires at least 24.15)
 - Docker + Docker Compose
 - PostgreSQL 18 (via Docker)
 
@@ -134,8 +148,7 @@ This starts:
 
 ```bash
 cd next-step-pro-climbing-backend
-cp .env.example .env  # if exists, fill in the variables
-./gradlew bootRun
+./gradlew bootRun     # dev profile by default; an optional .env here is loaded (variables: hub/.env.example)
 ```
 
 Backend starts at `http://localhost:8080`.
@@ -163,16 +176,16 @@ The application supports **3 languages**: Polish, English, and Spanish.
 
 ## API Documentation
 
-Available after starting the backend:
+Available in the `dev` profile (the default for `bootRun`); elsewhere only with `SWAGGER_ENABLED=true`:
 - **Swagger UI:** `http://localhost:8080/swagger-ui.html`
 - **OpenAPI JSON:** `http://localhost:8080/v3/api-docs`
 
 ## Deployment
 
 CI/CD via GitHub Actions:
-1. Push/PR to `main` runs tests (backend: Gradle test, frontend: lint + typecheck + build)
-2. Merge to `main` builds Docker images and pushes to GHCR
-3. Production deploy — manual trigger in GitHub Actions; after the container is healthy, an external smoke test hits the public endpoints and fails the deploy if any isn't `200`
+1. Push/PR to `main` runs the gates — backend: the full Gradle test suite; frontend: `npm audit`, lint, typecheck, unit tests (a second time in the `America/New_York` timezone), Playwright and the build
+2. Merge to `main` builds the Docker images (tagged with `VERSION`), scans them with Trivy and pushes them to GHCR
+3. Production deploy — manual trigger in GitHub Actions, one run at a time; after the container is healthy, an external smoke test hits the public endpoints and an SEO smoke test checks crawler routing and `robots.txt`, and either fails the deploy
 
 Production: `nextsteppro.pl`
 
@@ -180,20 +193,15 @@ Production: `nextsteppro.pl`
 
 Automated daily backups at 3:00 AM via cron on the production server:
 
-- **Database:** `pg_dump` exports the full PostgreSQL database, compressed with gzip
-- **Files:** `tar` archives the `uploads/` directory (instructor photos, gallery, courses, news, assets)
-- **Offsite sync:** `rclone` uploads backup files to Google Drive
-- **Retention:** local backups older than 7 days are automatically deleted
+- **Database:** `pg_dump` (plain SQL, gzip) to `/backups/db/<YYYY-MM-DD>.sql.gz`, every night
+- **Files:** `tar` of the uploads volume to `/backups/files/<YYYY-MM-DD>.tar.gz` — only when the uploads changed, and at least every 30 days
+- **Offsite:** `rclone` to Google Drive through an encrypted `crypt` remote (encrypted before it leaves the server)
+- **Retention:** 7 days on the server, 40 days on Drive; manual dumps in `/backups/milestones` are kept 90 days
+- **Monitoring:** a healthcheck ping on success and on failure — silence means the backup did not run
 
-### Manual restore
+### Restore
 
-```bash
-# Database
-gunzip -c backup_YYYY-MM-DD.sql.gz | docker exec -i nsp-postgres-prod psql -U $POSTGRES_USER -d $POSTGRES_DB
-
-# Files
-tar -xzf uploads_YYYY-MM-DD.tar.gz -C /path/to/uploads/
-```
+Follow [`next-step-pro-climbing-hub/RESTORE.md`](next-step-pro-climbing-hub/RESTORE.md): it covers downloading from the encrypted remote, checking that a dump is complete before relying on it, stopping the backend, loading with `ON_ERROR_STOP=1`, and the quarterly restore drill that never touches production. A one-line `gunzip | psql` without those steps can end "successfully" on a half-restored database.
 
 ## License
 
