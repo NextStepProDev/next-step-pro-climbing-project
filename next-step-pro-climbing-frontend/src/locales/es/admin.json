@@ -398,6 +398,10 @@
     "spots": "Plazas",
     "commentOptional": "Comentario (opcional)",
     "guestNotePlaceholder": "Nombre / nota (p.ej. Juan García — tel. 123456789)",
+    "assignGuest": "Asignar a una cuenta",
+    "assignGuestHint": "Elige la cuenta que creó este invitado. La reserva pasa a esa cuenta con el mismo número de plazas, junto con el cargo y los pagos. El cliente no recibe ningún correo.",
+    "assignGuestConfirm": "Asignar",
+    "assignGuestAlreadyBooked": "Esta persona ya está inscrita en esta sesión: elimina primero el invitado o su reserva.",
     "addParticipantConfirm": "Añadir",
     "templatesTitle": "Plantillas de franjas horarias",
     "templatesDescription": "Plantillas predefinidas para crear franjas horarias rápidamente. Al añadir una nueva franja puedes elegir una plantilla o introducir los datos manualmente.",
@@ -749,7 +753,8 @@
       "ADMIN_GOAL_REOPENED": "Logro del objetivo de peso deshecho",
       "RESCHEDULE_REQUESTED": "Solicitud de cambio de horario",
       "ADMIN_RESCHEDULE_ACCEPTED": "Cambio de horario aceptado",
-      "ADMIN_RESCHEDULE_REJECTED": "Solicitud de cambio de horario rechazada"
+      "ADMIN_RESCHEDULE_REJECTED": "Solicitud de cambio de horario rechazada",
+      "ADMIN_GUEST_ASSIGNED_TO_ACCOUNT": "Invitado asignado a una cuenta"
     },
     "persons": "({{count}} pers.)"
   },

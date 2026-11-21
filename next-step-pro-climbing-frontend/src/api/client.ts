@@ -1077,6 +1077,19 @@ export const adminApi = {
   deleteGuestParticipantFromEvent: (eventId: string, guestId: string) =>
     fetchApi<void>(`/admin/events/${eventId}/participants/guest/${guestId}`, { method: 'DELETE' }),
 
+  // Hands a guest over to a registered account: same seats, the guest's charge and payments move too.
+  assignSlotGuestToAccount: (slotId: string, guestId: string, userId: string) =>
+    fetchApi<void>(`/admin/slots/${slotId}/participants/guest/${guestId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+
+  assignEventGuestToAccount: (eventId: string, guestId: string, userId: string) =>
+    fetchApi<void>(`/admin/events/${eventId}/participants/guest/${guestId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+
   // Reservations
   getUpcomingReservations: () =>
     fetchApi<ReservationAdmin[]>('/admin/reservations/upcoming'),
