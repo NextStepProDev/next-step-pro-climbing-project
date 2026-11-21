@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Pencil, Trash2, UserPlus, Users } from 'lucide-react'
+import { Pencil, Trash2, UserCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { UserSearchSelect } from '../ui/UserSearchSelect'
 import { adminApi } from '../../api/client'
@@ -59,6 +59,9 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
   const [confirmDeleteGuestId, setConfirmDeleteGuestId] = useState<string | null>(null)
   const [editingSpotsFor, setEditingSpotsFor] = useState<string | null>(null)
   const [editedSpots, setEditedSpots] = useState(1)
+  // A guest being handed over to the account they registered later — at most one at a time.
+  const [assigningGuestId, setAssigningGuestId] = useState<string | null>(null)
+  const [assignUserId, setAssignUserId] = useState('')
   // Per instance: the events panel can unfold several of these at once, and fixed ids made every
   // label point at the first section's field.
   const fieldId = useId()
@@ -90,6 +93,8 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
         addGuest: (note: string, participants: number) =>
           adminApi.addGuestParticipantToSlot(targetId, note, participants),
         removeGuest: (guestId: string) => adminApi.deleteGuestParticipantFromSlot(targetId, guestId),
+        assignGuest: (guestId: string, userId: string) =>
+          adminApi.assignSlotGuestToAccount(targetId, guestId, userId),
         removeRegistered: (p: Participant) => adminApi.cancelReservationByAdmin(p.reservationId),
         updateSpots: (p: Participant, participants: number) =>
           adminApi.updateReservationParticipants(p.reservationId, participants),
@@ -110,6 +115,8 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
       addGuest: (note: string, participants: number) =>
         adminApi.addGuestParticipantToEvent(targetId, note, participants),
       removeGuest: (guestId: string) => adminApi.deleteGuestParticipantFromEvent(targetId, guestId),
+      assignGuest: (guestId: string, userId: string) =>
+        adminApi.assignEventGuestToAccount(targetId, guestId, userId),
       removeRegistered: (p: Participant) => adminApi.cancelEventParticipant(targetId, p.userId),
       // The person on every day of the event, like removing them
       updateSpots: (p: Participant, participants: number) =>
@@ -127,7 +134,7 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
   const { data: allUsers } = useQuery({
     queryKey: ['admin', 'users'],
     queryFn: () => adminApi.getAllUsers(),
-    enabled: showAddForm && addMode === 'registered',
+    enabled: (showAddForm && addMode === 'registered') || assigningGuestId !== null,
   })
 
   /**
@@ -187,12 +194,25 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
     onSuccess: () => { refresh(); setConfirmDeleteGuestId(null) },
   })
 
+  const closeAssign = () => {
+    setAssigningGuestId(null)
+    setAssignUserId('')
+  }
+
+  // The guest's charge and payments move with it, so `refresh` already covers the settlement
+  // section below — the guest line there becomes this person's line.
+  const assignGuestMutation = useMutation({
+    mutationFn: ({ guestId, userId }: { guestId: string; userId: string }) => ops.assignGuest(guestId, userId),
+    onSuccess: () => { refresh(); closeAssign() },
+  })
+
   // Reported during render on purpose — see the prop's doc and useChildDirty. Above the early
   // return, so a refetch that flips `isLoading` cannot leave the host holding a stale `true`.
   // The seat stepper alone does not count: a number with nobody attached to it is not work, and
   // it resets with the form (closeAddForm clears all four fields together).
   onDirtyChange?.(
     (showAddForm && (selectedUserId !== '' || addComment.trim() !== '' || guestNote.trim() !== ''))
+      || (assigningGuestId !== null && assignUserId !== '')
       || (editingSpotsFor !== null
         && data?.participants.find((p) => p.reservationId === editingSpotsFor)?.participants !== editedSpots)
   )
@@ -208,6 +228,8 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
   const alreadyBooked = target === 'event' && selectedUserId
     ? participants.find((p) => p.userId === selectedUserId) ?? null
     : null
+  // The server refuses this too; saying it before the click spares a round trip and names why.
+  const assignTargetBooked = assignUserId !== '' && participants.some((p) => p.userId === assignUserId)
 
   return (
     <div className="mt-4 rounded-lg border border-surface-700 bg-surface-800/40 p-3 space-y-3">
@@ -337,6 +359,45 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
                     <p className="text-xs text-rose-400">{getErrorMessage(removeGuestMutation.error)}</p>
                   )}
                 </div>
+              ) : assigningGuestId === g.id ? (
+                <form
+                  className="space-y-2"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    assignGuestMutation.mutate({ guestId: g.id, userId: assignUserId })
+                  }}
+                >
+                  <p className="text-xs text-surface-300">
+                    <span className="font-medium text-surface-100">{g.note}</span> — {t('slots.assignGuest')}
+                  </p>
+                  <p className="text-xs text-surface-400">{t('slots.assignGuestHint')}</p>
+                  <UserSearchSelect
+                    users={allUsers ?? []}
+                    value={assignUserId}
+                    onChange={(id) => { setAssignUserId(id); assignGuestMutation.reset() }}
+                  />
+                  {assignTargetBooked && (
+                    <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1.5">
+                      {t('slots.assignGuestAlreadyBooked')}
+                    </p>
+                  )}
+                  {assignGuestMutation.isError && (
+                    <p className="text-xs text-rose-400">{getErrorMessage(assignGuestMutation.error)}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      loading={assignGuestMutation.isPending}
+                      disabled={!assignUserId || assignTargetBooked}
+                    >
+                      {t('slots.assignGuestConfirm')}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={closeAssign}>
+                      {t('slots.cancelEdit')}
+                    </Button>
+                  </div>
+                </form>
               ) : (
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -352,15 +413,32 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDeleteGuestId(g.id)}
-                    title={t(ops.removeActionKey)}
-                    aria-label={`${t(ops.removeActionKey)} — ${g.note}`}
-                    className="p-1 shrink-0 text-surface-400 hover:text-rose-400 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex gap-1 shrink-0">
+                    {canAdd && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssigningGuestId(g.id)
+                          setAssignUserId('')
+                          assignGuestMutation.reset()
+                        }}
+                        title={t('slots.assignGuest')}
+                        aria-label={`${t('slots.assignGuest')} — ${g.note}`}
+                        className="p-1 text-surface-400 hover:text-primary-400 transition-colors"
+                      >
+                        <UserCheck className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteGuestId(g.id)}
+                      title={t(ops.removeActionKey)}
+                      aria-label={`${t(ops.removeActionKey)} — ${g.note}`}
+                      className="p-1 text-surface-400 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </li>

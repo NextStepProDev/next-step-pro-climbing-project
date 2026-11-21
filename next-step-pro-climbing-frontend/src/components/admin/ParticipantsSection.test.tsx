@@ -28,6 +28,8 @@ const cancelReservationByAdmin = vi.fn()
 const cancelEventParticipant = vi.fn()
 const updateReservationParticipants = vi.fn()
 const updateEventReservationParticipants = vi.fn()
+const assignSlotGuestToAccount = vi.fn()
+const assignEventGuestToAccount = vi.fn()
 
 vi.mock('../../api/client', () => ({
   adminApi: {
@@ -44,6 +46,8 @@ vi.mock('../../api/client', () => ({
     cancelEventParticipant: (...a: unknown[]) => cancelEventParticipant(...a),
     updateReservationParticipants: (...a: unknown[]) => updateReservationParticipants(...a),
     updateEventReservationParticipants: (...a: unknown[]) => updateEventReservationParticipants(...a),
+    assignSlotGuestToAccount: (...a: unknown[]) => assignSlotGuestToAccount(...a),
+    assignEventGuestToAccount: (...a: unknown[]) => assignEventGuestToAccount(...a),
   },
 }))
 
@@ -349,3 +353,67 @@ describe('ParticipantsSection — the waiting list next to it', () => {
   })
 })
 
+
+/* A guest who registered later: the seats, the charge and the payments move to the account. */
+describe('ParticipantsSection — handing a guest over to an account', () => {
+  const GUEST = { id: 'g-1', note: 'Anna z synem', participants: 2, createdAt: '2026-08-01T10:00:00Z' }
+
+  beforeEach(() => {
+    getSlotParticipants.mockReset().mockResolvedValue(slotRoster({ guestParticipants: [GUEST] }))
+    getEventParticipants.mockReset().mockResolvedValue(eventRoster({ guestParticipants: [GUEST] }))
+    getAllUsers.mockReset().mockResolvedValue([ADMIN_USER])
+    assignSlotGuestToAccount.mockReset().mockResolvedValue(undefined)
+    assignEventGuestToAccount.mockReset().mockResolvedValue(undefined)
+  })
+
+  async function assignTheAccount(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(await screen.findByRole('button', { name: 'slots.assignGuest — Anna z synem' }))
+    await user.click(await screen.findByPlaceholderText('users.searchPlaceholder'))
+    const option = await waitFor(() => {
+      const found = screen.getAllByRole('button').find((b) => b.textContent?.includes('anna@example.com'))
+      if (!found) throw new Error('the account has not been offered yet')
+      return found
+    })
+    await user.click(option)
+  }
+
+  it('assigns an event guest through the event route and refreshes the settlement below', async () => {
+    const user = userEvent.setup()
+    const { invalidate } = renderSection('event')
+
+    await assignTheAccount(user)
+    await user.click(screen.getByRole('button', { name: 'slots.assignGuestConfirm' }))
+
+    await waitFor(() => expect(assignEventGuestToAccount).toHaveBeenCalledWith('target-1', 'g-1', 'user-1'))
+    expect(assignSlotGuestToAccount).not.toHaveBeenCalled()
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['admin', 'settlements'] })
+  })
+
+  it('assigns a slot guest through the slot route', async () => {
+    const user = userEvent.setup()
+    renderSection('slot')
+
+    await assignTheAccount(user)
+    await user.click(screen.getByRole('button', { name: 'slots.assignGuestConfirm' }))
+
+    await waitFor(() => expect(assignSlotGuestToAccount).toHaveBeenCalledWith('target-1', 'g-1', 'user-1'))
+  })
+
+  it('refuses up front an account that is already booked here', async () => {
+    const user = userEvent.setup()
+    getSlotParticipants.mockResolvedValue(slotRoster({ participants: [participant()], guestParticipants: [GUEST] }))
+    renderSection('slot')
+
+    await assignTheAccount(user)
+
+    expect(screen.getByText('slots.assignGuestAlreadyBooked')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'slots.assignGuestConfirm' })).toBeDisabled()
+  })
+
+  it('offers no handover where nothing can be added', async () => {
+    renderSection('slot', false)
+
+    await screen.findByText('Anna z synem')
+    expect(screen.queryByRole('button', { name: 'slots.assignGuest — Anna z synem' })).not.toBeInTheDocument()
+  })
+})

@@ -194,6 +194,18 @@ public class ActivityLogService {
         saveAboutTerm(admin, ActivityActionType.ADMIN_RESCHEDULE_REJECTED, requester, slot, event, change);
     }
 
+    /**
+     * No description on purpose: the guest's note usually names the person, and a name in the
+     * description is exactly what account erasure could not remove (see activity_logs in CLAUDE.md).
+     */
+    public void logAdminGuestAssignedToAccount(User admin, User account, @Nullable TimeSlot slot, @Nullable Event event) {
+        ActivityLog log = new ActivityLog(admin, ActivityActionType.ADMIN_GUEST_ASSIGNED_TO_ACCOUNT);
+        log.setSubject(account);
+        log.setTimeSlot(slot);
+        log.setEvent(event);
+        activityLogRepository.save(log);
+    }
+
     @Transactional(readOnly = true)
     public List<ActivityLogDto> getRecentLogs(int page, int size) {
         List<ActivityLog> logs = activityLogRepository.findRecentWithDetails(PageRequest.of(page, size));

@@ -32,10 +32,13 @@ public class AdminController {
 
     private final AdminService adminService;
     private final ActivityLogService activityLogService;
+    private final GuestAssignmentService guestAssignmentService;
 
-    public AdminController(AdminService adminService, ActivityLogService activityLogService) {
+    public AdminController(AdminService adminService, ActivityLogService activityLogService,
+                           GuestAssignmentService guestAssignmentService) {
         this.adminService = adminService;
         this.activityLogService = activityLogService;
+        this.guestAssignmentService = guestAssignmentService;
     }
 
     // ==================== Time Slots Management ====================
@@ -265,6 +268,20 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    @Tag(name = "Admin - Slots")
+    @Operation(summary = "Assign a slot guest to a registered account",
+        description = "Replaces the guest with a reservation of the account for the same number of seats; "
+            + "the guest's charge and payments move to the account. No e-mail is sent.")
+    @PostMapping("/slots/{slotId}/participants/guest/{guestId}/assign")
+    public ResponseEntity<Void> assignSlotGuestToAccount(
+            @CurrentUserId UUID adminId,
+            @PathVariable UUID slotId,
+            @PathVariable UUID guestId,
+            @Valid @RequestBody AssignGuestRequest request) {
+        guestAssignmentService.assignSlotGuest(adminId, slotId, guestId, request.userId());
+        return ResponseEntity.noContent().build();
+    }
+
     @Tag(name = "Admin - Events")
     @Operation(summary = "Register an existing user for an event", description = "Admin books a chosen user onto an event — with confirmation email and a 'My reservations' entry")
     @PostMapping("/events/{eventId}/participants/registered")
@@ -292,6 +309,20 @@ public class AdminController {
             @PathVariable UUID eventId,
             @PathVariable UUID guestId) {
         adminService.deleteGuestParticipantFromEvent(eventId, guestId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(summary = "Assign an event guest to a registered account",
+        description = "Replaces the guest with the account's reservation on every day of the event, for the "
+            + "same number of seats; the guest's charge and payments move to the account. No e-mail is sent.")
+    @PostMapping("/events/{eventId}/participants/guest/{guestId}/assign")
+    public ResponseEntity<Void> assignEventGuestToAccount(
+            @CurrentUserId UUID adminId,
+            @PathVariable UUID eventId,
+            @PathVariable UUID guestId,
+            @Valid @RequestBody AssignGuestRequest request) {
+        guestAssignmentService.assignEventGuest(adminId, eventId, guestId, request.userId());
         return ResponseEntity.noContent().build();
     }
 

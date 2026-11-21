@@ -1315,6 +1315,7 @@ export type ActivityActionType =
   | 'RESCHEDULE_REQUESTED'
   | 'ADMIN_RESCHEDULE_ACCEPTED'
   | 'ADMIN_RESCHEDULE_REJECTED'
+  | 'ADMIN_GUEST_ASSIGNED_TO_ACCOUNT'
 
 export interface ActivityLog {
   id: string

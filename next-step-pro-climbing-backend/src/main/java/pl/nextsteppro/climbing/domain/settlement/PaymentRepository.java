@@ -59,4 +59,15 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Payment p WHERE p.id = :id")
     int deleteRow(@Param("id") UUID id);
+
+    /**
+     * Swaps the payer of a guest's payments to an account. Payments are immutable, and this is not
+     * an edit of one: amount, day received and where it was entered stay exactly as handed over.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+        UPDATE payments SET user_id = :userId, guest_reservation_id = NULL
+        WHERE guest_reservation_id = :guestId
+        """, nativeQuery = true)
+    int handOverGuestToUser(@Param("guestId") UUID guestId, @Param("userId") UUID userId);
 }

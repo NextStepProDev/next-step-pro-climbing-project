@@ -42,7 +42,10 @@ public enum ActivityActionType {
     RESCHEDULE_REQUESTED,
     // The coach's answer to it; the move itself is logged separately as ADMIN_SLOT/EVENT_UPDATED
     ADMIN_RESCHEDULE_ACCEPTED,
-    ADMIN_RESCHEDULE_REJECTED;
+    ADMIN_RESCHEDULE_REJECTED,
+    // A guest entry handed over to the registered account it turned out to be (subject = that
+    // account); its charge and payments moved with it
+    ADMIN_GUEST_ASSIGNED_TO_ACCOUNT;
 
     /**
      * Whether an entry of this type is about a person other than its actor. For these the person
@@ -58,7 +61,8 @@ public enum ActivityActionType {
                  ADMIN_TRAINING_CREATED, ADMIN_TRAINING_UPDATED, ADMIN_TRAINING_DELETED,
                  ADMIN_GOAL_CREATED, ADMIN_GOAL_UPDATED, ADMIN_GOAL_DELETED,
                  ADMIN_GOAL_ACHIEVED, ADMIN_GOAL_REOPENED,
-                 ADMIN_RESCHEDULE_ACCEPTED, ADMIN_RESCHEDULE_REJECTED -> true;
+                 ADMIN_RESCHEDULE_ACCEPTED, ADMIN_RESCHEDULE_REJECTED,
+                 ADMIN_GUEST_ASSIGNED_TO_ACCOUNT -> true;
             default -> false;
         };
     }

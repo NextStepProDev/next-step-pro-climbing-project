@@ -224,4 +224,9 @@ export const ACTION_CONFIG: Record<
     color: 'text-sky-400',
     bgColor: 'bg-sky-500/10',
   },
+  ADMIN_GUEST_ASSIGNED_TO_ACCOUNT: {
+    icon: UserCheck,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
+  },
 }

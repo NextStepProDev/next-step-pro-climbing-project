@@ -99,6 +99,10 @@ record AddRegisteredParticipantRequest(
     @Nullable String comment
 ) {}
 
+record AssignGuestRequest(
+    @NotNull UUID userId
+) {}
+
 record AddGuestParticipantRequest(
     @NotBlank String note,
     @Min(1) @Max(20) int participants

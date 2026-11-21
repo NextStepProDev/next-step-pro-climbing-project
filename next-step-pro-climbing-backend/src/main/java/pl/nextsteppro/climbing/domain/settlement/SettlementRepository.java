@@ -401,4 +401,29 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Settlement s WHERE s.guest.id = :guestId AND s.event.id = :eventId")
     int deleteForEventGuest(@Param("eventId") UUID eventId, @Param("guestId") UUID guestId);
+
+    /**
+     * Whether the account already has its own charge for the session the guest's charge is on —
+     * typically left over from a cancelled reservation, since charges survive cancellation. Moving
+     * the guest's row there would hit {@code uq_settlements_slot_user}/{@code uq_settlements_event_user}.
+     */
+    @Query(value = """
+        SELECT EXISTS (
+            SELECT 1 FROM settlements g
+            JOIN settlements u ON u.user_id = :userId
+                AND (u.time_slot_id = g.time_slot_id OR u.event_id = g.event_id)
+            WHERE g.guest_reservation_id = :guestId)
+        """, nativeQuery = true)
+    boolean existsUserChargeOnGuestTarget(@Param("guestId") UUID guestId, @Param("userId") UUID userId);
+
+    /** Swaps the payer of a guest's charge to an account; target and amount stay as they are. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+        UPDATE settlements
+        SET user_id = :userId, guest_reservation_id = NULL, updated_at = :updatedAt
+        WHERE guest_reservation_id = :guestId
+        """, nativeQuery = true)
+    int handOverGuestToUser(@Param("guestId") UUID guestId,
+                            @Param("userId") UUID userId,
+                            @Param("updatedAt") Instant updatedAt);
 }

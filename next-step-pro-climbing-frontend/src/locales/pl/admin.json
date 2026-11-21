@@ -398,6 +398,10 @@
     "spots": "Miejsca",
     "commentOptional": "Komentarz (opcjonalny)",
     "guestNotePlaceholder": "Imię i nazwisko / notatka (np. Jan Kowalski — tel. 123456789)",
+    "assignGuest": "Przypisz do konta",
+    "assignGuestHint": "Wybierz konto, które założył ten gość. Rezerwacja przejdzie na to konto z tą samą liczbą miejsc, razem z należnością i wpłatami. Klient nie dostanie maila.",
+    "assignGuestConfirm": "Przypisz",
+    "assignGuestAlreadyBooked": "Ta osoba jest już zapisana na ten termin — najpierw usuń gościa albo jej rezerwację.",
     "addParticipantConfirm": "Zapisz",
     "templatesTitle": "Szablony terminów",
     "templatesDescription": "Predefiniowane szablony do szybkiego tworzenia terminów. Przy dodawaniu nowego terminu możesz wybrać szablon z listy lub wpisać dane ręcznie.",
@@ -752,7 +756,8 @@
       "ADMIN_GOAL_REOPENED": "Cofnięto osiągnięcie celu wagowego",
       "RESCHEDULE_REQUESTED": "Prośba o zmianę terminu",
       "ADMIN_RESCHEDULE_ACCEPTED": "Zaakceptowano zmianę terminu",
-      "ADMIN_RESCHEDULE_REJECTED": "Odrzucono prośbę o zmianę terminu"
+      "ADMIN_RESCHEDULE_REJECTED": "Odrzucono prośbę o zmianę terminu",
+      "ADMIN_GUEST_ASSIGNED_TO_ACCOUNT": "Przypisano gościa do konta"
     },
     "persons": "({{count}} os.)"
   },
