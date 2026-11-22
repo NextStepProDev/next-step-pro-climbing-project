@@ -129,11 +129,27 @@ describe('AdminMessagesPanel', () => {
     renderPanel('/admin/messages?conversation=c-guest')
 
     await user.click(await screen.findByLabelText('contactMessages.delete'))
+    // Opening an unread conversation marks it read and refetches it — that is fine and happens
+    // before the delete; only fetches AFTER the delete are the bug.
+    await waitFor(() => expect(markRead).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 50))
+    const fetchesBefore = get.mock.calls.length
     await user.click(within(await screen.findByRole('dialog')).getByText('contactMessages.delete'))
     await screen.findByText('contactMessages.pick')
     await new Promise((r) => setTimeout(r, 50))
 
-    expect(get.mock.calls.filter(([id]) => id === 'c-guest')).toHaveLength(1)
+    expect(get.mock.calls.slice(fetchesBefore).filter(([id]) => id === 'c-guest')).toHaveLength(0)
+  })
+
+  it('cannot start a second delete while the first one is on its way', async () => {
+    const user = userEvent.setup()
+    remove.mockReturnValue(new Promise(() => {}))
+    renderPanel('/admin/messages?conversation=c-guest')
+
+    await user.click(await screen.findByLabelText('contactMessages.delete'))
+    await user.click(within(await screen.findByRole('dialog')).getByText('contactMessages.delete'))
+
+    await waitFor(() => expect(screen.getByLabelText('contactMessages.delete')).toBeDisabled())
   })
 
   it('says on the conversation when deleting fails (the confirmation is gone by then)', async () => {

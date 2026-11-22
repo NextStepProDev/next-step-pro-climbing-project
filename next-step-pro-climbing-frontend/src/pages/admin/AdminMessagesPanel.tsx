@@ -238,7 +238,7 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
       // until the URL change re-renders, and invalidating it would refetch a conversation that no
       // longer exists (400). It goes inactive on unmount and is garbage-collected from there.
       onBack()
-      invalidateAll()
+      queryClient.invalidateQueries({ queryKey: ['admin', 'contact', 'list'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
     },
   })
@@ -280,7 +280,10 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
         <button
           type="button"
           onClick={() => setConfirmDelete(true)}
-          className="p-2 rounded-lg text-surface-500 hover:text-rose-400 hover:bg-rose-500/10 shrink-0"
+          // A second delete while the first is in flight would hit a conversation that is gone
+          // and report a failure that never happened
+          disabled={deleteMutation.isPending}
+          className="p-2 rounded-lg text-surface-500 hover:text-rose-400 hover:bg-rose-500/10 shrink-0 disabled:opacity-40"
           aria-label={t('contactMessages.delete')}
           title={t('contactMessages.delete')}
         >
