@@ -105,5 +105,19 @@
     "short": "brakuje {{amount}}",
     "unpaid": "do zapłaty",
     "hint": "Wpłaty zapisuje trener. Wpłata pokrywa najpierw najstarszą zaległość — także za zajęcia poza abonamentem."
+  },
+  "messages": {
+    "tab": "Wiadomości",
+    "newReply": "Nowa odpowiedź",
+    "emptyTitle": "Nie ma tu jeszcze wiadomości",
+    "emptyBody": "Napisz do nas poniżej albo z formularza przy kursie lub w kalendarzu — wszystko trafi do tej jednej rozmowy.",
+    "listLabel": "Rozmowa z Next Step Pro Climbing",
+    "fromTeam": "Next Step Pro",
+    "fromMe": "Ty",
+    "writeFirst": "Napisz wiadomość",
+    "reply": "Odpowiedz",
+    "hint": "Odpowiemy tutaj i mailem.",
+    "otherWays": "Inne formy kontaktu",
+    "send": "Wyślij"
   }
 }

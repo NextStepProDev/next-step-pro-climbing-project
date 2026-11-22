@@ -93,6 +93,7 @@ class AdminServiceInviteSyncTest {
     @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private TrainingRequestRepository trainingRequestRepository;
     @Mock private pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
+    @Mock private pl.nextsteppro.climbing.api.contact.ContactConversationErasure contactConversationErasure;
 
     private AdminService adminService;
 
@@ -133,7 +134,9 @@ class AdminServiceInviteSyncTest {
             trainingRequestRepository,
             trainingCalendarService,
             null, // unassigned-session count: notifications only, not exercised here
-            null  // reschedule requests: only the cancel paths and notifications touch them
+            null, // reschedule requests: only the cancel paths and notifications touch them
+            null, // contact conversations: notifications only
+            contactConversationErasure
         );
 
         adminId = UUID.randomUUID();
@@ -535,8 +538,10 @@ class AdminServiceInviteSyncTest {
         adminService.deleteUser(adminId, victimId);
 
         // Then
-        var inOrder = inOrder(userSeatReleaseService, userRepository);
+        var inOrder = inOrder(userSeatReleaseService, contactConversationErasure, userRepository);
         inOrder.verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(victimId);
+        // Twin of the self-deletion path: what they wrote signed out goes too, before the user row
+        inOrder.verify(contactConversationErasure).eraseGuestConversationOf(victim);
         inOrder.verify(userRepository).delete(victim);
     }
 

@@ -37,7 +37,7 @@ describe('AdminCommandPalette', () => {
     // cannot remember what a tab is called.
     renderPalette()
 
-    expect(screen.getAllByRole('option')).toHaveLength(18)
+    expect(screen.getAllByRole('option')).toHaveLength(19)
     expect(screen.getByText('tabGroups.calendar')).toBeInTheDocument()
     expect(screen.getByText('tabGroups.system')).toBeInTheDocument()
   })

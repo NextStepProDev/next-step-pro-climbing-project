@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.auth.AuthDtos.AuthTokensResponse;
 import pl.nextsteppro.climbing.api.auth.SessionTokens;
+import pl.nextsteppro.climbing.api.contact.ContactConversationErasure;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport;
 import pl.nextsteppro.climbing.api.trainingcalendar.AttachmentSupport;
@@ -50,6 +51,7 @@ public class UserService {
     private final PasswordPolicyValidator passwordPolicy;
     private final SessionTokens sessionTokens;
     private final PasswordAttempts passwordAttempts;
+    private final ContactConversationErasure contactConversationErasure;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -63,7 +65,9 @@ public class UserService {
                        FileStorageService fileStorageService,
                        PasswordPolicyValidator passwordPolicy,
                        SessionTokens sessionTokens,
-                       PasswordAttempts passwordAttempts) {
+                       PasswordAttempts passwordAttempts,
+                       ContactConversationErasure contactConversationErasure) {
+        this.contactConversationErasure = contactConversationErasure;
         this.sessionTokens = sessionTokens;
         this.passwordAttempts = passwordAttempts;
         this.userRepository = userRepository;
@@ -224,6 +228,10 @@ public class UserService {
         //     also hang off a template or a copy on somebody else's calendar. These used to wait for
         //     the six-hourly orphan sweep — "eventually" is the wrong answer to an erasure request.
         attachmentSupport.purgeForUser(userId);
+
+        // 7c. What they wrote from the contact form while signed out sits in a guest conversation
+        //     under their address, out of reach of the cascade. Shared with the admin-side deletion.
+        contactConversationErasure.eraseGuestConversationOf(user);
 
         // 8. Delete tokens (bulk DELETE) and the user themselves.
         //    The DB cascades (ON DELETE CASCADE): cancelled reservations, waitlist entries, logs, stars.

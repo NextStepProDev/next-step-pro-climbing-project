@@ -1146,6 +1146,89 @@ export interface AdminNotifications {
   unassignedSessions: number
   // Clients asking to move a booked term — a STATE count, lit until answered
   pendingReschedules: number
+  // "Write to us" conversations with a message nobody on the team has read (shared, not per admin)
+  unreadMessages: number
+}
+
+// ==================== Contact form and the conversation with the team ====================
+
+/** Where a message was written, which is what it is about. */
+export type ContactContextType = 'GENERAL' | 'COURSE' | 'CALENDAR'
+
+/** What the form knows about where it was opened. `courseTitle` is only for the "About:" line. */
+export type ContactContext =
+  | { type: 'GENERAL' }
+  | { type: 'COURSE'; courseId: string; courseTitle: string }
+  /** `date` only when a day was actually selected — from a week or month view there is none. */
+  | { type: 'CALENDAR'; date: string | null }
+
+export interface SendContactMessage {
+  name?: string
+  email?: string
+  body: string
+  consent: boolean
+  /** Honeypot: hidden from people, filled in by bots. */
+  website?: string
+  contextType: ContactContextType
+  courseId?: string
+  date?: string
+  language: string
+}
+
+export interface ConversationMessage {
+  id: string
+  fromStaff: boolean
+  body: string
+  contextType: ContactContextType
+  courseId: string | null
+  courseTitle: string | null
+  date: string | null
+  createdAt: string
+}
+
+export interface MyConversation {
+  messages: ConversationMessage[]
+  unseenReply: boolean
+}
+
+export interface AdminConversationSummary {
+  id: string
+  /** The account, or null for a guest known only by `email`. */
+  userId: string | null
+  name: string
+  email: string
+  unread: boolean
+  answered: boolean
+  lastInboundAt: string
+  lastReplyAt: string | null
+  preview: string | null
+  previewFromStaff: boolean
+  previewContextType: ContactContextType | null
+  previewCourseTitle: string | null
+  previewDate: string | null
+}
+
+export interface AdminConversationPage {
+  content: AdminConversationSummary[]
+  totalElements: number
+  totalPages: number
+  page: number
+}
+
+export interface AdminConversationMessage extends ConversationMessage {
+  staffAuthorName: string | null
+  language: string
+}
+
+export interface AdminConversationDetail {
+  summary: AdminConversationSummary
+  messages: AdminConversationMessage[]
+}
+
+export interface ContactReplyResult {
+  message: AdminConversationMessage
+  /** False only for an account holder with mail notifications off — they see it in the app. */
+  mailed: boolean
 }
 
 /** A booked client's request to move their term — the card in "My reservations". */

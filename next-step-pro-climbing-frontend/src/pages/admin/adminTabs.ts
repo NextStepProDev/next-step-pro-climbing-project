@@ -16,6 +16,7 @@ import {
   Home,
   Dumbbell,
   Wallet,
+  MessagesSquare,
   type LucideIcon,
 } from 'lucide-react'
 import type { AdminNotifications } from '../../types'
@@ -65,6 +66,7 @@ export const adminTabGroups: AdminTabGroup[] = [
       tab('reservations', '/admin/reservations', ClipboardList),
       tab('events', '/admin/events', Calendar),
       tab('requests', '/admin/requests', CalendarPlus),
+      tab('messages', '/admin/messages', MessagesSquare),
       tab('trainingCalendars', '/admin/training-calendars', Dumbbell),
       tab('settlements', '/admin/settlements', Wallet),
     ],
@@ -109,6 +111,8 @@ export function adminTabBadges(notifications: AdminNotifications | undefined): R
   return {
     // Both kinds of client request are answered in this tab: new times and moves of booked ones
     '/admin/requests': (notifications?.pendingRequests ?? 0) + (notifications?.pendingReschedules ?? 0),
+    // Conversations with a message nobody on the team has read — opening one clears it
+    '/admin/messages': notifications?.unreadMessages ?? 0,
     // Waitlist joins count together with new reservations — both views (the "Waitlists"
     // section and the reservation list) live in this tab, and entering it clears both
     '/admin/reservations': (notifications?.newReservations ?? 0) + (notifications?.newWaitlistEntries ?? 0),

@@ -215,5 +215,41 @@
     "scrollToTop": "Scroll to top",
     "share": "Share",
     "badge": "Badge"
+  },
+  "contactForm": {
+    "title": "Write to us",
+    "subtitle": "We reply to the e-mail address you give, usually the same or the next day.",
+    "modalTitle": "Write to us",
+    "name": "Name",
+    "email": "E-mail",
+    "message": "Message",
+    "messagePlaceholder": "How can we help?",
+    "honeypot": "Leave this field empty",
+    "consent": "I understand my name, e-mail address and message will be used to reply to me. Details in the <1>privacy policy</1>.",
+    "send": "Send message",
+    "sentTitle": "Thanks, your message is on its way!",
+    "sentInApp": "You will find the reply under Messages in My reservations (and by e-mail, if you have notifications on).",
+    "sentGuest": "We will reply to the e-mail address you gave.",
+    "openConversation": "Go to the conversation",
+    "writeAnother": "Write another message",
+    "signedInAs": "Writing as {{name}} ({{email}}) — the reply goes to your conversation in the app.",
+    "courseCtaTitle": "A question about this course?",
+    "courseCtaBody": "Write to us — the message will say which course it is about.",
+    "courseCta": "Ask about this course",
+    "about": {
+      "prefix": "About:",
+      "general": "a general message",
+      "course": "the course “{{title}}”",
+      "courseRemoved": "a removed course",
+      "calendar": "a date, {{date}}",
+      "calendarAny": "a date from the calendar"
+    },
+    "errors": {
+      "name": "Tell us your name",
+      "email": "Give us your e-mail address",
+      "emailInvalid": "That does not look like an e-mail address",
+      "body": "Write your message",
+      "consent": "Tick this box to send the message"
+    }
   }
 }

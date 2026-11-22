@@ -12,6 +12,8 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestRepository;
+import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
+import pl.nextsteppro.climbing.api.contact.ContactConversationErasure;
 import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestStatus;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservation;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
@@ -98,6 +100,8 @@ public class AdminService {
     private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
     private final UnassignedSessionCounter unassignedSessionCounter;
     private final RescheduleRequestRepository rescheduleRequestRepository;
+    private final ContactConversationRepository contactConversationRepository;
+    private final ContactConversationErasure contactConversationErasure;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -122,7 +126,11 @@ public class AdminService {
                        TrainingRequestRepository trainingRequestRepository,
                        pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService,
                        UnassignedSessionCounter unassignedSessionCounter,
-                       RescheduleRequestRepository rescheduleRequestRepository) {
+                       RescheduleRequestRepository rescheduleRequestRepository,
+                       ContactConversationRepository contactConversationRepository,
+                       ContactConversationErasure contactConversationErasure) {
+        this.contactConversationErasure = contactConversationErasure;
+        this.contactConversationRepository = contactConversationRepository;
         this.rescheduleRequestRepository = rescheduleRequestRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
@@ -1194,6 +1202,8 @@ public class AdminService {
         // belong to a template or to a copy on somebody else's calendar. Mirrors the self-deletion
         // path; these used to be left to the six-hourly orphan sweep.
         attachmentSupport.purgeForUser(userId);
+        // And what they wrote from the contact form while signed out — shared with self-deletion.
+        contactConversationErasure.eraseGuestConversationOf(user);
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
         jwtAuthenticationFilter.evictUser(userId);
@@ -1374,8 +1384,9 @@ public class AdminService {
         int newUsers = userRepository.countByEmailVerifiedAtAfter(admin.getAdminUsersSeenAt());
         int unassignedSessions = unassignedSessionCounter.countUnassigned(LocalDate.now(WARSAW));
         int pendingReschedules = rescheduleRequestRepository.countByStatus(RescheduleRequestStatus.PENDING);
+        int unreadMessages = contactConversationRepository.countUnreadForStaff();
         return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries,
-            athleteActivity, newUsers, unassignedSessions, pendingReschedules);
+            athleteActivity, newUsers, unassignedSessions, pendingReschedules, unreadMessages);
     }
 
     public void markReservationsSeen(UUID adminId) {

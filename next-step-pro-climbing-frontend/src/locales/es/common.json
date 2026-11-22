@@ -217,5 +217,41 @@
     "scrollToTop": "Volver arriba",
     "share": "Compartir",
     "badge": "Insignia"
+  },
+  "contactForm": {
+    "title": "Escríbenos",
+    "subtitle": "Respondemos al correo que nos indiques, normalmente el mismo día o al siguiente.",
+    "modalTitle": "Escríbenos",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "message": "Mensaje",
+    "messagePlaceholder": "¿En qué podemos ayudarte?",
+    "honeypot": "Deja este campo vacío",
+    "consent": "Entiendo que mi nombre, mi correo y mi mensaje se usarán para responderme. Detalles en la <1>política de privacidad</1>.",
+    "send": "Enviar mensaje",
+    "sentTitle": "¡Gracias, mensaje enviado!",
+    "sentInApp": "Verás la respuesta en Mensajes, dentro de Mis reservas (y por correo, si tienes las notificaciones activadas).",
+    "sentGuest": "Responderemos al correo que nos has indicado.",
+    "openConversation": "Ir a la conversación",
+    "writeAnother": "Escribir otro mensaje",
+    "signedInAs": "Escribes como {{name}} ({{email}}) — la respuesta irá a tu conversación en la aplicación.",
+    "courseCtaTitle": "¿Tienes una pregunta sobre este curso?",
+    "courseCtaBody": "Escríbenos — en el mensaje se verá de qué curso se trata.",
+    "courseCta": "Preguntar por este curso",
+    "about": {
+      "prefix": "Sobre:",
+      "general": "un mensaje general",
+      "course": "el curso «{{title}}»",
+      "courseRemoved": "un curso eliminado",
+      "calendar": "una fecha, {{date}}",
+      "calendarAny": "una fecha del calendario"
+    },
+    "errors": {
+      "name": "Dinos tu nombre",
+      "email": "Indica tu correo electrónico",
+      "emailInvalid": "Eso no parece un correo electrónico",
+      "body": "Escribe tu mensaje",
+      "consent": "Marca esta casilla para enviar el mensaje"
+    }
   }
 }

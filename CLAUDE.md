@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V107. Następna migracja: V108.** Wszystkie do V106 są na produkcji (deploy 4.74.0, 2026-10-23); V107 czeka na deploy.
+**Stan: V108. Następna migracja: V109.** Wszystkie do V106 są na produkcji (deploy 4.74.0, 2026-10-23); V107 i V108 czekają na deploy.
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
@@ -298,6 +298,13 @@ Zalogowany użytkownik proponuje termin: w oknie dostępności (godziny ogranicz
 Przy odrzuceniu użyć `findByIdWithUser` (JOIN FETCH) — mail leci async i czyta usera poza sesją Hibernate.
 ⚠️ **Akceptacja NIE wysyła maila** — klient dowiaduje się z zaproszenia (ręcznego, albo „Utwórz i wyślij zaproszenie” w formularzu tworzenia) i z karty „Moje propozycje”. Dlatego **przyjęcie w innym terminie niż zaproponowany** nie może wyglądać jak przyjęcie jego godzin: czy termin się różni, rozstrzyga jedna metoda, `TrainingRequest.agreedTermDiffers()` (liczona **na żywo** z utworzonego slotu/wydarzenia, więc późniejsza edycja też się liczy), a pytają o nią trzy miejsca — DTO propozycji (`termChanged` + `agreed*`), zaproszenie w „Moich rezerwacjach” (`proposed*`, wypełniane **tylko** przy różnicy) i mail zaproszenia (bursztynowa ramka „Twoja propozycja…”). Front niczego nie przelicza — tylko renderuje flagę serwera.
 🙂 Polska etykieta przycisku to **żart**: „Zaproponuj termin nie do odrzucenia" (`day.proposeTraining`, `customSlot.propose` tylko w `pl/calendar.json`; EN/ES mają normalne „Propose a time"). Nie „poprawiać" przy syncu tłumaczeń.
+
+### „Napisz do nas” (V108)
+
+- **Jedna rozmowa na osobę** (konto ALBO adres gościa, decyzja 2026-11-22); kontekst (kurs/dzień) niesie wiadomość, nie rozmowa. Kalendarz bez wybranego dnia = `CALENDAR` bez daty, nigdy „dziś”.
+- ⚠️ **Rozmowa gościa przechodzi na konto dopiero przy POTWIERDZENIU adresu** (`ContactConversationClaim` w `AccountConfirmation.confirm`), nigdy przy rejestracji — wpisanie cudzego adresu dawałoby wgląd w cudzą korespondencję. Ta sama reguła: usunięcie i eksport potwierdzonego konta obejmują rozmowę gościa pod jego adresem (`ContactConversationErasure`).
+- ⚠️ **Bez maila „dostaliśmy wiadomość” do piszącego** — publiczny formularz mailujący na dowolny adres to droga na blocklisty. Spam: honeypot + kubełek `contactsend` + godzinowy `ContactSendThrottle`.
+- Retencja rok (`ContactRetentionService.RETENTION`) jest wypisana w polityce prywatności PL i EN.
 
 ### Prośba o zmianę terminu (V105)
 

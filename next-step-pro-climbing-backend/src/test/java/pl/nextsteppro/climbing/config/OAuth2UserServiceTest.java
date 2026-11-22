@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.api.auth.AccountConfirmation;
+import pl.nextsteppro.climbing.api.contact.ContactConversationClaim;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,7 +61,7 @@ class OAuth2UserServiceTest {
         // Real AccountConfirmation over a mocked log: it is what marks the account confirmed, so
         // stubbing it out would hide the very behaviour these tests assert on.
         service = new OAuth2UserService(userRepository, adminEmailConfig, authMailService,
-            new AccountConfirmation(activityLogService));
+            new AccountConfirmation(activityLogService, mock(ContactConversationClaim.class)));
     }
 
     // ---- linking to an existing account ----

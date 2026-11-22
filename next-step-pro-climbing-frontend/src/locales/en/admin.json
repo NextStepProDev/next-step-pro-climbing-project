@@ -19,7 +19,8 @@
     "site": "Homepage",
     "requests": "Proposals",
     "trainingCalendars": "Training calendars",
-    "settlements": "Settlements"
+    "settlements": "Settlements",
+    "messages": "Messages"
   },
   "tabGroups": {
     "calendar": "Calendar",
@@ -48,7 +49,8 @@
       "activity": "A timeline of what happened in the system.",
       "assets": "The shared file library for use inside content.",
       "storage": "Disk usage and file housekeeping.",
-      "site": "Hero, badges, the location section and calendar promo."
+      "site": "Hero, badges, the location section and calendar promo.",
+      "messages": "Messages from the site — from guests and signed-in users."
     }
   },
   "palette": {
@@ -74,7 +76,8 @@
       "activity": "log · history · audit · timeline",
       "assets": "files · media · images · library",
       "storage": "disk · space · capacity",
-      "site": "hero · homepage · badges · location · promo · settings"
+      "site": "hero · homepage · badges · location · promo · settings",
+      "messages": "contact · write to us · questions · mail"
     }
   },
   "team": {
@@ -1376,5 +1379,36 @@
       "addCert": "Add achievement",
       "empty": "No athletes yet. Add the first one with the button above."
     }
+  },
+  "contactMessages": {
+    "listLabel": "Conversations",
+    "filter": {
+      "all": "All",
+      "unread": "Unread"
+    },
+    "empty": "Nobody has written yet.",
+    "emptyUnread": "All read.",
+    "prev": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{total}}",
+    "pick": "Pick a conversation from the list.",
+    "unread": "Unread",
+    "guest": "guest",
+    "you": "You:",
+    "awaiting": "Awaiting reply",
+    "back": "Back to the list",
+    "userCard": "User card",
+    "guestHint": "Guest without an account — gets the reply by e-mail only",
+    "delete": "Delete conversation",
+    "deleteTitle": "Delete the conversation?",
+    "deleteMessage": "The whole conversation with {{name}} goes, with every message in it. This cannot be undone.",
+    "messagesLabel": "Messages in the conversation",
+    "team": "Team",
+    "reply": "Reply",
+    "replyHintUser": "Goes to the conversation in the app and by e-mail (if the client has notifications on).",
+    "replyHintGuest": "Goes by e-mail to the guest’s address.",
+    "send": "Send reply",
+    "sentMailed": "Sent — the reply went out by e-mail.",
+    "sentInAppOnly": "Saved in the conversation. The client has e-mail notifications off and will see it in the app."
   }
 }

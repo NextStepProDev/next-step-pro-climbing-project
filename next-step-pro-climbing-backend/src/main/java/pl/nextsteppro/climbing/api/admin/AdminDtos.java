@@ -320,7 +320,10 @@ record AdminNotificationsDto(
     // "seen" marker: it stays lit until the payer is assigned, because visiting the tab fixes nothing
     int unassignedSessions,
     // Clients asking to move a booked term — a STATE count like pendingRequests: lit until answered
-    int pendingReschedules
+    int pendingReschedules,
+    // Conversations with a message nobody on the team has read. Shared, not per admin
+    // (contact_conversations.staff_read_at): opening the conversation or replying clears it
+    int unreadMessages
 ) {}
 
 record NotifyParticipantsResult(int notifiedCount) {}

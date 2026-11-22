@@ -111,7 +111,10 @@ public class SecurityConfig {
                     // link that acts on being opened is acted on by mail security scanners, which
                     // fetch every URL in an incoming message before the recipient reads it.
                     .requestMatchers(HttpMethod.GET, "/api/user/unsubscribe").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/user/unsubscribe").permitAll();
+                    .requestMatchers(HttpMethod.POST, "/api/user/unsubscribe").permitAll()
+                    // The "write to us" form: guests may send. Exactly this path and method; reading
+                    // a conversation (/api/conversation) stays behind authentication.
+                    .requestMatchers(HttpMethod.POST, "/api/contact-messages").permitAll();
                 // Dev endpoints only in dev profile
                 if (java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev")) {
                     auth.requestMatchers("/api/dev/**").permitAll();

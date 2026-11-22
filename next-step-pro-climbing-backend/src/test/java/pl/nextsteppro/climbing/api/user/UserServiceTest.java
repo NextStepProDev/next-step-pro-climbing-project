@@ -68,6 +68,8 @@ class UserServiceTest {
     private pl.nextsteppro.climbing.api.auth.SessionTokens sessionTokens;
     @Mock
     private PasswordAttempts passwordAttempts;
+    @Mock
+    private pl.nextsteppro.climbing.api.contact.ContactConversationErasure contactConversationErasure;
 
     private UserService userService;
     private User testUser;
@@ -88,7 +90,8 @@ class UserServiceTest {
             fileStorageService,
             passwordPolicy,
             sessionTokens,
-            passwordAttempts
+            passwordAttempts,
+            contactConversationErasure
         );
 
         userId = UUID.randomUUID();

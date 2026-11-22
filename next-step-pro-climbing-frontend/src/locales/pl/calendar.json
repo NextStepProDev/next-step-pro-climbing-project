@@ -238,12 +238,13 @@
   "customSlot": {
     "title": "Nie znalazłeś odpowiedniego terminu?",
     "description": "Zadzwoń lub napisz — chętnie umówimy termin indywidualnie, dopasowany do Twoich możliwości.",
-    "email": "Napisz e-mail",
+    "email": "Napisz do nas",
     "propose": "Zaproponuj termin nie do odrzucenia"
   },
   "contactDay": {
     "message": "Skontaktuj się z nami, aby ustalić termin zajęć na ściance lub skałach.",
-    "cta": "Przejdź do kontaktu"
+    "cta": "Przejdź do kontaktu",
+    "write": "Napisz do nas w sprawie tego dnia"
   },
   "unavailable": {
     "message": "W tym terminie jesteśmy niedostępni — brak zajęć i zapisów.",

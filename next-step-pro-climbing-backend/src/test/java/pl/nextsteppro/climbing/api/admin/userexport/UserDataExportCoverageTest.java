@@ -30,6 +30,7 @@ class UserDataExportCoverageTest extends BaseIntegrationTest {
         "athlete_goals.athlete_id",
         "athlete_weights.athlete_id",
         "climbing_ascents.athlete_id",
+        "contact_conversations.user_id",
         "event_waitlist.user_id",
         "newsletter_consent_log.user_id",
         "personal_trainings.athlete_id",
@@ -49,6 +50,7 @@ class UserDataExportCoverageTest extends BaseIntegrationTest {
 
     private static final Map<String, String> LEFT_OUT = Map.ofEntries(
         entry("auth_tokens.user_id", "hashes of credentials — secrets are never exported"),
+        entry("contact_messages.staff_author_id", "which admin answered; the export names the team only as COACH, like the training thread"),
         entry("admin_private_notes.author_id", "the admin's own notebook; never leaves its package (CLAUDE.md)"),
         entry("activity_logs.subject_user_id", "admin-side entries about this person; ADMIN_* is left out of the export on purpose — the one that matters to them (cancelled by admin) is logged under their own id"),
         entry("session_payouts.user_id", "bookkeeping mark derived from the subscription and the booking, both exported"),

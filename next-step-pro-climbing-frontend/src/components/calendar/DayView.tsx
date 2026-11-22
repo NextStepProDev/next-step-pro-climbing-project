@@ -28,6 +28,8 @@ interface DayViewProps {
   noteMarks?: NoteMarks;
   /** Closed sessions with nobody to bill — admin only, ids only. */
   unassignedMarks?: UnassignedMarks;
+  /** Opens the contact form for this day. Without it the CTA links to the contact page. */
+  onWriteToUs?: () => void;
 }
 
 /* ===============================
@@ -205,6 +207,7 @@ export function DayView({
   onProposeTraining,
   noteMarks,
   unassignedMarks,
+  onWriteToUs,
 }: DayViewProps) {
   const { t } = useTranslation('calendar');
   const locale = useDateLocale();
@@ -354,12 +357,22 @@ export function DayView({
                     )}
                     <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                       <p className="text-sm text-indigo-300">{t('contactDay.message')}</p>
-                      <Link
-                        to="/kontakt"
-                        className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
-                      >
-                        {t('contactDay.cta')}
-                      </Link>
+                      {onWriteToUs ? (
+                        <button
+                          type="button"
+                          onClick={onWriteToUs}
+                          className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                          {t('contactDay.write')}
+                        </button>
+                      ) : (
+                        <Link
+                          to="/kontakt"
+                          className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                          {t('contactDay.cta')}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 );

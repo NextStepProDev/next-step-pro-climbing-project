@@ -1,0 +1,60 @@
+package pl.nextsteppro.climbing.api.contact;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.contact.ContactContextType;
+import pl.nextsteppro.climbing.domain.contact.ContactConversation;
+import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * A message from the site. {@code name}/{@code email} and {@code consent} are for guests and
+ * ignored for a signed-in sender, whose account already says who they are.
+ *
+ * @param website honeypot: a field hidden from people and filled in by form-filling bots
+ */
+record SendContactMessageRequest(
+    @Nullable @Size(max = ContactConversation.MAX_GUEST_NAME_LENGTH) String name,
+    @Nullable @Email @Size(max = ContactConversation.MAX_GUEST_EMAIL_LENGTH) String email,
+    @NotBlank @Size(max = ContactMessage.MAX_BODY_LENGTH) String body,
+    boolean consent,
+    @Nullable @Size(max = 200) String website,
+    @Nullable ContactContextType contextType,
+    @Nullable UUID courseId,
+    @Nullable LocalDate date,
+    @Nullable @Size(max = 10) String language
+) {}
+
+/** @param inConversation the message went into the sender's own conversation in the app */
+record ContactSentDto(boolean inConversation) {}
+
+/**
+ * One message as the PERSON sees it. Who on the team answered is not part of it: the person talks
+ * to the team, and an admin's name has no business in a client's payload.
+ */
+record ConversationMessageDto(
+    UUID id,
+    boolean fromStaff,
+    String body,
+    ContactContextType contextType,
+    @Nullable UUID courseId,
+    @Nullable String courseTitle,
+    @Nullable LocalDate date,
+    Instant createdAt
+) {
+    static ConversationMessageDto from(ContactMessage m) {
+        return new ConversationMessageDto(m.getId(), m.isFromStaff(), m.getBody(), m.getContextType(),
+            m.getCourse() != null ? m.getCourse().getId() : null, m.getCourseTitle(), m.getContextDate(),
+            m.getCreatedAt());
+    }
+}
+
+record MyConversationDto(List<ConversationMessageDto> messages, boolean unseenReply) {}
+
+record UnseenReplyDto(boolean unseenReply) {}

@@ -19,7 +19,8 @@
     "site": "Página principal",
     "requests": "Propuestas",
     "trainingCalendars": "Calendarios de entrenamiento",
-    "settlements": "Liquidaciones"
+    "settlements": "Liquidaciones",
+    "messages": "Mensajes"
   },
   "tabGroups": {
     "calendar": "Calendario",
@@ -48,7 +49,8 @@
       "activity": "Cronología de lo que ha pasado en el sistema.",
       "assets": "Biblioteca compartida de archivos para el contenido.",
       "storage": "Espacio en disco y limpieza de archivos.",
-      "site": "Hero, insignias, sección de ubicación y promo del calendario."
+      "site": "Hero, insignias, sección de ubicación y promo del calendario.",
+      "messages": "Mensajes desde la web — de invitados y usuarios con sesión."
     }
   },
   "palette": {
@@ -74,7 +76,8 @@
       "activity": "registro · historial · auditoría · cronología",
       "assets": "archivos · medios · imágenes · biblioteca",
       "storage": "disco · espacio · capacidad",
-      "site": "hero · página principal · insignias · ubicación · promo · ajustes"
+      "site": "hero · página principal · insignias · ubicación · promo · ajustes",
+      "messages": "contacto · escríbenos · preguntas · correo"
     }
   },
   "team": {
@@ -1382,5 +1385,36 @@
       "addCert": "Añadir logro",
       "empty": "Aún no hay deportistas. Añade el primero con el botón de arriba."
     }
+  },
+  "contactMessages": {
+    "listLabel": "Conversaciones",
+    "filter": {
+      "all": "Todas",
+      "unread": "Sin leer"
+    },
+    "empty": "Nadie ha escrito todavía.",
+    "emptyUnread": "Todo leído.",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "page": "Página {{page}} de {{total}}",
+    "pick": "Elige una conversación de la lista.",
+    "unread": "Sin leer",
+    "guest": "invitado",
+    "you": "Tú:",
+    "awaiting": "Pendiente de respuesta",
+    "back": "Volver a la lista",
+    "userCard": "Ficha del usuario",
+    "guestHint": "Invitado sin cuenta — recibe la respuesta solo por correo",
+    "delete": "Eliminar conversación",
+    "deleteTitle": "¿Eliminar la conversación?",
+    "deleteMessage": "Se eliminará toda la conversación con {{name}}, con todos sus mensajes. No se puede deshacer.",
+    "messagesLabel": "Mensajes de la conversación",
+    "team": "Equipo",
+    "reply": "Respuesta",
+    "replyHintUser": "Va a la conversación en la aplicación y por correo (si el cliente tiene las notificaciones activadas).",
+    "replyHintGuest": "Va por correo a la dirección del invitado.",
+    "send": "Enviar respuesta",
+    "sentMailed": "Enviado — la respuesta salió por correo.",
+    "sentInAppOnly": "Guardado en la conversación. El cliente tiene desactivadas las notificaciones por correo y la verá en la aplicación."
   }
 }

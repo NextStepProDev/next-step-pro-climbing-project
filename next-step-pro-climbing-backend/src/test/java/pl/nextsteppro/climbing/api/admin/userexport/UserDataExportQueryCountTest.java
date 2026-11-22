@@ -36,10 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class UserDataExportQueryCountTest extends BaseIntegrationTest {
 
     private static final int ROWS = 48;
-    /** Measured at 18: one read per section, the user, the RPE and attachment/file batches, the admin
+    /** Measured at 19: one read per section (the contact conversation is one too), the user, the RPE and attachment/file batches, the admin
      * and the log insert. One query of slack and no more — dropping a single JOIN FETCH costs only
      * two batched round trips at this size, and a looser ceiling would swallow them. */
-    private static final int MAX_QUERIES = 19;
+    private static final int MAX_QUERIES = 20;
 
     @Autowired private UserDataExportService service;
     @Autowired private EntityManagerFactory entityManagerFactory;

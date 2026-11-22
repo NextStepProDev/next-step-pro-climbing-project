@@ -26,6 +26,7 @@ import { AdminMailPanel } from './admin/AdminMailPanel'
 import { AdminStoragePanel } from './admin/AdminStoragePanel'
 import { AdminSitePanel } from './admin/AdminSitePanel'
 import { AdminRequestsPanel } from './admin/AdminRequestsPanel'
+import { AdminMessagesPanel } from './admin/AdminMessagesPanel'
 import { AdminSettlementsPanel } from './admin/AdminSettlementsPanel'
 import { AdminTrainingCalendarsPanel } from './admin/AdminTrainingCalendarsPanel'
 import { AdminAthleteCalendarPanel } from './admin/AdminAthleteCalendarPanel'
@@ -109,6 +110,7 @@ export function AdminPage() {
         <Route path="reservations" element={<AdminReservationsPanel />} />
         <Route path="events" element={<AdminEventsPanel />} />
         <Route path="requests" element={<AdminRequestsPanel />} />
+        <Route path="messages" element={<AdminMessagesPanel />} />
         <Route path="settlements" element={<AdminSettlementsPanel />} />
         <Route path="settlements/sources/:sourceId" element={<AdminPayoutSourcePanel />} />
         <Route path="training-calendars" element={<AdminTrainingCalendarsPanel />} />

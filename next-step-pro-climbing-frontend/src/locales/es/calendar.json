@@ -238,12 +238,13 @@
   "customSlot": {
     "title": "¿No encuentras un horario adecuado?",
     "description": "Llámanos o escríbenos — estaremos encantados de acordar una sesión individual adaptada a tus posibilidades.",
-    "email": "Enviar e-mail",
+    "email": "Escríbenos",
     "propose": "Propón un horario"
   },
   "contactDay": {
     "message": "Contáctenos para concertar una sesión en el rocódromo o en las rocas.",
-    "cta": "Ir a contacto"
+    "cta": "Ir a contacto",
+    "write": "Escríbenos sobre este día"
   },
   "unavailable": {
     "message": "No estamos disponibles en esta fecha — sin clases ni inscripciones.",

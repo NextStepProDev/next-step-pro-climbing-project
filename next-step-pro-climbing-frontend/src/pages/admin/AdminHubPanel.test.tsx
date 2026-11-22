@@ -26,6 +26,7 @@ const NOTHING_PENDING: AdminNotifications = {
   newUsers: 0,
   unassignedSessions: 0,
   pendingReschedules: 0,
+  unreadMessages: 0,
 }
 
 async function renderHub(notifications: AdminNotifications) {
@@ -50,7 +51,7 @@ describe('AdminHubPanel', () => {
   it('lays the whole panel out as tiles, grouped', async () => {
     await renderHub(NOTHING_PENDING)
 
-    expect(screen.getAllByRole('link')).toHaveLength(18)
+    expect(screen.getAllByRole('link')).toHaveLength(19)
     expect(screen.getByText('tabGroups.calendar')).toBeInTheDocument()
     expect(screen.getByText('tabGroups.content')).toBeInTheDocument()
     expect(screen.getByText('tabGroups.team')).toBeInTheDocument()
@@ -80,6 +81,7 @@ describe('AdminHubPanel', () => {
       newUsers: 0,
       unassignedSessions: 0,
       pendingReschedules: 0,
+      unreadMessages: 0,
     })
 
     const attention = (await screen.findByText('hub.attention')).parentElement as HTMLElement
