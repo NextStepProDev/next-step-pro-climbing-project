@@ -133,7 +133,8 @@ class AdminServiceInviteSyncTest {
             trainingRequestRepository,
             trainingCalendarService,
             null, // unassigned-session count: notifications only, not exercised here
-            null  // reschedule requests: only the cancel paths and notifications touch them
+            null, // reschedule requests: only the cancel paths and notifications touch them
+            null  // contact conversations: notifications only
         );
 
         adminId = UUID.randomUUID();

@@ -76,7 +76,7 @@ public class MailDispatcher {
     }
 
     public void sendHtml(String to, String subject, String body, @Nullable byte[] icsAttachment) {
-        send(to, subject, body, icsAttachment, null);
+        send(to, subject, body, icsAttachment, null, null);
     }
 
     /**
@@ -95,11 +95,19 @@ public class MailDispatcher {
      * mail (verification, reservations) — that is not a mailing list and cannot be left.
      */
     public void sendNewsletterHtml(String to, String subject, String body, String unsubscribeUrl) {
-        send(to, subject, body, null, unsubscribeUrl);
+        send(to, subject, body, null, unsubscribeUrl, null);
+    }
+
+    /**
+     * A message somebody wrote to the team, forwarded to the team's inbox. Reply-To is the writer,
+     * so answering from the mail client answers THEM rather than the site's own sending address.
+     */
+    public void sendHtmlWithReplyTo(String to, String subject, String body, String replyTo) {
+        send(to, subject, body, null, null, replyTo);
     }
 
     private void send(String to, String subject, String body, @Nullable byte[] icsAttachment,
-                      @Nullable String unsubscribeUrl) {
+                      @Nullable String unsubscribeUrl, @Nullable String replyTo) {
         int maxAttempts = retryDelaysMs.length + 1;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
@@ -116,6 +124,9 @@ public class MailDispatcher {
                     helper.setText(body, true);
                 }
                 helper.setFrom(appConfig.getMail().getFrom());
+                if (replyTo != null) {
+                    helper.setReplyTo(replyTo);
+                }
                 helper.addInline("logo", new ByteArrayResource(LOGO_BYTES), "image/png");
                 if (icsAttachment != null) {
                     helper.addAttachment(ICS_ATTACHMENT_NAME,

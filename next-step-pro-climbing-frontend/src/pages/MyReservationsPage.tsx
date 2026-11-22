@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useDateLocale } from '../utils/dateFnsLocale'
 import { Calendar, CalendarClock, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
-import { reservationApi, calendarApi, trainingRequestApi, trainingCalendarApi } from '../api/client'
+import { reservationApi, calendarApi, trainingRequestApi, trainingCalendarApi, contactApi } from '../api/client'
+import { MyConversationSection } from '../components/contact/MyConversationSection'
 import { useAuth } from '../context/AuthContext'
 import { athleteAdapter } from '../components/training/trainingCalendarAdapter'
 import { athleteAscentAdapter } from '../components/ascents/ascentAdapter'
@@ -35,6 +36,8 @@ const AscentsSection = lazy(() =>
   import('../components/ascents/AscentsSection')
     .then((m) => ({ default: m.AscentsSection })))
 
+type MyTab = 'reservations' | 'calendar' | 'ascents' | 'messages'
+
 export function MyReservationsPage() {
   const { t } = useTranslation('reservations')
   const { t: tTraining } = useTranslation('training')
@@ -50,12 +53,13 @@ export function MyReservationsPage() {
   // Scoped to the CALENDAR alone: the logbook carries no health data and is open to everyone.
   const needsTrainingConsent = isAthlete && !user?.trainingConsentGiven
   const tabParam = searchParams.get('tab')
-  const activeTab: 'reservations' | 'calendar' | 'ascents' =
+  const activeTab: MyTab =
     tabParam === 'ascents' ? 'ascents'
+      : tabParam === 'messages' ? 'messages'
       : (isAthlete && tabParam === 'calendar') ? 'calendar'
         : 'reservations'
 
-  const switchTab = (tab: 'reservations' | 'calendar' | 'ascents') => {
+  const switchTab = (tab: MyTab) => {
     const params = new URLSearchParams(searchParams)
     if (tab === 'reservations') params.delete('tab')
     else params.set('tab', tab)
@@ -84,6 +88,16 @@ export function MyReservationsPage() {
     refetchOnWindowFocus: true,
   })
   const calendarBadge = trainingNotifications?.newCount ?? 0
+
+  // An answer from the team not seen yet (shared cache with the Navbar poll)
+  const { data: conversationUnseen } = useQuery({
+    queryKey: ['conversation', 'unseen'],
+    queryFn: contactApi.getUnseen,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
+  })
+  const messagesBadge = conversationUnseen?.unseenReply ?? false
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
@@ -237,7 +251,7 @@ export function MyReservationsPage() {
   return (
     // The week grid is min-w-[900px]; max-w-4xl (~832px of content) would force a horizontal
     // scroll where the sticky hour gutter overlaps Monday — widen for the calendar tab
-    <div className={`${activeTab === 'reservations' ? 'max-w-4xl' : 'max-w-6xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
+    <div className={`${activeTab === 'reservations' || activeTab === 'messages' ? 'max-w-4xl' : 'max-w-6xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-surface-100 mb-2">
           {t('title')}
@@ -248,7 +262,7 @@ export function MyReservationsPage() {
       </div>
 
       {/* Reservations and the logbook are everybody's; the training calendar needs the flag */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => switchTab('reservations')}
           className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
@@ -286,6 +300,22 @@ export function MyReservationsPage() {
         >
           {tAscents('tab')}
         </button>
+        <button
+          onClick={() => switchTab('messages')}
+          className={`relative px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+            activeTab === 'messages'
+              ? 'bg-primary-600 border-primary-500 text-white'
+              : 'bg-surface-900 border-surface-700 text-surface-400 hover:text-surface-200'
+          }`}
+        >
+          {t('messages.tab')}
+          {messagesBadge && (
+            <span
+              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-rose-500 rounded-full"
+              aria-label={t('messages.newReply')}
+            />
+          )}
+        </button>
       </div>
 
       {activeTab !== 'reservations' ? (
@@ -297,7 +327,9 @@ export function MyReservationsPage() {
           <Suspense fallback={<div className="py-16 flex justify-center"><LoadingSpinner /></div>}>
             {activeTab === 'calendar'
               ? <TrainingCalendarSection api={athleteAdapter} scopeKey="me" />
-              : <AscentsSection api={athleteAscentAdapter} scopeKey="me" />}
+              : activeTab === 'messages'
+                ? <MyConversationSection />
+                : <AscentsSection api={athleteAscentAdapter} scopeKey="me" />}
           </Suspense>
         )
       ) : (

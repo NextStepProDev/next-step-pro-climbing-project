@@ -31,7 +31,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useClickOutside } from "../../hooks/useClickOutside";
-import { adminApi, reservationApi, trainingCalendarApi } from "../../api/client";
+import { adminApi, contactApi, reservationApi, trainingCalendarApi } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/Button";
@@ -100,6 +100,7 @@ export function Navbar() {
       + (adminNotifications?.newUsers ?? 0)
       + (adminNotifications?.unassignedSessions ?? 0)
       + (adminNotifications?.pendingReschedules ?? 0)
+      + (adminNotifications?.unreadMessages ?? 0)
     : 0;
 
   // The client's pending invitations (invitation-held seats) — a badge on the
@@ -131,6 +132,19 @@ export function Navbar() {
   });
   const trainingBadgeCount = user?.isAthlete ? (trainingNotifications?.newCount ?? 0) : 0;
 
+  // An answer from the team in the "write to us" conversation, not seen yet. One conversation,
+  // so it counts as one. Cache shared with the Messages tab on My Reservations.
+  const { data: conversationUnseen } = useQuery({
+    queryKey: ['conversation', 'unseen'],
+    queryFn: contactApi.getUnseen,
+    enabled: isAuthenticated,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const conversationBadgeCount = isAuthenticated && conversationUnseen?.unseenReply ? 1 : 0;
+
   const mediaLinks: NavLink[] = [
     { to: "/galeria", label: t('nav.gallery'), icon: Images },
     { to: "/filmy", label: t('nav.videos'), icon: Video },
@@ -152,7 +166,7 @@ export function Navbar() {
           to: "/my-reservations",
           label: t('nav.myReservations'),
           icon: Star,
-          badge: invitationBadgeCount + trainingBadgeCount,
+          badge: invitationBadgeCount + trainingBadgeCount + conversationBadgeCount,
           premium: true,
         }]
       : []),

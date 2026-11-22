@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.activitylog.ActivityLog;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
 import pl.nextsteppro.climbing.domain.activitylog.ActivityLogRepository;
 import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal;
 import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoalRepository;
@@ -74,7 +75,7 @@ import java.util.stream.Stream;
 public class UserDataExportService {
 
     // 2: rescheduleRequests section added (2026-10-21)
-    static final int SCHEMA_VERSION = 2;
+    static final int SCHEMA_VERSION = 3;
 
     private final UserRepository userRepository;
     private final NewsletterConsentLogRepository consentLogRepository;
@@ -95,6 +96,7 @@ public class UserDataExportService {
     private final AthleteWeightRepository weightRepository;
     private final ClimbingAscentRepository ascentRepository;
     private final ActivityLogService activityLogService;
+    private final ContactMessageRepository contactMessageRepository;
 
     public UserDataExportService(UserRepository userRepository,
                                  NewsletterConsentLogRepository consentLogRepository,
@@ -114,7 +116,9 @@ public class UserDataExportService {
                                  AthleteWeightRepository weightRepository,
                                  ClimbingAscentRepository ascentRepository,
                                  ActivityLogService activityLogService,
-                                 RescheduleRequestRepository rescheduleRequestRepository) {
+                                 RescheduleRequestRepository rescheduleRequestRepository,
+                                 ContactMessageRepository contactMessageRepository) {
+        this.contactMessageRepository = contactMessageRepository;
         this.rescheduleRequestRepository = rescheduleRequestRepository;
         this.userRepository = userRepository;
         this.consentLogRepository = consentLogRepository;
@@ -173,12 +177,21 @@ public class UserDataExportService {
                 .map(w -> new ExportWeightDto(w.getMeasuredOn(), w.getWeightKg(), w.getCreatedAt()))
                 .toList(),
             ascentRepository.findByAthleteIdOrderByClimbedOnAscCreatedAtAsc(userId).stream()
-                .map(UserDataExportService::toAscent).toList());
+                .map(UserDataExportService::toAscent).toList(),
+            contactMessages(userId));
 
         // Logged after the reads, so the export's own entry is not part of the file it describes.
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminUserDataExported(admin, user);
         return Optional.of(dto);
+    }
+
+    private List<ExportContactMessageDto> contactMessages(UUID userId) {
+        // One query for the section, like every other: the conversation is reached through its owner.
+        return contactMessageRepository.findByConversationUserId(userId).stream()
+            .map(m -> new ExportContactMessageDto(m.getId(), m.isFromStaff() ? "COACH" : "ME", m.getBody(),
+                m.getContextType().name(), m.getCourseTitle(), m.getContextDate(), m.getCreatedAt()))
+            .toList();
     }
 
     private static ExportAccountDto toAccount(User user) {

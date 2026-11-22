@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom'
 import { useThemeLogo } from '../hooks/useThemeLogo'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '19 listopada 2026'
-const LAST_UPDATED_EN = '19 November 2026'
+const LAST_UPDATED_PL = '22 listopada 2026'
+const LAST_UPDATED_EN = '22 November 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -146,6 +146,24 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             ]} />
           </SubSection>
 
+          <SubSection title="Wiadomość przez formularz „Napisz do nas”">
+            <p className="text-surface-400 text-sm leading-relaxed mb-3">
+              Formularz jest na stronie Kontakt, przy kursach i w kalendarzu. Wiadomość trafia mailem do
+              administratora oraz do panelu, z którego na nią odpowiada. Można z niego korzystać bez konta.
+            </p>
+            <DataList items={[
+              'Imię i adres e-mail — jeśli piszesz bez logowania; wiadomość zalogowanej osoby jest przypisana do jej konta',
+              'Treść wiadomości i to, czego dotyczy (kurs albo dzień w kalendarzu)',
+              'Język strony, z której wysłano wiadomość',
+              'Odpowiedzi administratora',
+            ]} />
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              Jeśli później założysz konto na ten sam adres e-mail i go potwierdzisz, wcześniejsze wiadomości
+              pojawią się w zakładce Wiadomości na Twoim koncie. Dzieje się to dopiero po potwierdzeniu adresu,
+              bo samo wpisanie go przy rejestracji niczego nie dowodzi.
+            </p>
+          </SubSection>
+
           <SubSection title="Dziennik przejść (każdy zalogowany)">
             <p className="text-surface-400 text-sm leading-relaxed mb-3">
               Każde konto ma własny dziennik przejść wspinaczkowych. Wpisy tworzysz wyłącznie Ty i tylko Ty
@@ -211,6 +229,10 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             <LegalBasis
               purpose="Weryfikacja konta e-mail i odzyskiwanie hasła"
               basis="Art. 6 ust. 1 lit. b RODO — wykonanie umowy"
+            />
+            <LegalBasis
+              purpose="Odpowiedź na wiadomość wysłaną przez formularz „Napisz do nas”"
+              basis="Art. 6 ust. 1 lit. f RODO — uzasadniony interes administratora (odpowiedź na korespondencję), a gdy pytasz o zajęcia — art. 6 ust. 1 lit. b RODO (działania podejmowane na Twoje żądanie przed zawarciem umowy)"
             />
             <LegalBasis
               purpose="Prowadzenie planu treningowego podopiecznego (treningi, komentarze, materiały)"
@@ -447,6 +469,12 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               usunięcia konta jako wymagany przez RODO dowód wyrażonej zgody.
             </p>
             <p>
+              <span className="text-surface-200 font-medium">Wiadomości z formularza „Napisz do nas”</span> — każda
+              wiadomość i każda odpowiedź jest usuwana automatycznie po roku od wysłania. Wcześniej znika razem
+              z kontem albo gdy administrator usunie rozmowę. Kopia wiadomości, która trafiła mailem do skrzynki
+              administratora, zostaje w tej skrzynce.
+            </p>
+            <p>
               <span className="text-surface-200 font-medium">Zdjęcie profilowe (awatar)</span> — przechowywane do momentu jego
               usunięcia przez Ciebie lub usunięcia konta; trwale usuwane razem z kontem.
             </p>
@@ -674,6 +702,23 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               'Profile picture (avatar) — optional; if you add one, it is cropped to a circle in your browser and stored on the server within the EEA. You can change or remove it at any time in account settings',
             ]} />
           </SubSection>
+          <SubSection title="A message through the “Write to us” form">
+            <p className="text-surface-400 text-sm leading-relaxed mb-3">
+              The form is on the Contact page, on course pages and in the calendar. The message reaches the
+              administrator by e-mail and in the panel used to answer it. It can be used without an account.
+            </p>
+            <DataList items={[
+              'Name and e-mail address — if you write without signing in; a signed-in person’s message is attached to their account',
+              'The message and what it is about (a course or a day in the calendar)',
+              'The language of the page the message was sent from',
+              'The administrator’s replies',
+            ]} />
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              If you later create an account with the same e-mail address and confirm it, your earlier messages
+              appear under Messages in your account. This happens only once the address is confirmed, because
+              typing it into a sign-up form proves nothing.
+            </p>
+          </SubSection>
           <SubSection title="Climbing logbook (every signed-in user)">
             <p className="text-surface-400 text-sm leading-relaxed mb-3">
               Every account has its own climbing logbook. Only you create the entries and only you can change
@@ -738,6 +783,10 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <LegalBasis
               purpose="E-mail verification and password recovery"
               basis="Art. 6(1)(b) GDPR — performance of a contract"
+            />
+            <LegalBasis
+              purpose="Replying to a message sent through the “Write to us” form"
+              basis="Art. 6(1)(f) GDPR — the administrator’s legitimate interest (answering correspondence), and when you ask about classes — Art. 6(1)(b) GDPR (steps taken at your request before entering into a contract)"
             />
             <LegalBasis
               purpose="Running an athlete's training plan (sessions, comments, materials)"
@@ -971,6 +1020,12 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <p>
               <span className="text-surface-200 font-medium">Newsletter consent timestamp</span> — stored until account deletion
               as GDPR-required proof of consent.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Messages from the “Write to us” form</span> — every
+              message and every reply is deleted automatically a year after it was sent. Before that it goes
+              together with the account, or when the administrator deletes the conversation. The copy of a
+              message that reached the administrator’s mailbox by e-mail stays in that mailbox.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Profile picture (avatar)</span> — stored until you remove it or

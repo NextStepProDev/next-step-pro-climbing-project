@@ -103,5 +103,19 @@
     "short": "faltan {{amount}}",
     "unpaid": "pendiente",
     "hint": "Los pagos los registra tu entrenador. Un pago cubre primero la deuda más antigua, incluidas las sesiones fuera de la suscripción."
+  },
+  "messages": {
+    "tab": "Mensajes",
+    "newReply": "Nueva respuesta",
+    "emptyTitle": "Todavía no hay mensajes",
+    "emptyBody": "Escríbenos abajo, o desde el formulario de un curso o del calendario — todo llega a esta única conversación.",
+    "listLabel": "Conversación con Next Step Pro Climbing",
+    "fromTeam": "Next Step Pro",
+    "fromMe": "Tú",
+    "writeFirst": "Escribe un mensaje",
+    "reply": "Responder",
+    "hint": "Respondemos aquí y por correo.",
+    "otherWays": "Otras formas de contacto",
+    "send": "Enviar"
   }
 }

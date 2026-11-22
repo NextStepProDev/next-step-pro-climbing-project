@@ -42,7 +42,25 @@ record UserDataExportDto(
     List<ExportCommentDto> messages,
     List<ExportGoalDto> goals,
     List<ExportWeightDto> weights,
-    List<ExportAscentDto> ascents
+    List<ExportAscentDto> ascents,
+    List<ExportContactMessageDto> contactMessages
+) {}
+
+/**
+ * The person's "write to us" conversation. The team's replies are included and named by role
+ * only, like the training thread: which admin answered is not this person's data.
+ *
+ * @param author {@code "ME"} or {@code "COACH"}
+ * @param about  {@code GENERAL}, {@code COURSE} or {@code CALENDAR}
+ */
+record ExportContactMessageDto(
+    UUID id,
+    String author,
+    String body,
+    String about,
+    @Nullable String courseTitle,
+    @Nullable LocalDate date,
+    Instant createdAt
 ) {}
 
 /**

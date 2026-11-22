@@ -132,6 +132,11 @@ import type {
   CreateRescheduleRequest,
   AdminRescheduleRequest,
   AdminRescheduleList,
+  SendContactMessage,
+  MyConversation,
+  AdminConversationPage,
+  AdminConversationDetail,
+  ContactReplyResult,
 } from '../types'
 import {
   getAccessToken,
@@ -553,6 +558,25 @@ export const trainingRequestApi = {
 
   cancel: (requestId: string) =>
     fetchApi<void>(`/training-requests/${requestId}`, { method: 'DELETE' }),
+}
+
+/**
+ * "Write to us". `send` is open to guests; for a signed-in sender the token rides along and the
+ * message goes into their one conversation. A POST, so `fetchApi` never repeats it after a timeout —
+ * a repeat would be a second mail in the team's inbox.
+ */
+export const contactApi = {
+  send: (data: SendContactMessage) =>
+    fetchApi<{ inConversation: boolean }>('/contact-messages', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getConversation: () => fetchApi<MyConversation>('/conversation'),
+
+  getUnseen: () => fetchApi<{ unseenReply: boolean }>('/conversation/unseen'),
+
+  markSeen: () => fetchApi<void>('/conversation/seen', { method: 'POST' }),
 }
 
 /** A booked client asking to move their term. The booking stands unchanged until the coach accepts. */
@@ -1156,6 +1180,27 @@ export const adminUserHistoryApi = {
   // in step. Each call is logged server-side under the calling admin.
   exportData: (userId: string) =>
     fetchApi<Record<string, unknown>>(`/admin/users/${userId}/export`),
+}
+
+// "Write to us" conversations, the team's side
+export const adminContactApi = {
+  list: (unreadOnly: boolean, page = 0, size = 20) =>
+    fetchApi<AdminConversationPage>(`/admin/contact/conversations?unread=${unreadOnly}&page=${page}&size=${size}`),
+
+  get: (conversationId: string) =>
+    fetchApi<AdminConversationDetail>(`/admin/contact/conversations/${conversationId}`),
+
+  markRead: (conversationId: string) =>
+    fetchApi<void>(`/admin/contact/conversations/${conversationId}/read`, { method: 'POST' }),
+
+  reply: (conversationId: string, body: string) =>
+    fetchApi<ContactReplyResult>(`/admin/contact/conversations/${conversationId}/replies`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+
+  delete: (conversationId: string) =>
+    fetchApi<void>(`/admin/contact/conversations/${conversationId}`, { method: 'DELETE' }),
 }
 
 // Aggregate statistics about the whole user base (Users panel → Statistics).

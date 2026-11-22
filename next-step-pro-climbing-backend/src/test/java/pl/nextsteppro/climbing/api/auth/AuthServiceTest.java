@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.nextsteppro.climbing.api.auth.AuthDtos.*;
+import pl.nextsteppro.climbing.api.contact.ContactConversationClaim;
 import pl.nextsteppro.climbing.config.AdminEmailConfig;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
@@ -75,7 +76,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        accountConfirmation = new AccountConfirmation(activityLogService);
+        accountConfirmation = new AccountConfirmation(activityLogService, mock(ContactConversationClaim.class));
         authService = new AuthService(
             userRepository,
             authTokenRepository,

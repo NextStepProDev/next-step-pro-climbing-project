@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.api.auth;
 
 import org.springframework.stereotype.Component;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
+import pl.nextsteppro.climbing.api.contact.ContactConversationClaim;
 import pl.nextsteppro.climbing.domain.user.User;
 
 /**
@@ -44,9 +45,12 @@ public class AccountConfirmation {
     }
 
     private final ActivityLogService activityLogService;
+    private final ContactConversationClaim contactConversationClaim;
 
-    public AccountConfirmation(ActivityLogService activityLogService) {
+    public AccountConfirmation(ActivityLogService activityLogService,
+                               ContactConversationClaim contactConversationClaim) {
         this.activityLogService = activityLogService;
+        this.contactConversationClaim = contactConversationClaim;
     }
 
     /**
@@ -58,5 +62,8 @@ public class AccountConfirmation {
     public void confirm(User user, ConfirmationSource source) {
         user.markEmailVerified();
         activityLogService.logAccountConfirmed(user, source.label());
+        // A confirmed address is the proof a guest conversation from it belongs to this person;
+        // see ContactConversationClaim for why it is here and never at registration.
+        contactConversationClaim.claimFor(user);
     }
 }

@@ -19,7 +19,8 @@
     "site": "Strona główna",
     "requests": "Propozycje",
     "trainingCalendars": "Kalendarze treningowe",
-    "settlements": "Rozliczenia"
+    "settlements": "Rozliczenia",
+    "messages": "Wiadomości"
   },
   "tabGroups": {
     "calendar": "Kalendarz",
@@ -48,7 +49,8 @@
       "activity": "Oś czasu tego, co działo się w systemie.",
       "assets": "Wspólna biblioteka plików do wstawiania w treści.",
       "storage": "Zajęte miejsce na dysku i porządki w plikach.",
-      "site": "Hero, plakietki, sekcja lokalizacji i promo kalendarza."
+      "site": "Hero, plakietki, sekcja lokalizacji i promo kalendarza.",
+      "messages": "Wiadomości ze strony — od gości i zalogowanych."
     }
   },
   "palette": {
@@ -74,7 +76,8 @@
       "activity": "log · historia · audyt · dziennik",
       "assets": "pliki · media · obrazki · biblioteka",
       "storage": "dysk · miejsce · pojemność",
-      "site": "hero · strona startowa · plakietki · lokalizacja · promo · ustawienia"
+      "site": "hero · strona startowa · plakietki · lokalizacja · promo · ustawienia",
+      "messages": "kontakt · napisz do nas · pytania · mail"
     }
   },
   "team": {
@@ -1400,5 +1403,36 @@
       "addCert": "Dodaj osiągnięcie",
       "empty": "Brak zawodników. Dodaj pierwszego przyciskiem powyżej."
     }
+  },
+  "contactMessages": {
+    "listLabel": "Rozmowy",
+    "filter": {
+      "all": "Wszystkie",
+      "unread": "Nieprzeczytane"
+    },
+    "empty": "Nikt jeszcze nie napisał.",
+    "emptyUnread": "Wszystko przeczytane.",
+    "prev": "Poprzednie",
+    "next": "Następne",
+    "page": "Strona {{page}} z {{total}}",
+    "pick": "Wybierz rozmowę z listy.",
+    "unread": "Nieprzeczytana",
+    "guest": "gość",
+    "you": "Ty:",
+    "awaiting": "Czeka na odpowiedź",
+    "back": "Wróć do listy",
+    "userCard": "Karta użytkownika",
+    "guestHint": "Gość bez konta — odpowiedź dostanie tylko mailem",
+    "delete": "Usuń rozmowę",
+    "deleteTitle": "Usunąć rozmowę?",
+    "deleteMessage": "Cała rozmowa z {{name}} zniknie razem ze wszystkimi wiadomościami. Tego nie da się cofnąć.",
+    "messagesLabel": "Wiadomości w rozmowie",
+    "team": "Zespół",
+    "reply": "Odpowiedź",
+    "replyHintUser": "Trafi do rozmowy w aplikacji i mailem (jeśli klient ma włączone powiadomienia).",
+    "replyHintGuest": "Pójdzie mailem na adres gościa.",
+    "send": "Wyślij odpowiedź",
+    "sentMailed": "Wysłano — odpowiedź poszła mailem.",
+    "sentInAppOnly": "Zapisano w rozmowie. Klient ma wyłączone powiadomienia mailowe, zobaczy odpowiedź w aplikacji."
   }
 }

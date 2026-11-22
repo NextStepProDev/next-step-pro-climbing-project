@@ -12,6 +12,7 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestRepository;
+import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestStatus;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservation;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
@@ -98,6 +99,7 @@ public class AdminService {
     private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
     private final UnassignedSessionCounter unassignedSessionCounter;
     private final RescheduleRequestRepository rescheduleRequestRepository;
+    private final ContactConversationRepository contactConversationRepository;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -122,7 +124,9 @@ public class AdminService {
                        TrainingRequestRepository trainingRequestRepository,
                        pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService,
                        UnassignedSessionCounter unassignedSessionCounter,
-                       RescheduleRequestRepository rescheduleRequestRepository) {
+                       RescheduleRequestRepository rescheduleRequestRepository,
+                       ContactConversationRepository contactConversationRepository) {
+        this.contactConversationRepository = contactConversationRepository;
         this.rescheduleRequestRepository = rescheduleRequestRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
@@ -1374,8 +1378,9 @@ public class AdminService {
         int newUsers = userRepository.countByEmailVerifiedAtAfter(admin.getAdminUsersSeenAt());
         int unassignedSessions = unassignedSessionCounter.countUnassigned(LocalDate.now(WARSAW));
         int pendingReschedules = rescheduleRequestRepository.countByStatus(RescheduleRequestStatus.PENDING);
+        int unreadMessages = contactConversationRepository.countUnreadForStaff();
         return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries,
-            athleteActivity, newUsers, unassignedSessions, pendingReschedules);
+            athleteActivity, newUsers, unassignedSessions, pendingReschedules, unreadMessages);
     }
 
     public void markReservationsSeen(UUID adminId) {

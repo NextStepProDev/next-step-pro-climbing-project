@@ -5,6 +5,7 @@ import { Facebook, Youtube, Instagram } from '../components/ui/BrandIcons'
 import { useThemeLogo } from '../hooks/useThemeLogo'
 import { pzaLogo } from '../assets'
 import { CONTACT } from '../constants/contact'
+import { ContactForm } from '../components/contact/ContactForm'
 import { useState } from 'react'
 
 export function ContactPage() {
@@ -131,6 +132,15 @@ export function ContactPage() {
                 iconColor="text-orange-400"
               />
             </div>
+          </div>
+
+          {/* Card: write to us */}
+          <div id="napisz" className="md:col-span-2 bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8 scroll-mt-24">
+            <h2 className="text-lg font-semibold text-surface-100 mb-1">
+              {t('contactForm.title')}
+            </h2>
+            <p className="text-sm text-surface-400 mb-6">{t('contactForm.subtitle')}</p>
+            <ContactForm context={{ type: 'GENERAL' }} />
           </div>
 
           {/* Karta: PZA */}

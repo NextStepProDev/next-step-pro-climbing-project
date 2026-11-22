@@ -217,5 +217,41 @@
     "scrollToTop": "Przewiń na górę",
     "share": "Udostępnij",
     "badge": "Odznaka"
+  },
+  "contactForm": {
+    "title": "Napisz do nas",
+    "subtitle": "Odpowiemy na podany adres e-mail, zwykle tego samego albo następnego dnia.",
+    "modalTitle": "Napisz do nas",
+    "name": "Imię",
+    "email": "E-mail",
+    "message": "Wiadomość",
+    "messagePlaceholder": "W czym możemy pomóc?",
+    "honeypot": "Zostaw to pole puste",
+    "consent": "Wiem, że moje imię, adres e-mail i treść wiadomości posłużą do udzielenia odpowiedzi. Szczegóły w <1>polityce prywatności</1>.",
+    "send": "Wyślij wiadomość",
+    "sentTitle": "Dzięki, wiadomość wysłana!",
+    "sentInApp": "Odpowiedź zobaczysz w zakładce Wiadomości w Moich rezerwacjach — damy też znać mailem.",
+    "sentGuest": "Odpowiemy na podany adres e-mail.",
+    "openConversation": "Przejdź do rozmowy",
+    "writeAnother": "Napisz kolejną wiadomość",
+    "signedInAs": "Piszesz jako {{name}} ({{email}}) — odpowiedź trafi do Twojej rozmowy w aplikacji.",
+    "courseCtaTitle": "Masz pytanie o ten kurs?",
+    "courseCtaBody": "Napisz — w wiadomości będzie widać, którego kursu dotyczy.",
+    "courseCta": "Zapytaj o ten kurs",
+    "about": {
+      "prefix": "Dotyczy:",
+      "general": "wiadomość ogólna",
+      "course": "kurs „{{title}}”",
+      "courseRemoved": "kurs usunięty",
+      "calendar": "termin, dzień {{date}}",
+      "calendarAny": "termin z kalendarza"
+    },
+    "errors": {
+      "name": "Podaj imię",
+      "email": "Podaj adres e-mail",
+      "emailInvalid": "To nie wygląda na adres e-mail",
+      "body": "Wpisz treść wiadomości",
+      "consent": "Zaznacz to pole, żeby wysłać wiadomość"
+    }
   }
 }

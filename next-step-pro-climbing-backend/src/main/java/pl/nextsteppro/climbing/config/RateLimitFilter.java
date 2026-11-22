@@ -64,6 +64,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // Proposing a time is a write, and each rejected one still costs validation and queries. The
     // "3 PENDING per user" rule caps what survives, not what the endpoint has to process.
     private static final int TRAINING_REQUEST_LIMIT = 20;
+    // Sending from the public "write to us" form: open to anonymous visitors, and every message is
+    // a mail in the team's inbox. ContactSendThrottle adds the hourly cap this one-minute window
+    // cannot express.
+    private static final int CONTACT_SEND_LIMIT = 5;
+    // Reading your own conversation: the page, and the navbar badge polling for an answer.
+    private static final int CONVERSATION_LIMIT = 60;
     // Material uploads store a 10MB file on disk each; the endpoint is otherwise unthrottled, so a
     // per-IP cap bounds a disk-fill flood (orphans are also swept by the cleanup scheduler). The
     // ceiling has to clear ordinary work, though: one file is one request, a training now holds six
@@ -119,6 +125,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         new Rule("training", TRAINING_LIMIT, path -> under(path, "/api/training-calendar")),
         new Rule("ascents", ASCENT_LIMIT, path -> under(path, "/api/ascents")),
         new Rule("trainingreq", TRAINING_REQUEST_LIMIT, path -> under(path, "/api/training-requests")),
+        new Rule("contactsend", CONTACT_SEND_LIMIT, path -> under(path, "/api/contact-messages")),
+        new Rule("conversation", CONVERSATION_LIMIT, path -> under(path, "/api/conversation")),
         new Rule("publicfile", PUBLIC_FILE_LIMIT, path -> under(path, "/api/files")),
         new Rule("calendar", CALENDAR_LIMIT, path -> under(path, "/api/calendar")
             || under(path, "/api/events")),
@@ -255,7 +263,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private String getClientIp(HttpServletRequest request) {
+    /** Public so the contact form's hourly cap keys guests on the same address this filter does. */
+    public static String getClientIp(HttpServletRequest request) {
         // Cloudflare sets CF-Connecting-IP to the real client IP. With the origin
         // firewalled to Cloudflare ranges, this header cannot be forged by reaching
         // the origin directly, so it is the trustworthy key for per-IP rate limiting.

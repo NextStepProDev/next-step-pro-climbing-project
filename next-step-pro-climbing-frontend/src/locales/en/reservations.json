@@ -103,5 +103,19 @@
     "short": "{{amount}} short",
     "unpaid": "due",
     "hint": "Payments are recorded by your coach. A payment covers the oldest debt first — sessions outside the subscription included."
+  },
+  "messages": {
+    "tab": "Messages",
+    "newReply": "New reply",
+    "emptyTitle": "No messages yet",
+    "emptyBody": "Write to us below, or from the form on a course or in the calendar — it all lands in this one conversation.",
+    "listLabel": "Conversation with Next Step Pro Climbing",
+    "fromTeam": "Next Step Pro",
+    "fromMe": "You",
+    "writeFirst": "Write a message",
+    "reply": "Reply",
+    "hint": "We reply here and by e-mail.",
+    "otherWays": "Other ways to reach us",
+    "send": "Send"
   }
 }

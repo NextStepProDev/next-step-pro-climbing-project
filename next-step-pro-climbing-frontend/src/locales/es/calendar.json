@@ -243,7 +243,8 @@
   },
   "contactDay": {
     "message": "Contáctenos para concertar una sesión en el rocódromo o en las rocas.",
-    "cta": "Ir a contacto"
+    "cta": "Ir a contacto",
+    "write": "Escríbenos sobre este día"
   },
   "unavailable": {
     "message": "No estamos disponibles en esta fecha — sin clases ni inscripciones.",

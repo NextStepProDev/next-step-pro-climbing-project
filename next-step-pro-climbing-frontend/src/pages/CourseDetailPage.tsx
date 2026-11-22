@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { ArrowLeft, BookOpen, MessageSquare } from 'lucide-react'
+import { ContactModal } from '../components/contact/ContactModal'
 import { coursesApi, calendarApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -21,6 +22,7 @@ export function CourseDetailPage() {
   // When arriving from a calendar event modal, go back to it instead of the
   // course list (the returnTo URL carries `?event=<id>` to re-open the modal).
   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo
+  const [askOpen, setAskOpen] = useState(false)
 
   const { data: course, isLoading, error } = useQuery({
     queryKey: ['courses', courseId],
@@ -210,7 +212,29 @@ export function CourseDetailPage() {
       <div className="space-y-8">
         <CourseContentBlocks detail={course} />
         <CourseEventsList events={courseEvents} />
+
+        {/* Ask about this course: the message carries the course, so the coach knows which one */}
+        <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex-1">
+            <p className="text-surface-100 font-semibold text-sm">{t('contactForm.courseCtaTitle')}</p>
+            <p className="text-surface-400 text-sm mt-1">{t('contactForm.courseCtaBody')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAskOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors shrink-0"
+          >
+            <MessageSquare className="w-4 h-4" aria-hidden="true" />
+            {t('contactForm.courseCta')}
+          </button>
+        </div>
       </div>
+
+      <ContactModal
+        isOpen={askOpen}
+        onClose={() => setAskOpen(false)}
+        context={{ type: 'COURSE', courseId: course.id, courseTitle: course.title }}
+      />
     </div>
   )
 }

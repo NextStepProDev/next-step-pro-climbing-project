@@ -12,6 +12,7 @@ import { useUnassignedMarks } from "../components/admin/useUnassignedMarks";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
 import { WeekCalendar } from "../components/calendar/WeekCalendar";
 import { DayView } from "../components/calendar/DayView";
+import { ContactModal } from "../components/contact/ContactModal";
 import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
@@ -91,6 +92,8 @@ export function CalendarPage() {
   >(null);
   // Training request: start date + optional availability window (constrains the times)
   const [proposeContext, setProposeContext] = useState<{ date: string; window?: ProposeWindow } | null>(null);
+  // The contact form, when open: the day it was opened for, or null when no day was selected
+  const [contactFor, setContactFor] = useState<{ date: string | null } | null>(null);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
   /**
    * ⚠️ `payoutSource` is looked up when the copy is armed, never read off the slot on screen: the
@@ -757,6 +760,7 @@ export function CalendarPage() {
             : undefined}
           noteMarks={isAdmin ? noteMarks : undefined}
           unassignedMarks={isAdmin ? unassignedMarks : undefined}
+          onWriteToUs={() => setContactFor({ date: selectedDate })}
         />
       ) : viewMode === 'week' ? (
         weekLoading ? (
@@ -1068,15 +1072,23 @@ export function CalendarPage() {
             <Phone className="w-4 h-4" />
             +48 535 246 673
           </a>
-          <a
-            href="mailto:nextsteppro.team@gmail.com"
+          {/* Opens the contact form with the selected day, if any — never an invented one */}
+          <button
+            type="button"
+            onClick={() => setContactFor({ date: selectedDate })}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-200 text-sm font-medium transition-colors"
           >
             <Mail className="w-4 h-4" />
             {t('customSlot.email')}
-          </a>
+          </button>
         </div>
       </div>
+
+      <ContactModal
+        isOpen={contactFor !== null}
+        onClose={() => setContactFor(null)}
+        context={{ type: "CALENDAR", date: contactFor?.date ?? null }}
+      />
     </div>
   );
 }

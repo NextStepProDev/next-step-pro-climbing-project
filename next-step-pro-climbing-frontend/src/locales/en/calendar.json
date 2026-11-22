@@ -242,7 +242,8 @@
   },
   "contactDay": {
     "message": "Contact us to arrange a session at the climbing wall or outdoors.",
-    "cta": "Go to contact"
+    "cta": "Go to contact",
+    "write": "Write to us about this day"
   },
   "unavailable": {
     "message": "We're unavailable on this date — no classes and no sign-ups.",
