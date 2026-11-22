@@ -171,12 +171,16 @@ function ConversationRow({ summary, active, onSelect }: {
         </p>
       )}
       <div className="mt-2 flex items-center justify-between gap-2">
-        {summary.previewContextType && !summary.previewFromStaff ? (
-          <ContextChip
-            stored={{ contextType: summary.previewContextType, courseTitle: summary.previewCourseTitle, date: summary.previewDate }}
-            compact
-          />
-        ) : <span />}
+        {/* min-w-0: a flex item will not shrink below its content otherwise, so a long course
+            title pushed "awaiting reply" off a phone screen */}
+        <div className="min-w-0">
+          {summary.previewContextType && !summary.previewFromStaff && (
+            <ContextChip
+              stored={{ contextType: summary.previewContextType, courseTitle: summary.previewCourseTitle, date: summary.previewDate }}
+              compact
+            />
+          )}
+        </div>
         {!summary.answered && (
           <span className="text-[11px] text-amber-500 shrink-0">{t('contactMessages.awaiting')}</span>
         )}
@@ -230,8 +234,12 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
     mutationFn: () => adminContactApi.delete(conversationId),
     onSuccess: () => {
       setConfirmDelete(false)
-      invalidateAll()
+      // Only the list and the badge — never this conversation's own query: it is still mounted
+      // until the URL change re-renders, and invalidating it would refetch a conversation that no
+      // longer exists (400). It goes inactive on unmount and is garbage-collected from there.
       onBack()
+      invalidateAll()
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
     },
   })
 
@@ -279,6 +287,11 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
           <Trash2 className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
+
+      {/* ConfirmModal closes on confirm, so a failed delete has to be said here, on the conversation */}
+      {deleteMutation.isError && (
+        <p role="alert" className="mx-4 mt-4 text-sm text-rose-400">{getErrorMessage(deleteMutation.error)}</p>
+      )}
 
       <ol className="p-4 space-y-3 max-h-[60vh] overflow-y-auto" aria-label={t('contactMessages.messagesLabel')}>
         {messages.map((m) => (
@@ -350,10 +363,6 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
         onConfirm={() => deleteMutation.mutate()}
         title={t('contactMessages.deleteTitle')}
         message={t('contactMessages.deleteMessage', { name: summary.name })}
-        // The modal stays open on failure, so the failure has to be said inside it
-        details={deleteMutation.isError
-          ? <p role="alert" className="text-sm text-rose-400">{getErrorMessage(deleteMutation.error)}</p>
-          : undefined}
         confirmText={t('contactMessages.delete')}
         variant="danger"
       />
