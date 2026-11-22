@@ -43,6 +43,7 @@ import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 import { useDraft } from '../../hooks/useDraft'
 import { DraftBanner } from '../../components/ui/DraftBanner'
 import { keepablePendingBlocks } from '../../utils/pendingBlockDraft'
+import { CMS_IMAGE_ACCEPT } from '../../utils/imageUtils'
 
 type View = 'list' | 'edit'
 
@@ -986,7 +987,7 @@ function EditView({
           <label className="cursor-pointer">
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={CMS_IMAGE_ACCEPT}
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0]
@@ -1107,7 +1108,7 @@ function EditView({
           <label className="cursor-pointer">
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={CMS_IMAGE_ACCEPT}
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0]

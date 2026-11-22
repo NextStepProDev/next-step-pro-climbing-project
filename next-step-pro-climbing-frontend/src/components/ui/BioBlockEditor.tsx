@@ -7,6 +7,7 @@ import { GalleryPickerModal } from './GalleryPickerModal'
 import { adminAssetsApi } from '../../api/client'
 import type { BioBlock } from './bioBlocks'
 import { getErrorMessage } from '../../utils/errors'
+import { CMS_IMAGE_ACCEPT } from '../../utils/imageUtils'
 
 export type { BioBlock } from './bioBlocks'
 
@@ -193,7 +194,7 @@ export function BioBlockEditor({
       {uploadError && <p role="alert" className="text-sm text-rose-400">{uploadError}</p>}
 
       {/* Hidden disk input */}
-      <input ref={diskRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleDiskChange} />
+      <input ref={diskRef} type="file" accept={CMS_IMAGE_ACCEPT} className="hidden" onChange={handleDiskChange} />
 
       {/* Media Library Picker */}
       <MediaPickerModal

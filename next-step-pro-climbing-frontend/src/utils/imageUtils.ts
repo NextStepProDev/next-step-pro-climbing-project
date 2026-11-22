@@ -10,15 +10,40 @@ const MAX_DIMENSION = 1920
 const OUTPUT_QUALITY = 0.85
 const COMPRESS_THRESHOLD = 2 * 1024 * 1024 // 2 MB — below this AND within dimension, leave untouched
 
+/**
+ * Image types the CMS uploads (gallery, news, courses, team, media library, site images) accept.
+ * HEIC/HEIF are accepted at the picker and converted in the browser by {@link compressImage} —
+ * they never reach the server, which has no HEIC decoder.
+ */
+export const CMS_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+
+/**
+ * The `accept` attribute for CMS image pickers. The extensions are there because some browsers
+ * know no MIME type for HEIC and would otherwise grey the file out in the picker.
+ */
+export const CMS_IMAGE_ACCEPT = [...CMS_IMAGE_TYPES, '.heic', '.heif'].join(',')
+
+/**
+ * The file's MIME type, falling back to the extension. iOS reports HEIC inconsistently and
+ * sometimes as an empty string, and so does desktop Chrome on a `.heic` from Finder.
+ */
+export function imageTypeOf(file: File): string {
+  return file.type || typeFromExtension(file.name)
+}
+
+export function isHeic(file: File): boolean {
+  const type = imageTypeOf(file)
+  return type === 'image/heic' || type === 'image/heif'
+}
+
 export function validateImageFile(file: File, allowedTypes?: string[]): string | null {
   if (file.size > MAX_INPUT_SIZE) {
     const sizeMB = (file.size / (1024 * 1024)).toFixed(1)
     return i18n.t('fileTooLarge', { ns: 'errors', size: sizeMB })
   }
-  const allowed = allowedTypes ?? ['image/jpeg', 'image/png', 'image/webp']
-  // iOS reports HEIC inconsistently and sometimes as an empty string, so fall back to the
-  // extension rather than rejecting a photo the user clearly just picked from their camera roll.
-  const type = file.type || typeFromExtension(file.name)
+  const allowed = allowedTypes ?? CMS_IMAGE_TYPES
+  // Rather than rejecting a photo the user clearly just picked from their camera roll.
+  const type = imageTypeOf(file)
   if (!allowed.includes(type)) {
     return i18n.t('fileInvalidType', { ns: 'errors' })
   }
@@ -144,9 +169,15 @@ function supportsWebpEncoding(): boolean {
  * why a normal large camera/phone photo can be picked and still uploads as a small file — the
  * heavy work runs on the admin's machine, keeping the resource-constrained server untouched.
  * WebP preserves PNG transparency, so logos/badges with alpha stay correct.
+ *
+ * <p>HEIC is ALWAYS re-encoded, whatever its size: returned untouched it is exactly the file the
+ * server cannot read. For the same reason it never falls back to the original when the re-encode
+ * comes out bigger (HEIC compresses better than WebP, so a small one routinely does).
+ * ⚠️ HEIC decodes in Safari and not in desktop Chrome/Firefox — see {@link toUploadableImage}.
  */
 export async function compressImage(file: File): Promise<File> {
-  if (file.size <= COMPRESS_THRESHOLD && !(await exceedsDimension(file))) {
+  const heic = isHeic(file)
+  if (!heic && file.size <= COMPRESS_THRESHOLD && !(await exceedsDimension(file))) {
     return file
   }
 
@@ -173,8 +204,13 @@ export async function compressImage(file: File): Promise<File> {
       canvas.toBlob(
         blob => {
           // Fall back to the original if encoding failed or somehow produced a larger file
-          // (e.g. an already-optimized small image tripped the threshold via dimension only).
-          if (!blob || blob.size >= file.size) {
+          // (e.g. an already-optimized small image tripped the threshold via dimension only) —
+          // except for HEIC, whose original is exactly what the server cannot read.
+          if (!blob && heic) {
+            reject(new Error(i18n.t('imageLoadFailed', { ns: 'errors' })))
+            return
+          }
+          if (!blob || (!heic && blob.size >= file.size)) {
             resolve(file)
             return
           }
@@ -185,7 +221,11 @@ export async function compressImage(file: File): Promise<File> {
         OUTPUT_QUALITY,
       )
     }
-    img.onerror = () => reject(new Error(i18n.t('imageLoadFailed', { ns: 'errors' })))
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src)
+      // A HEIC this browser cannot decode needs the message that says what to do about it.
+      reject(new Error(i18n.t(heic ? 'imageUnreadableHeic' : 'imageLoadFailed', { ns: 'errors' })))
+    }
     img.src = URL.createObjectURL(file)
   })
 }

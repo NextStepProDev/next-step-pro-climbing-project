@@ -11,6 +11,7 @@ import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import type { AssetDto, LocationContentDto, LocationPresetDto, CalendarPromoContentDto, CalendarPromoPresetDto } from '../../types'
+import { CMS_IMAGE_ACCEPT } from '../../utils/imageUtils'
 
 interface FocalPoint { x: number; y: number }
 
@@ -274,7 +275,7 @@ function HeroImageSection({ variant }: { variant: 'desktop' | 'mobile' }) {
         <input
           id={fileInputId}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept={CMS_IMAGE_ACCEPT}
           className="hidden"
           disabled={isBusy}
           onChange={handleFileChange}
