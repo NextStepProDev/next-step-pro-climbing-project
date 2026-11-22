@@ -59,11 +59,13 @@ jobs:
 
       - run: npm ci
 
-      # Informational for now (does not block the deploy). Once the results are clean,
-      # remove continue-on-error so that high/critical fail the build.
+      # Blocking: any high or critical advisory in the dependency tree fails this job, so the
+      # docker job (needs: this one) publishes no image. Moderate and low are reported but
+      # do not fail.
+      # A finding with no fix yet is handled by bumping or overriding the package, not by
+      # making this step non-blocking again.
       - name: npm audit (high+)
         run: npm audit --audit-level=high
-        continue-on-error: true
 
       - run: npm run lint
 
