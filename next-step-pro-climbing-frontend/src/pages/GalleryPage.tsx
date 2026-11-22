@@ -58,7 +58,7 @@ export function GalleryPage() {
               {album.thumbnailUrl ? (
                 <>
                   <div
-                    className="absolute inset-0 scale-110 blur-xl"
+                    className="photo-backdrop"
                     style={{
                       backgroundImage: `url(${album.thumbnailUrl})`,
                       backgroundSize: 'cover',

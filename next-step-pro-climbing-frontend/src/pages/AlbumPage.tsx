@@ -84,7 +84,7 @@ export function AlbumPage() {
               className="aspect-square bg-surface-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500/50 transition-all group relative"
             >
               <div
-                className="absolute inset-0 scale-110 blur-xl"
+                className="photo-backdrop"
                 style={{
                   backgroundImage: `url(${photo.url})`,
                   backgroundSize: 'cover',

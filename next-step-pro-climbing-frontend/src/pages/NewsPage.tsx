@@ -234,7 +234,7 @@ export function NewsPage() {
                       ) : (
                         <>
                           <div
-                            className="absolute inset-0 scale-110 blur-xl"
+                            className="photo-backdrop"
                             style={{
                               backgroundImage: `url(${article.thumbnailUrl})`,
                               backgroundSize: 'cover',

@@ -878,3 +878,29 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
 }
 
+
+/* Blurred fill behind a photo shown with `object-contain` (gallery, album, news and course
+   thumbnails). The layer MUST overhang its frame by a multiple of the blur radius: CSS blur takes
+   transparency from outside the element into the edge, so the last ~2–3 radii of the layer fade
+   to the frame background. The old `inset-0 scale-110` overhung by 5% of the frame — fine on a
+   wide desktop card, but on a ~170 px phone tile 5% is ~9 px against a 24 px radius, so the
+   bands beside a portrait photo went grey along their top and bottom ends (much worse in iOS
+   Safari). A fixed overhang in radii is independent of tile size. The frame clips it with
+   `overflow: hidden`. */
+.photo-backdrop {
+  --photo-backdrop-blur: 24px;
+  position: absolute;
+  inset: calc(var(--photo-backdrop-blur) * -2.5);
+  filter: blur(var(--photo-backdrop-blur));
+  pointer-events: none;
+}
+.photo-backdrop-strong {
+  --photo-backdrop-blur: 40px;
+}
+/* an <img> with both insets set still takes its intrinsic size, so it needs the size spelled out */
+img.photo-backdrop {
+  width: calc(100% + var(--photo-backdrop-blur) * 5);
+  height: calc(100% + var(--photo-backdrop-blur) * 5);
+  max-width: none;
+  object-fit: cover;
+}

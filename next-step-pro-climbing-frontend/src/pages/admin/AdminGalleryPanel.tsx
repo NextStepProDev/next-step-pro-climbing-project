@@ -353,7 +353,7 @@ export function AdminGalleryPanel() {
                     {album.thumbnailUrl ? (
                       <div className="w-full h-40 sm:w-32 sm:h-24 rounded-lg overflow-hidden relative bg-surface-700">
                         <div
-                          className="absolute inset-0 scale-110 blur-xl"
+                          className="photo-backdrop"
                           style={{
                             backgroundImage: `url(${album.thumbnailUrl})`,
                             backgroundSize: 'cover',
@@ -529,7 +529,7 @@ export function AdminGalleryPanel() {
                           }}
                         >
                           <div
-                            className="absolute inset-0 scale-110 blur-xl"
+                            className="photo-backdrop"
                             style={{
                               backgroundImage: `url(${photo.url})`,
                               backgroundSize: 'cover',

@@ -1067,7 +1067,7 @@ function EditView({
             ) : (
               <div className="relative rounded-lg overflow-hidden bg-surface-700 aspect-video">
                 <div
-                  className="absolute inset-0 scale-110 blur-xl"
+                  className="photo-backdrop"
                   style={{
                     backgroundImage: `url(${thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''})`,
                     backgroundSize: 'cover',
