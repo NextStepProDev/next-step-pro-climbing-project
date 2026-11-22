@@ -29,6 +29,7 @@ final class MailPlainText {
     private static final Pattern LIST_ITEM = Pattern.compile("(?i)<li\\b[^>]*>");
     private static final Pattern ORDERED_LIST = Pattern.compile("(?is)<ol\\b([^>]*)>(.*?)</ol\\s*>");
     private static final Pattern LETTERED = Pattern.compile("(?i)\\btype\\s*=\\s*[\"']?a\\b");
+    private static final Pattern START = Pattern.compile("(?i)\\bstart\\s*=\\s*[\"']?(\\d{1,6})\\b");
     private static final Pattern BLOCK_BOUNDARY =
             Pattern.compile("(?i)</?(p|div|h[1-6]|tr|table|ul|ol|blockquote)\\b[^>]*>");
     private static final Pattern ANY_TAG = Pattern.compile("(?s)<[^>]+>");
@@ -64,16 +65,19 @@ final class MailPlainText {
     /**
      * In HTML the numbers of an {@code <ol>} are drawn by the client, so they are not in the text;
      * without this the plain part turns "1. Meet at 8:00, 2. Leave at 8:15" into bullets.
-     * {@code MailRichText} emits {@code type="a"} for lettered lists and never nests them.
+     * {@code MailRichText} emits {@code type="a"} for lettered lists and never nests them, and
+     * {@code start} for a list resumed after a heading — the count picks up from it, or the plain
+     * part would say "1." where the HTML part says "3.".
      */
     private static String numberOrderedLists(String html) {
         Matcher list = ORDERED_LIST.matcher(html);
         StringBuilder sb = new StringBuilder();
         while (list.find()) {
             boolean lettered = LETTERED.matcher(list.group(1)).find();
+            Matcher start = START.matcher(list.group(1));
             Matcher item = LIST_ITEM.matcher(list.group(2));
             StringBuilder items = new StringBuilder();
-            int n = 0;
+            int n = start.find() ? Math.max(Integer.parseInt(start.group(1)) - 1, 0) : 0;
             while (item.find()) {
                 String marker = lettered ? (char) ('a' + n % 26) + ") " : (n + 1) + ". ";
                 item.appendReplacement(items, Matcher.quoteReplacement(BREAK + marker));

@@ -102,6 +102,15 @@ class MailPlainTextTest {
     }
 
     @Test
+    @DisplayName("should continue from the start attribute, as the client does for the HTML part")
+    void shouldHonourTheStartOfAnOrderedList() {
+        String html = "<ol start=\"3\" style=\"margin:8px 0;\"><li>trzecia</li><li>czwarta</li></ol>"
+                + "<ol type=\"a\" start=\"3\" style=\"margin:8px 0;\"><li>wariant</li></ol>";
+
+        assertEquals("3. trzecia\n4. czwarta\n\nc) wariant\n", MailPlainText.fromHtml(html));
+    }
+
+    @Test
     @DisplayName("should decode entities, including escaped user text, without re-reading it as markup")
     void shouldDecodeEntities() {
         assertEquals("Komentarz: <b>nie tag</b> & \"cytat\" 50%\n",
