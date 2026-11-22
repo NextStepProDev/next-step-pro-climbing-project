@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from './Button'
-import { compressImage, MAX_INPUT_SIZE_MB } from '../../utils/imageUtils'
+import { CMS_IMAGE_ACCEPT, compressImage, imageTypeOf, MAX_INPUT_SIZE_MB } from '../../utils/imageUtils'
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void
@@ -17,7 +17,7 @@ interface FileUploadProps {
 export function FileUpload({
   onFileSelect,
   onClear,
-  accept = 'image/jpeg,image/png,image/webp',
+  accept = CMS_IMAGE_ACCEPT,
   maxSizeMB = MAX_INPUT_SIZE_MB,
   multiple = false,
   previews = [],
@@ -28,10 +28,13 @@ export function FileUpload({
   const [compressing, setCompressing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // `accept` may carry bare extensions (`.heic`) next to MIME types; only the MIME types matter
+  // here, because imageTypeOf already maps an extension to its type when the browser reports none.
+  const acceptedTypes = accept.split(',').map((type) => type.trim()).filter((type) => type.includes('/'))
+  const formatLabel = [...new Set(acceptedTypes.map((type) => type.split('/')[1].toUpperCase()))].join(', ')
+
   const validateFile = (file: File): boolean => {
-    // Check file type
-    const acceptedTypes = accept.split(',').map((t) => t.trim())
-    if (!acceptedTypes.includes(file.type)) {
+    if (!acceptedTypes.includes(imageTypeOf(file))) {
       return false
     }
 
@@ -59,25 +62,32 @@ export function FileUpload({
       }
     })
 
-    if (errors.length > 0) {
-      setError(errors.join(', '))
-    } else {
-      setError(null)
-    }
-
     if (validFiles.length > 0) {
       setCompressing(true)
       try {
-        const compressed = await Promise.all(validFiles.map(compressImage))
-        onFileSelect(compressed)
-      } catch {
-        // Without this the rejection went nowhere: the spinner stopped and nothing was selected,
-        // with no word on screen about why.
-        setError(t('editorUi.fileUpload.optimizeFailed'))
+        // Settled one by one: a HEIC this browser cannot decode must not drop the JPEGs picked
+        // with it. The unreadable ones are named, with the reason (the HEIC one says what to do).
+        const results = await Promise.allSettled(validFiles.map(compressImage))
+        const prepared: File[] = []
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            prepared.push(result.value)
+          } else {
+            const reason = result.reason instanceof Error && result.reason.message
+              ? result.reason.message
+              : t('editorUi.fileUpload.optimizeFailed')
+            errors.push(`${validFiles[index].name}: ${reason}`)
+          }
+        })
+        if (prepared.length > 0) {
+          onFileSelect(prepared)
+        }
       } finally {
         setCompressing(false)
       }
     }
+
+    setError(errors.length > 0 ? errors.join(', ') : null)
   }
 
   const handleDrag = (e: DragEvent<HTMLDivElement>) => {
@@ -202,7 +212,7 @@ export function FileUpload({
               )}
             </div>
             <div className="text-sm text-surface-400">
-              {accept.split(',').map((type) => type.split('/')[1].toUpperCase()).join(', ')}
+              {formatLabel}
               {' '}
               {t(multiple ? 'editorUi.fileUpload.maxEach' : 'editorUi.fileUpload.maxOne', { mb: maxSizeMB })}
             </div>

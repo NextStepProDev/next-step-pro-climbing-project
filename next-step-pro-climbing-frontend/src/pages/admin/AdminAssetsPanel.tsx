@@ -12,6 +12,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { getErrorMessage } from '../../utils/errors'
 import { formatBytes } from '../../utils/formatBytes'
 import type { AssetDto } from '../../types'
+import { CMS_IMAGE_ACCEPT } from '../../utils/imageUtils'
 
 export function AdminAssetsPanel() {
   const { t } = useTranslation('admin')
@@ -164,7 +165,7 @@ export function AdminAssetsPanel() {
           <FileUpload
             onFileSelect={handleFileSelect}
             onClear={() => { previews.forEach((p) => URL.revokeObjectURL(p)); setSelectedFiles([]); setPreviews([]) }}
-            accept="image/jpeg,image/png,image/webp"
+            accept={CMS_IMAGE_ACCEPT}
             maxSizeMB={10}
             multiple
             previews={previews}
