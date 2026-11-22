@@ -237,6 +237,18 @@
     "blockTypeImage": "Image",
     "blockTypeVideo": "Video",
     "addVideo": "Add video",
+    "blockTypeGallery": "Album",
+    "addAlbum": "Insert album",
+    "changeAlbum": "Change album",
+    "albumDraftWarning": "This album is unpublished — readers will not see this block until you publish it in the Gallery.",
+    "albumEmptyWarning": "The album “{{name}}” is empty — the block will appear in the article once you add photos to it.",
+    "albumMissing": "This album was deleted — pick another one or remove this block. Readers do not see it.",
+    "albumPicker": {
+      "title": "Insert album",
+      "hint": "The article shows the photos straight from the gallery — nothing is copied, and photos added to the album later appear here too.",
+      "noAlbums": "There are no albums yet. Create one in the Gallery tab.",
+      "draft": "Draft"
+    },
     "videoUrlPlaceholder": "Paste YouTube or Instagram link...",
     "videoUrlHint": "Supported: YouTube (watch, youtu.be, Shorts) and Instagram (reel, post). The link will be converted to embed format when saved.",
     "deleteConfirmTitle": "Delete article",
@@ -1298,6 +1310,12 @@
     "deleteAlbumTitle": "Delete album",
     "deleteAlbumMessage": "Delete the album “{{name}}”? Every photo in it will be permanently deleted. This cannot be undone.",
     "deleteAlbumConfirm": "Delete album",
+    "albumUsage": {
+      "checking": "Checking whether the album is embedded in articles…",
+      "checkFailed": "Could not check whether the album is embedded in articles. If it is, it will disappear from them.",
+      "usedIn_one": "This album is embedded in {{count}} article. Deleting it removes it from that article (the article stays):",
+      "usedIn_other": "This album is embedded in {{count}} articles. Deleting it removes it from them (the articles stay):"
+    },
     "deletePhotoTitle": "Delete photo",
     "deletePhotoMessage": "Delete this photo? This cannot be undone.",
     "deletePhotoConfirm": "Delete",

@@ -1,4 +1,4 @@
-import { useEffect, useId } from 'react'
+import { useEffect, useId, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useFocusTrap } from '../../utils/useFocusTrap'
 import { useBodyScrollLock } from './scrollLock'
@@ -13,6 +13,8 @@ interface ConfirmModalProps {
   onSave?: () => void
   title: string
   message: string
+  /** Shown under the message: what the action also takes with it, when that needs a list. */
+  details?: ReactNode
   confirmText?: string
   saveText?: string
   variant?: 'danger' | 'primary'
@@ -25,6 +27,7 @@ export function ConfirmModal({
   onSave,
   title,
   message,
+  details,
   confirmText,
   saveText,
   variant = 'danger',
@@ -67,6 +70,7 @@ export function ConfirmModal({
             <div>
               <h3 id={titleId} className="text-lg font-semibold text-surface-100">{title}</h3>
               <p className="text-sm text-surface-400 mt-1">{message}</p>
+              {details}
             </div>
           </div>
           <div className="flex gap-3 justify-end">

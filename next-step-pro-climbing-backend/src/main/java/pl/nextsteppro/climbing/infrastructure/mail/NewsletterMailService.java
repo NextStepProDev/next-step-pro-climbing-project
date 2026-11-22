@@ -18,6 +18,8 @@ import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class NewsletterMailService {
@@ -36,30 +38,39 @@ public class NewsletterMailService {
         this.siteUrl = appConfig.getSiteUrl();
     }
 
+    /**
+     * @param galleries what to draw for each GALLERY block, by album id; a block whose album is
+     *                  missing from the map (unpublished, deleted, empty) is skipped
+     */
     @Async("mailCampaignExecutor")
-    public void sendToAll(News news, List<NewsContentBlock> blocks, List<User> subscribers, String baseUrl) {
+    public void sendToAll(News news, List<NewsContentBlock> blocks, Map<UUID, NewsletterGallery> galleries,
+                          List<User> subscribers, String baseUrl) {
         log.info("Sending newsletter '{}' to {} subscribers", news.getTitle(), subscribers.size());
         for (User subscriber : subscribers) {
             String unsubscribeToken = userService.newsletterUnsubscribeToken(subscriber);
             String unsubscribeUrl = baseUrl + "/api/user/unsubscribe?token=" + unsubscribeToken;
-            sendToUser(news, blocks, subscriber, baseUrl, unsubscribeUrl);
+            sendToUser(news, blocks, galleries, subscriber, baseUrl, unsubscribeUrl);
         }
         log.info("Newsletter '{}' sent", news.getTitle());
     }
 
-    private void sendToUser(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String unsubscribeUrl) {
+    private void sendToUser(News news, List<NewsContentBlock> blocks, Map<UUID, NewsletterGallery> galleries,
+                            User subscriber, String baseUrl, String unsubscribeUrl) {
         String lang = subscriber.getPreferredLanguage();
         String subject = news.getTitle();
-        String body = buildBody(news, blocks, subscriber, baseUrl, lang, unsubscribeUrl);
+        String body = buildBody(news, blocks, galleries, baseUrl, lang, unsubscribeUrl);
 
         mailDispatcher.sendNewsletterHtml(subscriber.getEmail(), subject, body, unsubscribeUrl);
     }
 
-    private String buildBody(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String lang, String unsubscribeUrl) {
+    private String buildBody(News news, List<NewsContentBlock> blocks, Map<UUID, NewsletterGallery> galleries,
+                             String baseUrl, String lang, String unsubscribeUrl) {
         String settingsUrl = baseUrl + "/settings";
-        String newsUrl = baseUrl + "/news/" + news.getId();
+        // The site's article route (App.tsx, sitemap, OG stubs). It said /news/ until 2026-11-22,
+        // a path with no route, so every title link in the newsletter opened the 404 page.
+        String newsUrl = baseUrl + "/aktualnosci/" + news.getId();
         String thumbnailHtml = buildThumbnailHtml(news, baseUrl);
-        String blocksHtml = buildBlocksHtml(blocks, baseUrl);
+        String blocksHtml = buildBlocksHtml(blocks, galleries, baseUrl, newsUrl, lang);
 
         String footerText = msg.getForLang("email.newsletter.footer", lang, unsubscribeUrl, settingsUrl);
 
@@ -120,7 +131,8 @@ public class NewsletterMailService {
         return String.format(Locale.ROOT, "%.0f%% %.0f%%", x * 100, y * 100);
     }
 
-    private String buildBlocksHtml(List<NewsContentBlock> blocks, String baseUrl) {
+    private String buildBlocksHtml(List<NewsContentBlock> blocks, Map<UUID, NewsletterGallery> galleries,
+                                   String baseUrl, String newsUrl, String lang) {
         if (blocks.isEmpty()) return "";
 
         var sb = new StringBuilder();
@@ -141,9 +153,44 @@ public class NewsletterMailService {
                         </div>
                         """.formatted(imgUrl, buildCaptionHtml(block.getCaption())));
                 }
+            } else if (block.getBlockType() == BlockType.GALLERY && block.getAlbumId() != null) {
+                NewsletterGallery gallery = galleries.get(block.getAlbumId());
+                if (gallery != null) {
+                    sb.append(buildGalleryHtml(gallery, block.getCaption(), newsUrl, lang));
+                }
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * One row of photos in a table (Outlook ignores flex and grid) and a button to the article,
+     * where the whole album opens in the lightbox. The button is a text link on purpose: the
+     * plain-text part is derived from this HTML and keeps only links that carry text.
+     */
+    private String buildGalleryHtml(NewsletterGallery gallery, @Nullable String caption, String newsUrl, String lang) {
+        var cells = new StringBuilder();
+        for (String url : gallery.photoUrls()) {
+            cells.append("""
+                <td style="padding: 2px; width: %d%%;"><a href="%s" style="display: block; line-height: 0;"><img src="%s" alt="" style="width: 100%%; height: 120px; object-fit: cover; display: block; border-radius: 4px;" /></a></td>
+                """.formatted(100 / gallery.photoUrls().size(), escapeHtml(newsUrl), escapeHtml(url)));
+        }
+        String label = msg.getForLang("email.newsletter.gallery.more", lang, gallery.photoCount());
+        return """
+            <div style="margin: 20px 0;">
+                <p style="font-size: 14px; color: #f3f4f6; margin: 0 0 8px; font-weight: bold;">%s</p>
+                <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tr>
+                %s
+                </tr></table>
+                %s
+                <p style="margin: 12px 0 0;"><a href="%s" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-size: 14px;">%s</a></p>
+            </div>
+            """.formatted(
+                escapeHtml(gallery.albumName()),
+                cells,
+                buildCaptionHtml(caption),
+                escapeHtml(newsUrl),
+                escapeHtml(label));
     }
 
     private String buildCaptionHtml(@Nullable String caption) {

@@ -44,6 +44,9 @@ public class NewsDtos {
             @Nullable String content,
             @Nullable String imageUrl,
             @Nullable String caption,
+            // GALLERY only: the album to load from /api/gallery. An unpublished album answers 404
+            // there, and the page drops the block, so this DTO (cached) never has to follow the album.
+            @Nullable UUID albumId,
             int displayOrder
     ) {}
 

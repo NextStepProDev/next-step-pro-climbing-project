@@ -115,7 +115,13 @@
     "backToGallery": "Back to gallery",
     "noPhotos": "This album doesn't contain any photos yet",
     "photo_one": "photo",
-    "photo_other": "photos"
+    "photo_other": "photos",
+    "inArticle": {
+      "openAlbum": "See the whole album",
+      "openPhoto": "Photo {{index}} of {{total}}",
+      "showAll_one": "Show {{count}} photo",
+      "showAll_other": "Show all {{count}} photos"
+    }
   },
   "courses": {
     "title": "Courses",

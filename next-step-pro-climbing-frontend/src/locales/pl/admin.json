@@ -237,6 +237,18 @@
     "blockTypeImage": "Zdjęcie",
     "blockTypeVideo": "Wideo",
     "addVideo": "Dodaj wideo",
+    "blockTypeGallery": "Album",
+    "addAlbum": "Wstaw album",
+    "changeAlbum": "Zmień album",
+    "albumDraftWarning": "Album jest nieopublikowany — czytelnicy nie zobaczą tego bloku, dopóki go nie opublikujesz w Galerii.",
+    "albumEmptyWarning": "Album „{{name}}” jest pusty — blok pojawi się w artykule, gdy dodasz do niego zdjęcia.",
+    "albumMissing": "Album został usunięty — wybierz inny albo usuń ten blok. Czytelnicy go nie widzą.",
+    "albumPicker": {
+      "title": "Wstaw album",
+      "hint": "Artykuł pokaże zdjęcia prosto z galerii — nic nie jest kopiowane, a zdjęcia dodane później do albumu pojawią się też tutaj.",
+      "noAlbums": "Nie ma jeszcze żadnego albumu. Utwórz go w zakładce Galeria.",
+      "draft": "Szkic"
+    },
     "videoUrlPlaceholder": "Wklej link YouTube lub Instagram...",
     "videoUrlHint": "Obsługiwane: YouTube (watch, youtu.be, Shorts) oraz Instagram (reel, post). Link zostanie przekształcony do formatu embed po zapisaniu.",
     "deleteConfirmTitle": "Usuń artykuł",
@@ -1320,6 +1332,13 @@
     "deleteAlbumTitle": "Usuń album",
     "deleteAlbumMessage": "Czy na pewno chcesz usunąć album „{{name}}”? Wszystkie zdjęcia w tym albumie zostaną bezpowrotnie usunięte. Tej operacji nie można cofnąć.",
     "deleteAlbumConfirm": "Usuń album",
+    "albumUsage": {
+      "checking": "Sprawdzam, czy album jest wstawiony w artykułach…",
+      "checkFailed": "Nie udało się sprawdzić, czy album jest wstawiony w artykułach. Jeśli tak, zniknie z nich po usunięciu.",
+      "usedIn_one": "Ten album jest wstawiony w {{count}} artykule. Po usunięciu zniknie z niego (sam artykuł zostanie):",
+      "usedIn_few": "Ten album jest wstawiony w {{count}} artykułach. Po usunięciu zniknie z nich (same artykuły zostaną):",
+      "usedIn_many": "Ten album jest wstawiony w {{count}} artykułach. Po usunięciu zniknie z nich (same artykuły zostaną):"
+    },
     "deletePhotoTitle": "Usuń zdjęcie",
     "deletePhotoMessage": "Czy na pewno chcesz usunąć to zdjęcie? Tej operacji nie można cofnąć.",
     "deletePhotoConfirm": "Usuń",

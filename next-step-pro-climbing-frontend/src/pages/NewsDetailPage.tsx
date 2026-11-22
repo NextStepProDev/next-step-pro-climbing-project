@@ -11,6 +11,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
+import { ArticleGalleryBlock } from '../components/gallery/ArticleGallery'
 import { useAuth } from '../context/AuthContext'
 import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage, pickBestTranslation } from '../constants/courseLanguages'
 import clsx from 'clsx'
@@ -236,6 +237,10 @@ export function NewsDetailPage() {
                 />
               </div>
             )
+          }
+
+          if (block.blockType === 'GALLERY' && block.albumId) {
+            return <ArticleGalleryBlock key={block.id} albumId={block.albumId} caption={block.caption} />
           }
 
           return null

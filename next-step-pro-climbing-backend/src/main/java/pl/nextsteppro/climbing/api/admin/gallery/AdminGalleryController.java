@@ -66,6 +66,17 @@ public class AdminGalleryController {
     }
 
     @Operation(
+        summary = "Articles that embed the album",
+        description = "News articles (each language version) with a gallery block showing this album; "
+            + "the delete confirmation lists them"
+    )
+    @GetMapping("/albums/{id}/articles")
+    public ResponseEntity<List<AlbumArticleDto>> getAlbumArticles(
+            @Parameter(description = "Album ID") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminGalleryService.getAlbumArticles(id));
+    }
+
+    @Operation(
         summary = "Create album",
         description = "Adds a new album to the gallery"
     )

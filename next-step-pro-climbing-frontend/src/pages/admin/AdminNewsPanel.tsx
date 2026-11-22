@@ -24,6 +24,7 @@ import {
   Video,
   Crop,
   CalendarClock,
+  GalleryHorizontal,
 } from 'lucide-react'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { adminNewsApi } from '../../api/client'
@@ -39,6 +40,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { Modal } from '../../components/ui/Modal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
+import { AlbumPickerModal, AdminGalleryBlockPreview } from '../../components/gallery/AdminArticleGallery'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { NewsPreviewModal, type PreviewBlock } from '../../components/ui/NewsPreviewModal'
 import { QueryError } from '../../components/ui/QueryError'
@@ -75,9 +77,34 @@ type PendingVideoBlock = {
   url: string
 }
 
-type PendingBlock = PendingTextBlock | PendingImageBlock | PendingVideoBlock
+// Points at an existing album; the photos stay in the gallery and are read live.
+type PendingGalleryBlock = {
+  type: 'GALLERY'
+  tempId: string
+  albumId: string
+  caption: string
+}
 
-type BlockEdit = { content?: string; caption?: string }
+type PendingBlock = PendingTextBlock | PendingImageBlock | PendingVideoBlock | PendingGalleryBlock
+
+type BlockEdit = { content?: string; caption?: string; albumId?: string }
+
+/** Where the album picker's choice goes: a new block, or the block whose album is being changed. */
+type AlbumPickerTarget = { kind: 'new' } | { kind: 'existing'; blockId: string } | { kind: 'pending'; tempId: string }
+
+function initialEdit(b: ContentBlockAdmin): BlockEdit {
+  return { content: b.content ?? undefined, caption: b.caption ?? undefined, albumId: b.albumId ?? undefined }
+}
+
+function blockEditChanged(b: ContentBlockAdmin, edit: BlockEdit | undefined): boolean {
+  if (!edit) return false
+  if (b.blockType === 'TEXT' || b.blockType === 'VIDEO_EMBED') return edit.content !== (b.content ?? undefined)
+  if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
+  if (b.blockType === 'GALLERY') {
+    return edit.caption !== (b.caption ?? undefined) || edit.albumId !== (b.albumId ?? undefined)
+  }
+  return false
+}
 
 interface ArticleDraft {
   title: string
@@ -542,6 +569,29 @@ function EditView({
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<'thumbnail' | 'block'>('block')
   const [showGalleryPicker, setShowGalleryPicker] = useState(false)
+  const [albumPickerTarget, setAlbumPickerTarget] = useState<AlbumPickerTarget | null>(null)
+
+  // A function, not a value: pendingBlocks is declared further down this component.
+  const albumPickerSelectedId = (): string | null => {
+    if (!albumPickerTarget || albumPickerTarget.kind === 'new') return null
+    if (albumPickerTarget.kind === 'existing') return blockEdits[albumPickerTarget.blockId]?.albumId ?? null
+    const { tempId } = albumPickerTarget
+    const pending = pendingBlocks.find((b) => b.tempId === tempId)
+    return pending?.type === 'GALLERY' ? pending.albumId : null
+  }
+
+  const applyPickedAlbum = (albumId: string) => {
+    if (!albumPickerTarget) return
+    if (albumPickerTarget.kind === 'new') {
+      setPendingBlocks((prev) => [...prev, { type: 'GALLERY', tempId: crypto.randomUUID(), albumId, caption: '' }])
+    } else if (albumPickerTarget.kind === 'existing') {
+      const { blockId } = albumPickerTarget
+      setBlockEdits((prev) => ({ ...prev, [blockId]: { ...prev[blockId], albumId } }))
+    } else {
+      const { tempId } = albumPickerTarget
+      setPendingBlocks((prev) => prev.map((b) => (b.tempId === tempId && b.type === 'GALLERY' ? { ...b, albumId } : b)))
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -550,10 +600,10 @@ function EditView({
   }, [thumbnailPreview])
 
   // ---------- Block edits (existing blocks, by id) ----------
-  const [blockEdits, setBlockEdits] = useState<Record<string, { content?: string; caption?: string }>>(() => {
-    const map: Record<string, { content?: string; caption?: string }> = {}
+  const [blockEdits, setBlockEdits] = useState<Record<string, BlockEdit>>(() => {
+    const map: Record<string, BlockEdit> = {}
     detail.blocks.forEach((b) => {
-      map[b.id] = { content: b.content ?? undefined, caption: b.caption ?? undefined }
+      map[b.id] = initialEdit(b)
     })
     return map
   })
@@ -566,7 +616,7 @@ function EditView({
       const next = { ...prev }
       detail.blocks.forEach((b) => {
         if (!(b.id in next)) {
-          next[b.id] = { content: b.content ?? undefined, caption: b.caption ?? undefined }
+          next[b.id] = initialEdit(b)
         }
       })
       return next
@@ -598,14 +648,7 @@ function EditView({
     if (focalPoint !== null && savedX == null) return true
     return focalPoint!.x !== savedX || focalPoint!.y !== (detail.thumbnailFocalPointY ?? 0.5)
   })()
-  const blockEditsDirty = detail.blocks.some((b) => {
-    const edit = blockEdits[b.id]
-    if (!edit) return false
-    if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
-    if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
-    if (b.blockType === 'VIDEO_EMBED') return edit.content !== (b.content ?? undefined)
-    return false
-  })
+  const blockEditsDirty = detail.blocks.some((b) => blockEditChanged(b, blockEdits[b.id]))
   const isDirty = metaDirty || thumbnailDirty || focalPointDirty || blockEditsDirty || pendingBlocks.length > 0
 
   // The editor's own "back to list" already confirms; this covers a refresh or a closed tab
@@ -640,17 +683,19 @@ function EditView({
   const previewBlocks: PreviewBlock[] = [
     ...detail.blocks.map((b) => ({
       tempId: b.id,
-      type: b.blockType as 'TEXT' | 'IMAGE' | 'VIDEO_EMBED',
+      type: b.blockType,
       content: blockEdits[b.id]?.content ?? b.content ?? undefined,
       imageUrl: b.imageUrl ?? undefined,
       caption: blockEdits[b.id]?.caption ?? b.caption ?? undefined,
+      albumId: b.blockType === 'GALLERY' ? (blockEdits[b.id]?.albumId ?? b.albumId ?? null) : undefined,
     })),
     ...pendingBlocks.map((b) => ({
       tempId: b.tempId,
-      type: b.type as 'TEXT' | 'IMAGE' | 'VIDEO_EMBED',
+      type: b.type,
       content: b.type === 'TEXT' ? b.content : b.type === 'VIDEO_EMBED' ? normalizeVideoUrlForPreview(b.url) : undefined,
       imageUrl: b.type === 'IMAGE' ? (b.imageUrl ?? b.preview) : undefined,
-      caption: b.type === 'IMAGE' ? b.caption || undefined : undefined,
+      caption: b.type === 'IMAGE' || b.type === 'GALLERY' ? b.caption || undefined : undefined,
+      albumId: b.type === 'GALLERY' ? b.albumId : undefined,
     })),
   ]
 
@@ -686,14 +731,7 @@ function EditView({
     // 3. Existing block edits
     await Promise.all(
       detail.blocks
-        .filter((b) => {
-          const edit = blockEdits[b.id]
-          if (!edit) return false
-          if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
-          if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
-          if (b.blockType === 'VIDEO_EMBED') return edit.content !== (b.content ?? undefined)
-          return false
-        })
+        .filter((b) => blockEditChanged(b, blockEdits[b.id]))
         .map((b) => {
           const edit = blockEdits[b.id]
           if (b.blockType === 'TEXT') {
@@ -701,6 +739,12 @@ function EditView({
           }
           if (b.blockType === 'VIDEO_EMBED') {
             return adminNewsApi.updateVideoEmbedBlock(b.id, edit.content ?? '')
+          }
+          if (b.blockType === 'GALLERY') {
+            // Unreachable from the editor (the caption field is disabled without an album); kept
+            // so a restored draft can never send a request the endpoint would refuse.
+            if (!edit.albumId) return Promise.resolve()
+            return adminNewsApi.updateGalleryBlock(b.id, edit.albumId, edit.caption || undefined)
           }
           return adminNewsApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
         })
@@ -715,6 +759,8 @@ function EditView({
         await adminNewsApi.addTextBlock(newsId, { content: pending.content })
       } else if (pending.type === 'VIDEO_EMBED') {
         await adminNewsApi.addVideoEmbedBlock(newsId, pending.url)
+      } else if (pending.type === 'GALLERY') {
+        await adminNewsApi.addGalleryBlock(newsId, pending.albumId, pending.caption || undefined)
       } else if ((pending.source === 'library' || pending.source === 'gallery') && pending.imageUrl) {
         await adminNewsApi.addImageBlockFromUrl(newsId, pending.imageUrl, pending.caption || undefined)
       } else if (pending.source === 'file' && pending.file) {
@@ -759,7 +805,7 @@ function EditView({
   }
 
   const handleSave = async () => {
-    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED')
+    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED' || b.type === 'GALLERY')
     if (hasNewMedia && hasTranslationSiblings) {
       setPendingSyncAction('save')
       setShowSyncMediaModal(true)
@@ -770,7 +816,7 @@ function EditView({
 
   // ---------- Publish (save if dirty, then publish) ----------
   const handlePublish = async () => {
-    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED')
+    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED' || b.type === 'GALLERY')
     if (isDirty && hasNewMedia && hasTranslationSiblings) {
       setPendingSyncAction('publish')
       setShowSyncMediaModal(true)
@@ -808,9 +854,9 @@ function EditView({
         : null
     )
 
-    const reset: Record<string, { content?: string; caption?: string }> = {}
+    const reset: Record<string, BlockEdit> = {}
     detail.blocks.forEach((b) => {
-      reset[b.id] = { content: b.content ?? undefined, caption: b.caption ?? undefined }
+      reset[b.id] = initialEdit(b)
     })
     setBlockEdits(reset)
 
@@ -1134,8 +1180,9 @@ function EditView({
               <BlockEditor
                 key={block.id}
                 block={block}
-                editState={blockEdits[block.id] ?? { content: block.content ?? undefined, caption: block.caption ?? undefined }}
+                editState={blockEdits[block.id] ?? initialEdit(block)}
                 onChange={(edit) => setBlockEdits((prev) => ({ ...prev, [block.id]: edit }))}
+                onPickAlbum={() => setAlbumPickerTarget({ kind: 'existing', blockId: block.id })}
                 isFirst={index === 0}
                 isLast={index === detail.blocks.length - 1 && pendingBlocks.length === 0}
                 onMoveUp={() => moveBlockMutation.mutate({ blockId: block.id, direction: 'UP' })}
@@ -1162,6 +1209,7 @@ function EditView({
                 isLast={index === pendingBlocks.length - 1}
                 onMoveUp={() => movePendingBlock(index, 'UP')}
                 onMoveDown={() => movePendingBlock(index, 'DOWN')}
+                onPickAlbum={() => setAlbumPickerTarget({ kind: 'pending', tempId: pending.tempId })}
               />
             ))}
           </div>
@@ -1170,7 +1218,7 @@ function EditView({
         )}
 
         {/* Dodaj blok */}
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex flex-wrap items-center gap-3 pt-2">
           <Button
             variant="secondary"
             onClick={() =>
@@ -1233,6 +1281,14 @@ function EditView({
           >
             <Video className="h-4 w-4" />
             {t('news.addVideo')}
+          </button>
+
+          <button
+            onClick={() => setAlbumPickerTarget({ kind: 'new' })}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-surface-800 border border-surface-600 rounded text-sm text-surface-200 hover:border-surface-400 transition-colors font-medium"
+          >
+            <GalleryHorizontal className="h-4 w-4" />
+            {t('news.addAlbum')}
           </button>
         </div>
       </section>
@@ -1424,6 +1480,16 @@ function EditView({
         }}
       />
 
+      {/* Album picker (gallery block) */}
+      {albumPickerTarget !== null && (
+        <AlbumPickerModal
+          isOpen
+          onClose={() => setAlbumPickerTarget(null)}
+          onSelect={(album) => applyPickedAlbum(album.id)}
+          selectedId={albumPickerSelectedId()}
+        />
+      )}
+
       {/* Gallery picker */}
       <GalleryPickerModal
         isOpen={showGalleryPicker}
@@ -1458,22 +1524,21 @@ function BlockEditor({
   onMoveUp,
   onMoveDown,
   onDelete,
+  onPickAlbum,
 }: {
   block: ContentBlockAdmin
-  editState: { content?: string; caption?: string }
-  onChange: (edit: { content?: string; caption?: string }) => void
+  editState: BlockEdit
+  onChange: (edit: BlockEdit) => void
   isFirst: boolean
   isLast: boolean
   onMoveUp: () => void
   onMoveDown: () => void
   onDelete: () => void
+  onPickAlbum: () => void
 }) {
   const { t } = useTranslation('admin')
 
-  const isModified =
-    block.blockType === 'TEXT' || block.blockType === 'VIDEO_EMBED'
-      ? editState.content !== (block.content ?? undefined)
-      : editState.caption !== (block.caption ?? undefined)
+  const isModified = blockEditChanged(block, editState)
 
   return (
     <div className={clsx(
@@ -1483,20 +1548,7 @@ function BlockEditor({
       {/* Block header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className={clsx(
-            'text-xs px-2 py-0.5 rounded-full',
-            block.blockType === 'TEXT' ? 'bg-blue-900/40 text-blue-400'
-            : block.blockType === 'VIDEO_EMBED' ? 'bg-orange-900/40 text-orange-400'
-            : 'bg-purple-900/40 text-purple-400'
-          )}>
-            {block.blockType === 'TEXT' ? (
-              <><Type className="h-3 w-3 inline mr-1" />{t('news.blockTypeText')}</>
-            ) : block.blockType === 'VIDEO_EMBED' ? (
-              <><Video className="h-3 w-3 inline mr-1" />{t('news.blockTypeVideo')}</>
-            ) : (
-              <><ImageIcon className="h-3 w-3 inline mr-1" />{t('news.blockTypeImage')}</>
-            )}
-          </span>
+          <BlockTypeBadge type={block.blockType} />
           {isModified && (
             <span className="text-xs text-amber-400">{t('news.modified')}</span>
           )}
@@ -1546,6 +1598,13 @@ function BlockEditor({
           />
           <p className="text-xs text-surface-500">{t('news.videoUrlHint')}</p>
         </div>
+      ) : block.blockType === 'GALLERY' ? (
+        <GalleryBlockFields
+          albumId={editState.albumId}
+          caption={editState.caption ?? ''}
+          onCaptionChange={(caption) => onChange({ ...editState, caption })}
+          onPickAlbum={onPickAlbum}
+        />
       ) : (
         <div className="space-y-2">
           {block.imageUrl && (
@@ -1580,6 +1639,7 @@ function PendingBlockItem({
   isLast,
   onMoveUp,
   onMoveDown,
+  onPickAlbum,
 }: {
   block: PendingBlock
   onChange: (updated: Partial<PendingBlock>) => void
@@ -1588,6 +1648,7 @@ function PendingBlockItem({
   isLast: boolean
   onMoveUp: () => void
   onMoveDown: () => void
+  onPickAlbum: () => void
 }) {
   const { t } = useTranslation('admin')
 
@@ -1595,20 +1656,7 @@ function PendingBlockItem({
     <div className="border border-primary-500/40 rounded-lg p-4 bg-primary-950/10">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className={clsx(
-            'text-xs px-2 py-0.5 rounded-full',
-            block.type === 'TEXT' ? 'bg-blue-900/40 text-blue-400'
-            : block.type === 'VIDEO_EMBED' ? 'bg-orange-900/40 text-orange-400'
-            : 'bg-purple-900/40 text-purple-400'
-          )}>
-            {block.type === 'TEXT' ? (
-              <><Type className="h-3 w-3 inline mr-1" />{t('news.blockTypeText')}</>
-            ) : block.type === 'VIDEO_EMBED' ? (
-              <><Video className="h-3 w-3 inline mr-1" />{t('news.blockTypeVideo')}</>
-            ) : (
-              <><ImageIcon className="h-3 w-3 inline mr-1" />{t('news.blockTypeImage')}</>
-            )}
-          </span>
+          <BlockTypeBadge type={block.type} />
           <span className="text-xs text-primary-400">{t('news.pendingBadge')}</span>
         </div>
         <div className="flex items-center gap-1">
@@ -1654,6 +1702,13 @@ function PendingBlockItem({
           />
           <p className="text-xs text-surface-500">{t('news.videoUrlHint')}</p>
         </div>
+      ) : block.type === 'GALLERY' ? (
+        <GalleryBlockFields
+          albumId={block.albumId}
+          caption={block.caption}
+          onCaptionChange={(caption) => onChange({ caption })}
+          onPickAlbum={onPickAlbum}
+        />
       ) : (
         <div className="space-y-2">
           {(block.imageUrl ?? block.preview) && (
@@ -1674,6 +1729,63 @@ function PendingBlockItem({
           />
         </div>
       )}
+    </div>
+  )
+}
+
+// ==================== Shared block pieces ====================
+
+function BlockTypeBadge({ type }: { type: PendingBlock['type'] | ContentBlockAdmin['blockType'] }) {
+  const { t } = useTranslation('admin')
+  return (
+    <span className={clsx(
+      'text-xs px-2 py-0.5 rounded-full',
+      type === 'TEXT' ? 'bg-blue-900/40 text-blue-400'
+      : type === 'VIDEO_EMBED' ? 'bg-orange-900/40 text-orange-400'
+      : type === 'GALLERY' ? 'bg-emerald-900/40 text-emerald-400'
+      : 'bg-purple-900/40 text-purple-400'
+    )}>
+      {type === 'TEXT' ? (
+        <><Type className="h-3 w-3 inline mr-1" />{t('news.blockTypeText')}</>
+      ) : type === 'VIDEO_EMBED' ? (
+        <><Video className="h-3 w-3 inline mr-1" />{t('news.blockTypeVideo')}</>
+      ) : type === 'GALLERY' ? (
+        <><GalleryHorizontal className="h-3 w-3 inline mr-1" />{t('news.blockTypeGallery')}</>
+      ) : (
+        <><ImageIcon className="h-3 w-3 inline mr-1" />{t('news.blockTypeImage')}</>
+      )}
+    </span>
+  )
+}
+
+/** A gallery block in the editor: the grid as readers will see it, a way to swap the album, a caption. */
+function GalleryBlockFields({ albumId, caption, onCaptionChange, onPickAlbum }: {
+  albumId: string | undefined
+  caption: string
+  onCaptionChange: (caption: string) => void
+  onPickAlbum: () => void
+}) {
+  const { t } = useTranslation('admin')
+  return (
+    <div className="space-y-2">
+      <AdminGalleryBlockPreview albumId={albumId} />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="text"
+          value={caption}
+          onChange={(e) => onCaptionChange(e.target.value)}
+          placeholder={t('news.captionPlaceholder')}
+          maxLength={1000}
+          // A block whose album was deleted has nothing to save a caption against (the endpoint
+          // needs an album), so a caption typed here would read as unsaved work and then vanish.
+          disabled={!albumId}
+          className="flex-1 bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        <Button variant="secondary" onClick={onPickAlbum}>
+          <GalleryHorizontal className="h-4 w-4 mr-1.5" />
+          {t('news.changeAlbum')}
+        </Button>
+      </div>
     </div>
   )
 }

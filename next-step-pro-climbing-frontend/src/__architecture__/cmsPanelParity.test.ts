@@ -38,6 +38,10 @@ const ONLY_IN_NEWS = [
   'addVideo', 'blockTypeVideo', 'videoUrlHint', 'videoUrlPlaceholder',
   // Sending an article to the newsletter — courses are not mailed out.
   'newsletterSend', 'newsletterConfirmTitle', 'newsletterConfirmMessage', 'newsletterSentSuccess',
+  // Gallery blocks (a whole album, read live): news only for now, by decision of 2026-11-22.
+  // Courses could take the same block later; their block table would need its own album_id.
+  'addAlbum', 'blockTypeGallery', 'changeAlbum', 'albumDraftWarning', 'albumEmptyWarning',
+  'albumMissing', 'albumPicker',
   // Thumbnail cropping, offered for articles only.
   'cropEnable', 'cropDisable',
   // An article has a lead paragraph and a publication date; a course has neither.

@@ -239,6 +239,18 @@
     "blockTypeImage": "Imagen",
     "blockTypeVideo": "Vídeo",
     "addVideo": "Añadir vídeo",
+    "blockTypeGallery": "Álbum",
+    "addAlbum": "Insertar álbum",
+    "changeAlbum": "Cambiar álbum",
+    "albumDraftWarning": "Este álbum no está publicado — los lectores no verán este bloque hasta que lo publiques en la Galería.",
+    "albumEmptyWarning": "El álbum «{{name}}» está vacío — el bloque aparecerá en el artículo cuando le añadas fotos.",
+    "albumMissing": "Este álbum se ha eliminado — elige otro o borra este bloque. Los lectores no lo ven.",
+    "albumPicker": {
+      "title": "Insertar álbum",
+      "hint": "El artículo muestra las fotos directamente desde la galería — no se copia nada, y las fotos que añadas al álbum después también aparecerán aquí.",
+      "noAlbums": "Todavía no hay álbumes. Crea uno en la pestaña Galería.",
+      "draft": "Borrador"
+    },
     "videoUrlPlaceholder": "Pega el enlace de YouTube o Instagram...",
     "videoUrlHint": "Compatible con: YouTube (watch, youtu.be, Shorts) e Instagram (reel, publicación). El enlace se convertirá al formato embed al guardar.",
     "deleteConfirmTitle": "Eliminar artículo",
@@ -1303,6 +1315,13 @@
     "deleteAlbumTitle": "Eliminar álbum",
     "deleteAlbumMessage": "¿Eliminar el álbum «{{name}}»? Todas sus fotos se eliminarán definitivamente. No se puede deshacer.",
     "deleteAlbumConfirm": "Eliminar álbum",
+    "albumUsage": {
+      "checking": "Comprobando si el álbum está insertado en artículos…",
+      "checkFailed": "No se pudo comprobar si el álbum está insertado en artículos. Si lo está, desaparecerá de ellos.",
+      "usedIn_one": "Este álbum está insertado en {{count}} artículo. Al eliminarlo desaparecerá de él (el artículo se mantiene):",
+      "usedIn_other": "Este álbum está insertado en {{count}} artículos. Al eliminarlo desaparecerá de ellos (los artículos se mantienen):",
+      "usedIn_many": "Este álbum está insertado en {{count}} artículos. Al eliminarlo desaparecerá de ellos (los artículos se mantienen):"
+    },
     "deletePhotoTitle": "Eliminar foto",
     "deletePhotoMessage": "¿Eliminar esta foto? No se puede deshacer.",
     "deletePhotoConfirm": "Eliminar",

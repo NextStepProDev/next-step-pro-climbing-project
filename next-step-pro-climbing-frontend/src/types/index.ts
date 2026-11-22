@@ -1448,6 +1448,14 @@ export interface AlbumAdmin {
   updatedAt: string
 }
 
+/** An article whose gallery block shows the album (each language version separately). */
+export interface AlbumArticle {
+  newsId: string
+  title: string
+  language: string
+  published: boolean
+}
+
 export interface AlbumDetailAdmin {
   id: string
   name: string
@@ -1503,7 +1511,8 @@ export interface UploadPhotoResponse {
 
 // ==================== News ====================
 
-export type BlockType = 'TEXT' | 'IMAGE' | 'VIDEO_EMBED'
+// GALLERY exists only in news; courses share these types and never send it.
+export type BlockType = 'TEXT' | 'IMAGE' | 'VIDEO_EMBED' | 'GALLERY'
 
 export interface ContentBlock {
   id: string
@@ -1511,6 +1520,8 @@ export interface ContentBlock {
   content: string | null
   imageUrl: string | null
   caption: string | null
+  /** GALLERY only: the album, loaded from /gallery; it answers 404 while unpublished. */
+  albumId?: string | null
   displayOrder: number
 }
 
@@ -1553,6 +1564,8 @@ export interface ContentBlockAdmin {
   imageFilename: string | null
   imageUrl: string | null
   caption: string | null
+  /** GALLERY only; null on a gallery block whose album was deleted. */
+  albumId?: string | null
   displayOrder: number
 }
 

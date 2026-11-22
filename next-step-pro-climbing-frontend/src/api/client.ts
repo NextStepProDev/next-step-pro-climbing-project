@@ -86,6 +86,7 @@ import type {
   AlbumSummary,
   AlbumDetail,
   AlbumAdmin,
+  AlbumArticle,
   AlbumDetailAdmin,
   CreateAlbumRequest,
   UpdateAlbumRequest,
@@ -1426,6 +1427,8 @@ export const adminGalleryApi = {
     }),
   deleteAlbum: (id: string) =>
     fetchApi<void>(`/admin/gallery/albums/${id}`, { method: 'DELETE' }),
+  getAlbumArticles: (id: string) =>
+    fetchApi<AlbumArticle[]>(`/admin/gallery/albums/${id}/articles`),
   deleteAllPhotos: (id: string) =>
     fetchApi<void>(`/admin/gallery/albums/${id}/photos`, { method: 'DELETE' }),
   reorderAlbums: (data: ReorderAlbumsRequest) =>
@@ -1583,6 +1586,18 @@ export const adminNewsApi = {
     fetchApi<void>(`/admin/news/blocks/${blockId}/video`, {
       method: 'PUT',
       body: JSON.stringify({ url }),
+    }),
+
+  addGalleryBlock: (newsId: string, albumId: string, caption?: string) =>
+    fetchApi<ContentBlockAdmin>(`/admin/news/${newsId}/blocks/gallery`, {
+      method: 'POST',
+      body: JSON.stringify({ albumId, caption: caption ?? null }),
+    }),
+
+  updateGalleryBlock: (blockId: string, albumId: string, caption?: string) =>
+    fetchApi<void>(`/admin/news/blocks/${blockId}/gallery`, {
+      method: 'PUT',
+      body: JSON.stringify({ albumId, caption: caption ?? null }),
     }),
 
   setThumbnailUrl: (newsId: string, thumbnailUrl: string) =>

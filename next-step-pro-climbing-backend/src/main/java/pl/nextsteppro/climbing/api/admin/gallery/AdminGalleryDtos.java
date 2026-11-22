@@ -83,4 +83,12 @@ public class AdminGalleryDtos {
             String filename,
             String url
     ) {}
+
+    /** An article whose gallery block shows the album; asked before the album is deleted. */
+    public record AlbumArticleDto(
+            UUID newsId,
+            String title,
+            String language,
+            boolean published
+    ) {}
 }

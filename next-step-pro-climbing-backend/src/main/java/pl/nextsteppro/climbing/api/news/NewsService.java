@@ -99,7 +99,12 @@ public class NewsService {
                 imageUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.getThumbnailFocalPointX(),
                 news.getThumbnailFocalPointY(),
-                blocks.stream().map(this::toBlockDto).toList(),
+                blocks.stream()
+                        // A gallery block whose album was deleted (V107 sets the id NULL) has
+                        // nothing to show; the editor still lists it so the admin can see why.
+                        .filter(b -> b.getBlockType() != BlockType.GALLERY || b.getAlbumId() != null)
+                        .map(this::toBlockDto)
+                        .toList(),
                 news.getPublishedAt(),
                 starred,
                 news.getLanguage(),
@@ -153,6 +158,7 @@ public class NewsService {
                 block.getContent(),
                 imageUrl(block.getImageUrl(), block.getImageFilename()),
                 block.getCaption(),
+                block.getAlbumId(),
                 block.getDisplayOrder()
         );
     }

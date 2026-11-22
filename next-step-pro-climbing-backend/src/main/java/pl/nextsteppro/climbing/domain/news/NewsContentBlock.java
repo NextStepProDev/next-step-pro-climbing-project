@@ -38,6 +38,15 @@ public class NewsContentBlock {
     @Nullable
     private String caption;
 
+    /**
+     * The album a {@link BlockType#GALLERY} block shows. A plain id, not an association: the
+     * photos are read through the gallery's own queries, and the column goes NULL when the album
+     * is deleted (V107), which the readers treat as "nothing to show".
+     */
+    @Column(name = "album_id")
+    @Nullable
+    private UUID albumId;
+
     @Column(name = "display_order", nullable = false)
     private int displayOrder = 0;
 
@@ -125,6 +134,15 @@ public class NewsContentBlock {
 
     public void setCaption(@Nullable String caption) {
         this.caption = caption;
+    }
+
+    @Nullable
+    public UUID getAlbumId() {
+        return albumId;
+    }
+
+    public void setAlbumId(@Nullable UUID albumId) {
+        this.albumId = albumId;
     }
 
     public void setDisplayOrder(int displayOrder) {
