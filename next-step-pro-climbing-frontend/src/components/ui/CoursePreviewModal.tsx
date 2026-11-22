@@ -58,7 +58,7 @@ export function CoursePreviewModal({
                   src={thumbnailUrl}
                   alt=""
                   aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl"
+                  className="photo-backdrop photo-backdrop-strong"
                 />
                 {/* Full image, centered */}
                 <img

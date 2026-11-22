@@ -166,7 +166,7 @@ export function CourseDetailPage() {
             src={course.thumbnailUrl}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl"
+            className="photo-backdrop photo-backdrop-strong"
             style={course.thumbnailFocalPointX != null && course.thumbnailFocalPointY != null
               ? { objectPosition: `${course.thumbnailFocalPointX * 100}% ${course.thumbnailFocalPointY * 100}%` }
               : undefined

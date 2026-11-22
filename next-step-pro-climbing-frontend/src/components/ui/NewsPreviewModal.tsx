@@ -55,7 +55,7 @@ export function NewsPreviewModal({
             ) : (
               <>
                 <div
-                  className="absolute inset-0 scale-110 blur-xl"
+                  className="photo-backdrop"
                   style={{
                     backgroundImage: `url(${thumbnailUrl})`,
                     backgroundSize: 'cover',
