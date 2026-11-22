@@ -34,23 +34,26 @@ final class MailRichText {
                     .append("</h3>");
                 i++;
             } else if (line.matches("^[•\\-*] .*")) {
-                sb.append("<ul style=\"margin:8px 0;padding-left:20px;\">");
+                sb.append("<ul style=\"margin:8px 0;padding-left:28px;\">");
                 while (i < lines.length && lines[i].matches("^[•\\-*] .*")) {
                     sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^[•\\-*] ", ""))).append("</li>");
                     i++;
                 }
                 sb.append("</ul>");
             } else if (line.matches("^\\d+\\. .*")) {
-                sb.append("<ol style=\"margin:8px 0;padding-left:20px;\">");
+                sb.append("<ol").append(startAttr(listNumber(line.substring(0, line.indexOf('.')))))
+                    .append(" style=\"margin:8px 0;padding-left:28px;\">");
                 while (i < lines.length && lines[i].matches("^\\d+\\. .*")) {
                     sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^\\d+\\. ", ""))).append("</li>");
                     i++;
                 }
                 sb.append("</ol>");
-            } else if (line.matches("^[a-z]\\) .*")) {
-                sb.append("<ol type=\"a\" style=\"margin:8px 0;padding-left:20px;\">");
-                while (i < lines.length && lines[i].matches("^[a-z]\\) .*")) {
-                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^[a-z]\\) ", ""))).append("</li>");
+            } else if (line.matches("^[a-zA-Z]\\) .*")) {
+                // Either case, as on the site: "C)" is a list there, so it must not be a paragraph here.
+                sb.append("<ol type=\"a\"").append(startAttr(Character.toLowerCase(line.charAt(0)) - 'a' + 1))
+                    .append(" style=\"margin:8px 0;padding-left:28px;\">");
+                while (i < lines.length && lines[i].matches("^[a-zA-Z]\\) .*")) {
+                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^[a-zA-Z]\\) ", ""))).append("</li>");
                     i++;
                 }
                 sb.append("</ol>");
@@ -63,6 +66,27 @@ final class MailRichText {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * A list resumed after a heading ("3.", "4.") keeps its numbers: the marker is stripped and
+     * the client draws the numbering, which would otherwise restart at 1. Same rule as the
+     * frontend's {@code startAttr}.
+     */
+    private static String startAttr(int start) {
+        return start > 1 ? " start=\"" + start + "\"" : "";
+    }
+
+    /**
+     * The marker regex takes any run of digits, so a typed "99999999999." must not throw: an
+     * exception here would fail the whole send. Out of range falls back to the default numbering.
+     */
+    private static int listNumber(String digits) {
+        try {
+            return Integer.parseInt(digits);
+        } catch (NumberFormatException e) {
+            return 1;
+        }
     }
 
     private static String inlineFormat(String text) {

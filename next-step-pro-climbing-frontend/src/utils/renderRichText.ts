@@ -123,13 +123,19 @@ export function renderRichText(content: string): string {
       continue
     }
 
+    // Lists hang their markers in a left indent (outside position), so an item that wraps lines
+    // up under its own text rather than under the bullet — with markers inside, a multi-line item
+    // reads as a paragraph. The padding is what keeps the markers inside the host's box (hosts
+    // clip with overflow-hidden). One width for every kind: wide enough for "10.", and it sets a
+    // bullet visibly in from the text edge (at 1.25em it sat almost on it). The newsletter
+    // renderer (MailRichText) uses the same indent in px.
     if (isBulletLine(line)) {
       const items: string[] = []
       while (i < lines.length && isBulletLine(lines[i])) {
         items.push(`<li>${inline(stripBullet(lines[i]))}</li>`)
         i++
       }
-      parts.push({ html: `<ul class="list-disc list-inside my-1 space-y-0.5">${items.join('')}</ul>`, block: true })
+      parts.push({ html: `<ul class="list-disc pl-[1.75em] my-1 space-y-0.5">${items.join('')}</ul>`, block: true })
       continue
     }
 
@@ -140,7 +146,7 @@ export function renderRichText(content: string): string {
         items.push(`<li>${inline(stripNumbered(lines[i]))}</li>`)
         i++
       }
-      parts.push({ html: `<ol${from} class="list-decimal list-inside my-1 space-y-0.5">${items.join('')}</ol>`, block: true })
+      parts.push({ html: `<ol${from} class="list-decimal pl-[1.75em] my-1 space-y-0.5">${items.join('')}</ol>`, block: true })
       continue
     }
 
@@ -152,7 +158,7 @@ export function renderRichText(content: string): string {
         i++
       }
       parts.push({
-        html: `<ol type="a"${from} class="list-[lower-alpha] list-inside my-1 space-y-0.5">${items.join('')}</ol>`,
+        html: `<ol type="a"${from} class="list-[lower-alpha] pl-[1.75em] my-1 space-y-0.5">${items.join('')}</ol>`,
         block: true,
       })
       continue

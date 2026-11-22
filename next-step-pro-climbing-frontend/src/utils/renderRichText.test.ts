@@ -80,6 +80,17 @@ describe('renderRichText — numbering', () => {
   })
 })
 
+describe('renderRichText — list indent', () => {
+  // Markers sit outside the text so a wrapped item lines up under its own words, and the left
+  // padding is what keeps them inside hosts that clip with overflow-hidden.
+  it('should hang every list kind in a left indent instead of drawing markers inline', () => {
+    for (const html of [renderRichText('• a'), renderRichText('1. a'), renderRichText('a) a')]) {
+      expect(html).not.toContain('list-inside')
+      expect(html).toMatch(/class="[^"]*\bpl-\[/)
+    }
+  })
+})
+
 describe('toPlainText', () => {
   it('should strip every inline marker, since a calendar app renders none of them', () => {
     expect(toPlainText('**mocno** *lekko* __pod__ ~~odpuść~~')).toBe('mocno lekko pod odpuść')
