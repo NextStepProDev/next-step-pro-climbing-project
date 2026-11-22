@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { ModalCancelButton } from '../../components/ui/ModalCancelButton'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { AlbumUsageNotice } from '../../components/gallery/AdminArticleGallery'
 import { FileUpload } from '../../components/ui/FileUpload'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -911,6 +912,7 @@ export function AdminGalleryPanel() {
         }}
         title={t('galleryAdmin.deleteAlbumTitle')}
         message={t('galleryAdmin.deleteAlbumMessage', { name: selectedAlbum?.name ?? '' })}
+        details={deleteAlbumConfirmOpen && selectedAlbum ? <AlbumUsageNotice albumId={selectedAlbum.id} /> : undefined}
         confirmText={t('galleryAdmin.deleteAlbumConfirm')}
       />
 

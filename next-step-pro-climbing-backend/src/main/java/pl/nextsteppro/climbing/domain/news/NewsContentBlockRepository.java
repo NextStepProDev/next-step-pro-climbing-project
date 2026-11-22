@@ -20,4 +20,8 @@ public interface NewsContentBlockRepository extends JpaRepository<NewsContentBlo
     List<String> findAllImageFilenames();
 
     boolean existsByImageFilenameAndIdNot(String imageFilename, UUID id);
+
+    /** Every article (each language version separately) with a gallery block showing this album. */
+    @Query("SELECT DISTINCT b.news FROM NewsContentBlock b WHERE b.albumId = :albumId")
+    List<News> findNewsShowingAlbum(@Param("albumId") UUID albumId);
 }

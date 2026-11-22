@@ -8,7 +8,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.news.AdminNewsDtos.*;
+import pl.nextsteppro.climbing.domain.gallery.Album;
+import pl.nextsteppro.climbing.domain.gallery.AlbumRepository;
+import pl.nextsteppro.climbing.domain.gallery.Photo;
+import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.domain.news.*;
+import pl.nextsteppro.climbing.infrastructure.mail.NewsletterGallery;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
@@ -45,6 +50,8 @@ class AdminNewsServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private NewsletterMailService newsletterMailService;
     @Mock private MultipartFile mockFile;
+    @Mock private AlbumRepository albumRepository;
+    @Mock private PhotoRepository photoRepository;
 
     private AdminNewsService adminNewsService;
 
@@ -57,7 +64,7 @@ class AdminNewsServiceTest {
     void setUp() {
         adminNewsService = new AdminNewsService(
                 newsRepository, blockRepository, fileStorageService,
-                userRepository, newsletterMailService, BASE_URL
+                userRepository, newsletterMailService, albumRepository, photoRepository, BASE_URL
         );
 
         newsId = UUID.randomUUID();
@@ -469,6 +476,138 @@ class AdminNewsServiceTest {
                         new UpdateVideoEmbedBlockRequest("https://youtu.be/dQw4w9WgXcQ")));
     }
 
+    // ========== GALLERY BLOCK ==========
+
+    @Test
+    void shouldAddAGalleryBlockThatOnlyPointsAtTheAlbum() {
+        UUID albumId = UUID.randomUUID();
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(albumRepository.existsById(albumId)).thenReturn(true);
+        when(blockRepository.findMaxDisplayOrder(newsId)).thenReturn(2);
+        when(blockRepository.save(any())).thenAnswer(inv -> {
+            NewsContentBlock b = inv.getArgument(0);
+            setField(b, "id", UUID.randomUUID());
+            return b;
+        });
+
+        ContentBlockAdminDto result = adminNewsService.addGalleryBlock(newsId,
+                new GalleryBlockRequest(albumId, "  Obóz 2026  "));
+
+        assertEquals("GALLERY", result.blockType());
+        assertEquals(albumId, result.albumId());
+        assertEquals("Obóz 2026", result.caption());
+        assertEquals(3, result.displayOrder());
+        assertNull(result.imageFilename(), "no photo is copied into the article");
+        verifyNoInteractions(fileStorageService);
+    }
+
+    @Test
+    void shouldRefuseAGalleryBlockForAnAlbumThatDoesNotExist() {
+        UUID albumId = UUID.randomUUID();
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(albumRepository.existsById(albumId)).thenReturn(false);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> adminNewsService.addGalleryBlock(newsId, new GalleryBlockRequest(albumId, null)));
+        verify(blockRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldSwitchTheAlbumOfAGalleryBlock() {
+        UUID newAlbum = UUID.randomUUID();
+        NewsContentBlock block = new NewsContentBlock(testNews, BlockType.GALLERY);
+        block.setAlbumId(UUID.randomUUID());
+        UUID blockId = UUID.randomUUID();
+        setField(block, "id", blockId);
+        when(blockRepository.findById(blockId)).thenReturn(Optional.of(block));
+        when(albumRepository.existsById(newAlbum)).thenReturn(true);
+
+        adminNewsService.updateGalleryBlock(blockId, new GalleryBlockRequest(newAlbum, " "));
+
+        assertEquals(newAlbum, block.getAlbumId());
+        assertNull(block.getCaption(), "a blank caption is no caption");
+    }
+
+    @Test
+    void shouldRefuseToTurnAnotherBlockIntoAGallery() {
+        NewsContentBlock block = new NewsContentBlock(testNews, BlockType.IMAGE);
+        UUID blockId = UUID.randomUUID();
+        setField(block, "id", blockId);
+        when(blockRepository.findById(blockId)).thenReturn(Optional.of(block));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> adminNewsService.updateGalleryBlock(blockId, new GalleryBlockRequest(UUID.randomUUID(), null)));
+        assertNull(block.getAlbumId());
+    }
+
+    @Test
+    void shouldGiveATranslationTheSameAlbum() {
+        UUID albumId = UUID.randomUUID();
+        NewsContentBlock gallery = new NewsContentBlock(testNews, BlockType.GALLERY);
+        gallery.setAlbumId(albumId);
+        testNews.setLanguage("pl");
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(newsRepository.save(any(News.class))).thenAnswer(inv -> {
+            News n = inv.getArgument(0);
+            setField(n, "id", UUID.randomUUID());
+            setField(n, "createdAt", Instant.now());
+            setField(n, "updatedAt", Instant.now());
+            return n;
+        });
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of(gallery));
+
+        adminNewsService.duplicateAsTranslation(newsId, "en");
+
+        ArgumentCaptor<NewsContentBlock> saved = ArgumentCaptor.forClass(NewsContentBlock.class);
+        verify(blockRepository).save(saved.capture());
+        assertEquals(BlockType.GALLERY, saved.getValue().getBlockType());
+        assertEquals(albumId, saved.getValue().getAlbumId());
+    }
+
+    // The mail is built on the campaign thread, so the photos are read here; an album the site
+    // would hide (unpublished) must not reach subscribers either.
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldHandTheNewsletterOnlyThePublishedAlbums() {
+        setField(testNews, "published", true);
+        UUID shown = UUID.randomUUID();
+        UUID hidden = UUID.randomUUID();
+        NewsContentBlock shownBlock = new NewsContentBlock(testNews, BlockType.GALLERY);
+        shownBlock.setAlbumId(shown);
+        NewsContentBlock hiddenBlock = new NewsContentBlock(testNews, BlockType.GALLERY);
+        hiddenBlock.setAlbumId(hidden);
+
+        Album published = new Album("Obóz");
+        published.setPublished(true);
+        Album draft = new Album("Szkic");
+        List<Photo> photos = new java.util.ArrayList<>();
+        for (int i = 0; i < 6; i++) photos.add(new Photo(published, "p" + i + ".jpg"));
+
+        User subscriber = mock(User.class);
+        when(subscriber.isEmailVerified()).thenReturn(true);
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of(shownBlock, hiddenBlock));
+        when(userRepository.findAllByNewsletterSubscribedTrue()).thenReturn(List.of(subscriber));
+        when(albumRepository.findById(shown)).thenReturn(Optional.of(published));
+        when(albumRepository.findById(hidden)).thenReturn(Optional.of(draft));
+        when(photoRepository.findByAlbumIdOrderByDisplayOrderAscCreatedAtAsc(shown)).thenReturn(photos);
+        // The draft has photos too, or it would drop out as an empty album and the test would
+        // pass without the publication check. Lenient: with the check in place it is never asked.
+        lenient().when(photoRepository.findByAlbumIdOrderByDisplayOrderAscCreatedAtAsc(hidden))
+                .thenReturn(List.of(new Photo(draft, "secret.jpg")));
+
+        adminNewsService.sendNewsNewsletter(newsId);
+
+        ArgumentCaptor<java.util.Map<UUID, NewsletterGallery>> galleries = ArgumentCaptor.forClass(java.util.Map.class);
+        verify(newsletterMailService).sendToAll(eq(testNews), anyList(), galleries.capture(), anyList(), eq(BASE_URL));
+        assertEquals(java.util.Set.of(shown), galleries.getValue().keySet());
+        NewsletterGallery gallery = galleries.getValue().get(shown);
+        assertEquals("Obóz", gallery.albumName());
+        assertEquals(6, gallery.photoCount());
+        assertEquals(List.of(BASE_URL + "/api/files/gallery/p0.jpg", BASE_URL + "/api/files/gallery/p1.jpg",
+                BASE_URL + "/api/files/gallery/p2.jpg", BASE_URL + "/api/files/gallery/p3.jpg"), gallery.photoUrls());
+    }
+
     // ========== MOVE BLOCK ==========
 
     @Test
@@ -546,7 +685,7 @@ class AdminNewsServiceTest {
 
         // Then
         assertEquals(1, result.subscriberCount());
-        verify(newsletterMailService).sendToAll(eq(testNews), anyList(), eq(List.of(subscriber)), eq(BASE_URL));
+        verify(newsletterMailService).sendToAll(eq(testNews), anyList(), anyMap(), eq(List.of(subscriber)), eq(BASE_URL));
     }
 
     // A newsletter is consent-based marketing: an address nobody confirmed (a typo, someone else's)
@@ -562,7 +701,7 @@ class AdminNewsServiceTest {
         NewsletterSentDto result = adminNewsService.sendNewsNewsletter(newsId);
 
         assertEquals(0, result.subscriberCount());
-        verify(newsletterMailService, never()).sendToAll(any(), any(), any(), any());
+        verify(newsletterMailService, never()).sendToAll(any(), any(), any(), any(), any());
     }
 
     // Each subscriber reads the article in their language when it exists; the version the admin sent
@@ -591,8 +730,8 @@ class AdminNewsServiceTest {
         NewsletterSentDto result = adminNewsService.sendNewsNewsletter(newsId);
 
         assertEquals(3, result.subscriberCount());
-        verify(newsletterMailService).sendToAll(eq(testNews), anyList(), eq(List.of(pl, es)), eq(BASE_URL));
-        verify(newsletterMailService).sendToAll(eq(english), anyList(), eq(List.of(en)), eq(BASE_URL));
+        verify(newsletterMailService).sendToAll(eq(testNews), anyList(), anyMap(), eq(List.of(pl, es)), eq(BASE_URL));
+        verify(newsletterMailService).sendToAll(eq(english), anyList(), anyMap(), eq(List.of(en)), eq(BASE_URL));
     }
 
     private static User subscriber(String language) {
@@ -609,7 +748,7 @@ class AdminNewsServiceTest {
 
         // When / Then
         assertThrows(IllegalStateException.class, () -> adminNewsService.sendNewsNewsletter(newsId));
-        verify(newsletterMailService, never()).sendToAll(any(), any(), any(), any());
+        verify(newsletterMailService, never()).sendToAll(any(), any(), any(), any(), any());
     }
 
     // ========== VIDEO URL NORMALIZATION ==========

@@ -2,13 +2,15 @@ import { Modal } from './Modal'
 import { Newspaper } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { renderRichText } from '../../utils/renderRichText'
+import { AdminGalleryBlockPreview } from '../gallery/AdminArticleGallery'
 
 export type PreviewBlock = {
   tempId: string
-  type: 'TEXT' | 'IMAGE' | 'VIDEO_EMBED'
+  type: 'TEXT' | 'IMAGE' | 'VIDEO_EMBED' | 'GALLERY'
   content?: string
   imageUrl?: string
   caption?: string
+  albumId?: string | null
 }
 
 interface NewsPreviewModalProps {
@@ -132,6 +134,9 @@ export function NewsPreviewModal({
                   />
                 </div>
               )
+            }
+            if (block.type === 'GALLERY') {
+              return <AdminGalleryBlockPreview key={block.tempId} albumId={block.albumId} caption={block.caption} />
             }
             return null
           })}

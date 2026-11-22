@@ -223,6 +223,23 @@ public class AdminNewsController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Add gallery block (points at an existing album, copies no photos)")
+    @PostMapping("/{id}/blocks/gallery")
+    public ResponseEntity<ContentBlockAdminDto> addGalleryBlock(
+            @Parameter(description = "News article ID") @PathVariable UUID id,
+            @Valid @RequestBody GalleryBlockRequest request) {
+        return ResponseEntity.ok(adminNewsService.addGalleryBlock(id, request));
+    }
+
+    @Operation(summary = "Change the album or caption of a gallery block")
+    @PutMapping("/blocks/{blockId}/gallery")
+    public ResponseEntity<Void> updateGalleryBlock(
+            @Parameter(description = "Block ID") @PathVariable UUID blockId,
+            @Valid @RequestBody GalleryBlockRequest request) {
+        adminNewsService.updateGalleryBlock(blockId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Add image block from the media library (URL)")
     @PostMapping("/{id}/blocks/image-from-url")
     public ResponseEntity<AdminNewsDtos.ContentBlockAdminDto> addImageBlockFromUrl(

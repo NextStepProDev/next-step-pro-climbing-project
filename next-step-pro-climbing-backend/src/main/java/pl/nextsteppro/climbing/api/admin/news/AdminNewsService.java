@@ -11,9 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.news.AdminNewsDtos.*;
+import pl.nextsteppro.climbing.domain.gallery.Album;
+import pl.nextsteppro.climbing.domain.gallery.AlbumRepository;
+import pl.nextsteppro.climbing.domain.gallery.Photo;
+import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.domain.news.*;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.infrastructure.mail.NewsletterGallery;
 import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
 import pl.nextsteppro.climbing.infrastructure.media.VideoEmbedUrls;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
@@ -40,6 +45,8 @@ public class AdminNewsService {
     private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
     private final NewsletterMailService newsletterMailService;
+    private final AlbumRepository albumRepository;
+    private final PhotoRepository photoRepository;
     private final String baseUrl;
 
     public AdminNewsService(NewsRepository newsRepository,
@@ -47,12 +54,16 @@ public class AdminNewsService {
                             FileStorageService fileStorageService,
                             UserRepository userRepository,
                             NewsletterMailService newsletterMailService,
+                            AlbumRepository albumRepository,
+                            PhotoRepository photoRepository,
                             @Value("${app.base-url}") String baseUrl) {
         this.newsRepository = newsRepository;
         this.blockRepository = blockRepository;
         this.fileStorageService = fileStorageService;
         this.userRepository = userRepository;
         this.newsletterMailService = newsletterMailService;
+        this.albumRepository = albumRepository;
+        this.photoRepository = photoRepository;
         this.baseUrl = baseUrl;
     }
 
@@ -201,6 +212,7 @@ public class AdminNewsService {
             copyBlock.setImageFilename(srcBlock.getImageFilename());
             copyBlock.setImageUrl(srcBlock.getImageUrl());
             copyBlock.setCaption(srcBlock.getCaption());
+            copyBlock.setAlbumId(srcBlock.getAlbumId());
             copyBlock.setDisplayOrder(srcBlock.getDisplayOrder());
             blockRepository.save(copyBlock);
         }
@@ -385,6 +397,47 @@ public class AdminNewsService {
     }
 
     @CacheEvict(value = "newsDetail", allEntries = true)
+    public ContentBlockAdminDto addGalleryBlock(UUID newsId, GalleryBlockRequest request) {
+        News news = findNews(newsId);
+        requireAlbum(request.albumId());
+        int order = blockRepository.findMaxDisplayOrder(newsId) + 1;
+
+        NewsContentBlock block = new NewsContentBlock(news, BlockType.GALLERY);
+        block.setAlbumId(request.albumId());
+        block.setCaption(blankToNull(request.caption()));
+        block.setDisplayOrder(order);
+
+        block = blockRepository.save(block);
+        return toBlockAdminDto(block);
+    }
+
+    @CacheEvict(value = "newsDetail", allEntries = true)
+    public void updateGalleryBlock(UUID blockId, GalleryBlockRequest request) {
+        NewsContentBlock block = findBlock(blockId);
+
+        if (block.getBlockType() != BlockType.GALLERY) {
+            throw new LocalizedMessage.Rejected("error.block.wrong.type");
+        }
+        requireAlbum(request.albumId());
+
+        block.setAlbumId(request.albumId());
+        block.setCaption(blankToNull(request.caption()));
+        blockRepository.save(block);
+    }
+
+    // An unpublished album is accepted on purpose: the admin can write the article while the
+    // photos are still being sorted. The public page hides the block until the album is published.
+    private void requireAlbum(UUID albumId) {
+        if (!albumRepository.existsById(albumId)) {
+            throw new LocalizedMessage.Rejected("error.not.found.album");
+        }
+    }
+
+    private static @Nullable String blankToNull(@Nullable String text) {
+        return text == null || text.isBlank() ? null : text.strip();
+    }
+
+    @CacheEvict(value = "newsDetail", allEntries = true)
     public void deleteBlock(UUID blockId) {
         NewsContentBlock block = findBlock(blockId);
 
@@ -445,7 +498,9 @@ public class AdminNewsService {
         List<NewsContentBlock> sourceBlocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(sourceNewsId);
 
         List<NewsContentBlock> sourceMediaBlocks = sourceBlocks.stream()
-                .filter(b -> b.getBlockType() == BlockType.IMAGE || b.getBlockType() == BlockType.VIDEO_EMBED)
+                .filter(b -> b.getBlockType() == BlockType.IMAGE
+                        || b.getBlockType() == BlockType.VIDEO_EMBED
+                        || (b.getBlockType() == BlockType.GALLERY && b.getAlbumId() != null))
                 .toList();
 
         if (sourceMediaBlocks.isEmpty()) {
@@ -475,6 +530,7 @@ public class AdminNewsService {
                     copy.setImageFilename(srcBlock.getImageFilename());
                     copy.setImageUrl(srcBlock.getImageUrl());
                     copy.setCaption(srcBlock.getCaption());
+                    copy.setAlbumId(srcBlock.getAlbumId());
                     copy.setDisplayOrder(maxOrder);
                     blockRepository.save(copy);
                     totalAdded++;
@@ -500,6 +556,9 @@ public class AdminNewsService {
         }
         if (source.getBlockType() == BlockType.VIDEO_EMBED) {
             return source.getContent() != null && source.getContent().equals(existing.getContent());
+        }
+        if (source.getBlockType() == BlockType.GALLERY) {
+            return source.getAlbumId() != null && source.getAlbumId().equals(existing.getAlbumId());
         }
         return false;
     }
@@ -535,7 +594,7 @@ public class AdminNewsService {
         recipients.forEach((version, readers) -> {
             if (readers.isEmpty()) return;
             List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(version.getId());
-            newsletterMailService.sendToAll(version, blocks, List.copyOf(readers), baseUrl);
+            newsletterMailService.sendToAll(version, blocks, galleriesFor(blocks), List.copyOf(readers), baseUrl);
         });
         return new NewsletterSentDto(subscribers.size());
     }
@@ -643,8 +702,34 @@ public class AdminNewsService {
                 block.getImageFilename(),
                 imageUrl(block.getImageUrl(), block.getImageFilename()),
                 block.getCaption(),
+                block.getAlbumId(),
                 block.getDisplayOrder()
         );
+    }
+
+    /**
+     * What the newsletter needs to draw each gallery block: read here, inside the transaction,
+     * because the mail is built on the campaign thread. Unpublished and deleted albums are left
+     * out, so their blocks are skipped in the mail exactly as on the site.
+     */
+    private Map<UUID, NewsletterGallery> galleriesFor(List<NewsContentBlock> blocks) {
+        Map<UUID, NewsletterGallery> galleries = new HashMap<>();
+        for (NewsContentBlock block : blocks) {
+            UUID albumId = block.getAlbumId();
+            if (block.getBlockType() != BlockType.GALLERY || albumId == null || galleries.containsKey(albumId)) {
+                continue;
+            }
+            albumRepository.findById(albumId).filter(Album::isPublished).ifPresent(album -> {
+                List<Photo> photos = photoRepository.findByAlbumIdOrderByDisplayOrderAscCreatedAtAsc(albumId);
+                if (photos.isEmpty()) return;
+                List<String> urls = photos.stream()
+                        .limit(NewsletterGallery.PREVIEW_PHOTOS)
+                        .map(p -> FileUrls.of(baseUrl, "gallery", p.getFilename()))
+                        .toList();
+                galleries.put(albumId, new NewsletterGallery(album.getName(), urls, photos.size()));
+            });
+        }
+        return galleries;
     }
 
     private @Nullable String imageUrl(@Nullable String externalUrl, @Nullable String filename) {

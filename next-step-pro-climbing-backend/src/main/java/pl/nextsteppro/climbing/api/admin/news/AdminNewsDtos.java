@@ -51,6 +51,7 @@ public class AdminNewsDtos {
             @Nullable String imageFilename,
             @Nullable String imageUrl,
             @Nullable String caption,
+            @Nullable UUID albumId,
             int displayOrder
     ) {}
 
@@ -98,6 +99,12 @@ public class AdminNewsDtos {
 
     public record UpdateVideoEmbedBlockRequest(
             @NotBlank String url
+    ) {}
+
+    /** Adding and editing a gallery block take the same body: the album and an optional caption. */
+    public record GalleryBlockRequest(
+            @jakarta.validation.constraints.NotNull UUID albumId,
+            @Nullable @Size(max = 1000) String caption
     ) {}
 
     public record UpdatePublishedAtRequest(

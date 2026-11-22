@@ -116,7 +116,14 @@
     "noPhotos": "Este álbum aún no contiene fotos",
     "photo_one": "foto",
     "photo_other": "fotos",
-    "photo_many": "fotos"
+    "photo_many": "fotos",
+    "inArticle": {
+      "openAlbum": "Ver el álbum completo",
+      "openPhoto": "Foto {{index}} de {{total}}",
+      "showAll_one": "Mostrar {{count}} foto",
+      "showAll_other": "Mostrar las {{count}} fotos",
+      "showAll_many": "Mostrar las {{count}} fotos"
+    }
   },
   "courses": {
     "title": "Cursos",

@@ -11,6 +11,8 @@ import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,8 +29,9 @@ class NewsletterMailServiceTest {
 
     private final MailDispatcher dispatcher = mock(MailDispatcher.class);
     private final UserService userService = mock(UserService.class);
+    private final MessageService msg = mock(MessageService.class);
     private final NewsletterMailService service =
-        new NewsletterMailService(dispatcher, new AppConfig(), mock(MessageService.class), userService);
+        new NewsletterMailService(dispatcher, new AppConfig(), msg, userService);
     private final User subscriber = new User("reader@example.com", "Ala", "Kot", "", "ala");
 
     @Test
@@ -92,13 +95,74 @@ class NewsletterMailServiceTest {
         assertFalse(body.contains("**") || body.contains("## "));
     }
 
+    @Test
+    void shouldDrawAGalleryBlockAsARowOfPhotosWithAButtonToTheArticle() {
+        News news = new News("Obóz");
+        UUID albumId = UUID.randomUUID();
+        NewsContentBlock block = new NewsContentBlock(news, BlockType.GALLERY);
+        block.setAlbumId(albumId);
+        block.setCaption("Dzień <drugi>");
+        when(msg.getForLang(eq("email.newsletter.gallery.more"), any(), eq(32))).thenReturn("Zobacz wszystkie zdjęcia (32)");
+
+        String body = bodyOf(news, List.of(block), Map.of(albumId, new NewsletterGallery(
+            "Frankenjura & co", List.of(BASE + "/api/files/gallery/a.jpg", BASE + "/api/files/gallery/b.jpg"), 32)));
+
+        assertTrue(body.contains("<img src=\"" + BASE + "/api/files/gallery/a.jpg\""));
+        assertTrue(body.contains("<img src=\"" + BASE + "/api/files/gallery/b.jpg\""));
+        assertTrue(body.contains("Frankenjura &amp; co"), "the album name is escaped");
+        assertTrue(body.contains("Dzień &lt;drugi&gt;"), "the caption is escaped");
+        assertTrue(body.contains(">Zobacz wszystkie zdjęcia (32)</a>"),
+            "the button must be a text link, or the plain-text part loses it");
+    }
+
+    @Test
+    void shouldLinkToTheArticleRouteTheSiteActuallyHas() {
+        // The site serves articles at /aktualnosci/{id}; /news/{id} has no route and lands on the
+        // 404 page — which is where every newsletter title link went until 2026-11-22.
+        News news = new News("Nowy sezon");
+        java.util.UUID id = UUID.randomUUID();
+        setId(news, id);
+
+        String body = bodyOf(news);
+
+        assertTrue(body.contains("href=\"" + BASE + "/aktualnosci/" + id + "\""));
+        assertFalse(body.contains("/news/" + id));
+    }
+
+    private static void setId(News news, UUID id) {
+        try {
+            var field = News.class.getDeclaredField("id");
+            field.setAccessible(true);
+            field.set(news, id);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Test
+    void shouldSkipAGalleryBlockWhoseAlbumIsNotPublished() {
+        // The caller leaves unpublished, deleted and empty albums out of the map.
+        News news = new News("Obóz");
+        NewsContentBlock block = new NewsContentBlock(news, BlockType.GALLERY);
+        block.setAlbumId(UUID.randomUUID());
+
+        String body = bodyOf(news, List.of(block), Map.of());
+
+        assertFalse(body.contains("/api/files/gallery/"));
+        assertFalse(body.contains("<table role=\"presentation\""));
+    }
+
     private String bodyOf(News news) {
         return bodyOf(news, List.of());
     }
 
     private String bodyOf(News news, List<NewsContentBlock> blocks) {
+        return bodyOf(news, blocks, Map.of());
+    }
+
+    private String bodyOf(News news, List<NewsContentBlock> blocks, Map<UUID, NewsletterGallery> galleries) {
         when(userService.newsletterUnsubscribeToken(subscriber)).thenReturn("token");
-        service.sendToAll(news, blocks, List.of(subscriber), BASE);
+        service.sendToAll(news, blocks, galleries, List.of(subscriber), BASE);
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(dispatcher).sendNewsletterHtml(eq("reader@example.com"), anyString(), body.capture(), any());
         return body.getValue();

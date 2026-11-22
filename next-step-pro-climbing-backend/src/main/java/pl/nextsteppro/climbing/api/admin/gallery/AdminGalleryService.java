@@ -14,12 +14,15 @@ import pl.nextsteppro.climbing.domain.gallery.AlbumRepository;
 import pl.nextsteppro.climbing.domain.gallery.AlbumSummaryProjection;
 import pl.nextsteppro.climbing.domain.gallery.Photo;
 import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
+import pl.nextsteppro.climbing.domain.news.News;
+import pl.nextsteppro.climbing.domain.news.NewsContentBlockRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
@@ -36,18 +39,38 @@ public class AdminGalleryService {
     private final PhotoRepository photoRepository;
     private final FileStorageService fileStorageService;
     private final FileUrlReferences fileUrlReferences;
+    private final NewsContentBlockRepository newsBlockRepository;
     private final String baseUrl;
 
     public AdminGalleryService(AlbumRepository albumRepository,
                                PhotoRepository photoRepository,
                                FileStorageService fileStorageService,
                                FileUrlReferences fileUrlReferences,
+                               NewsContentBlockRepository newsBlockRepository,
                                @Value("${app.base-url}") String baseUrl) {
         this.albumRepository = albumRepository;
         this.photoRepository = photoRepository;
         this.fileStorageService = fileStorageService;
         this.fileUrlReferences = fileUrlReferences;
+        this.newsBlockRepository = newsBlockRepository;
         this.baseUrl = baseUrl;
+    }
+
+    /**
+     * The articles that embed this album, so the delete confirmation can name them. Deleting the
+     * album is still allowed (V107 sets their blocks' album to NULL and the blocks stop showing);
+     * the point is that it no longer happens without the admin knowing which articles lose it.
+     */
+    @Transactional(readOnly = true)
+    public List<AlbumArticleDto> getAlbumArticles(UUID albumId) {
+        if (!albumRepository.existsById(albumId)) {
+            throw new LocalizedMessage.Rejected("error.not.found.album");
+        }
+        return newsBlockRepository.findNewsShowingAlbum(albumId).stream()
+                .sorted(Comparator.comparing(News::getTitle, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(News::getLanguage))
+                .map(n -> new AlbumArticleDto(n.getId(), n.getTitle(), n.getLanguage(), n.isPublished()))
+                .toList();
     }
 
     // Album operations
