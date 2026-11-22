@@ -199,6 +199,8 @@ export function ContactForm({ context, onDirtyChange, onSent }: ContactFormProps
         <label htmlFor={`${id}-website`}>{t('contactForm.honeypot')}</label>
         <input
           id={`${id}-website`}
+          // Bots pick fields by name; a tempting one is the point of the trap
+          name="website"
           type="text"
           tabIndex={-1}
           autoComplete="off"

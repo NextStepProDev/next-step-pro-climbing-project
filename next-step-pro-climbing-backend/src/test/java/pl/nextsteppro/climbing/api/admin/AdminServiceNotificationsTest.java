@@ -52,7 +52,7 @@ class AdminServiceNotificationsTest {
             userRepository, null, null, null, null, null,
             waitlistRepository, eventWaitlistRepository, null, null, null, null, null, null, null,
             trainingRequestRepository, trainingCalendarService, unassignedSessionCounter,
-            rescheduleRequestRepository, contactConversationRepository);
+            rescheduleRequestRepository, contactConversationRepository, null);
     }
 
     /**

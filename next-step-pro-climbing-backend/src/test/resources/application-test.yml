@@ -24,6 +24,10 @@ spring:
 # Uploads go to a scratch directory rather than ./uploads, so a test run never leaves files in
 # the working tree and parallel runs cannot collide with a developer's local storage.
 app:
+  # The integration suite sends more guest messages in one JVM than a real hour would; the
+  # ceiling itself is covered by ContactSendThrottleTest.
+  contact:
+    guest-mail-per-hour: 100000
   # ⚠️ The suite signs and verifies its own tokens inside a single run, so this value never has to
   # match anything — but JwtConfig refuses to start without one, and until this line existed the
   # whole test suite depended on JWT_SECRET reaching it from outside.

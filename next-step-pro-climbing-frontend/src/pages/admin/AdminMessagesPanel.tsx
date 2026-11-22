@@ -140,7 +140,8 @@ function ConversationRow({ summary, active, onSelect }: {
       onClick={onSelect}
       aria-current={active ? 'true' : undefined}
       className={clsx(
-        'w-full text-left rounded-xl border p-4 transition-colors',
+        // relative: anchors the sr-only text to the row, not the document (CLAUDE.md, sr-only trap)
+        'relative w-full text-left rounded-xl border p-4 transition-colors',
         active ? 'bg-surface-800 border-primary-500/60' : 'bg-surface-900 border-surface-800 hover:border-surface-600',
       )}
     >
@@ -148,7 +149,12 @@ function ConversationRow({ summary, active, onSelect }: {
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-sm font-semibold text-surface-100">
             {summary.unread && (
-              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" aria-label={t('contactMessages.unread')} />
+              <>
+                {/* The dot is for eyes; the words are for a screen reader, which ignores an
+                    aria-label on a role-less span */}
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" aria-hidden="true" />
+                <span className="sr-only">{t('contactMessages.unread')}</span>
+              </>
             )}
             <span className="truncate">{summary.name}</span>
             {!summary.userId && (

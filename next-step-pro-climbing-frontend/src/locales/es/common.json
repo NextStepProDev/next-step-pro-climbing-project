@@ -230,7 +230,7 @@
     "consent": "Entiendo que mi nombre, mi correo y mi mensaje se usarán para responderme. Detalles en la <1>política de privacidad</1>.",
     "send": "Enviar mensaje",
     "sentTitle": "¡Gracias, mensaje enviado!",
-    "sentInApp": "Verás la respuesta en Mensajes, dentro de Mis reservas — también te avisaremos por correo.",
+    "sentInApp": "Verás la respuesta en Mensajes, dentro de Mis reservas (y por correo, si tienes las notificaciones activadas).",
     "sentGuest": "Responderemos al correo que nos has indicado.",
     "openConversation": "Ir a la conversación",
     "writeAnother": "Escribir otro mensaje",

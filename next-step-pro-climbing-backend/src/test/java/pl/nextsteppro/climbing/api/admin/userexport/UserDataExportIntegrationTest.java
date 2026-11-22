@@ -26,6 +26,10 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRpe;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRpeRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
+import pl.nextsteppro.climbing.domain.contact.ContactConversation;
+import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
+import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRole;
 import pl.nextsteppro.climbing.integration.BaseIntegrationTest;
@@ -61,6 +65,8 @@ class UserDataExportIntegrationTest extends BaseIntegrationTest {
     @Autowired private AthleteGoalRepository goalRepository;
     @Autowired private NewsletterConsentLogRepository consentLogRepository;
     @Autowired private AdminPrivateNoteRepository noteRepository;
+    @Autowired private ContactConversationRepository contactConversationRepository;
+    @Autowired private ContactMessageRepository contactMessageRepository;
 
     private User user;
     private User admin;
@@ -119,6 +125,37 @@ class UserDataExportIntegrationTest extends BaseIntegrationTest {
         return new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .writeValueAsString(service.export(user.getId(), admin.getId()).orElseThrow());
+    }
+
+    @Test
+    void shouldExportWhatAConfirmedPersonWroteFromTheFormWhileSignedOut() {
+        user.markEmailVerified();
+        userRepository.save(user);
+        ContactConversation own = contactConversationRepository.save(ContactConversation.forUser(user, Instant.now()));
+        contactMessageRepository.save(ContactMessage.general(own, "Z konta", "pl", Instant.now().minusSeconds(60)));
+        ContactConversation asGuest = contactConversationRepository.save(
+            ContactConversation.forGuest(user.getEmail().toUpperCase(), "Ola", Instant.now()));
+        contactMessageRepository.save(ContactMessage.general(asGuest, "Bez logowania", "pl", Instant.now()));
+        contactMessageRepository.flush();
+
+        UserDataExportDto export = service.export(user.getId(), admin.getId()).orElseThrow();
+
+        assertEquals(List.of("Z konta", "Bez logowania"),
+            export.contactMessages().stream().map(ExportContactMessageDto::body).toList());
+    }
+
+    @Test
+    void shouldNotExportAGuestConversationUnderTheAddressOfAnUnconfirmedAccount() {
+        // Anyone can type an address into a sign-up form; until it is confirmed, mail sent from it
+        // as a guest is not this account's data and must not be handed to whoever holds the account.
+        ContactConversation asGuest = contactConversationRepository.save(
+            ContactConversation.forGuest(user.getEmail(), "Ktoś", Instant.now()));
+        contactMessageRepository.save(ContactMessage.general(asGuest, "Cudza wiadomość", "pl", Instant.now()));
+        contactMessageRepository.flush();
+
+        UserDataExportDto export = service.export(user.getId(), admin.getId()).orElseThrow();
+
+        assertTrue(export.contactMessages().isEmpty());
     }
 
     @Test

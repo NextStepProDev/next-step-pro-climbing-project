@@ -302,7 +302,7 @@ Przy odrzuceniu użyć `findByIdWithUser` (JOIN FETCH) — mail leci async i czy
 ### „Napisz do nas” (V108)
 
 - **Jedna rozmowa na osobę** (konto ALBO adres gościa, decyzja 2026-11-22); kontekst (kurs/dzień) niesie wiadomość, nie rozmowa. Kalendarz bez wybranego dnia = `CALENDAR` bez daty, nigdy „dziś”.
-- ⚠️ **Rozmowa gościa przechodzi na konto dopiero przy POTWIERDZENIU adresu** (`ContactConversationClaim` w `AccountConfirmation.confirm`), nigdy przy rejestracji — wpisanie cudzego adresu dawałoby wgląd w cudzą korespondencję.
+- ⚠️ **Rozmowa gościa przechodzi na konto dopiero przy POTWIERDZENIU adresu** (`ContactConversationClaim` w `AccountConfirmation.confirm`), nigdy przy rejestracji — wpisanie cudzego adresu dawałoby wgląd w cudzą korespondencję. Ta sama reguła: usunięcie i eksport potwierdzonego konta obejmują rozmowę gościa pod jego adresem (`ContactConversationErasure`).
 - ⚠️ **Bez maila „dostaliśmy wiadomość” do piszącego** — publiczny formularz mailujący na dowolny adres to droga na blocklisty. Spam: honeypot + kubełek `contactsend` + godzinowy `ContactSendThrottle`.
 - Retencja rok (`ContactRetentionService.RETENTION`) jest wypisana w polityce prywatności PL i EN.
 

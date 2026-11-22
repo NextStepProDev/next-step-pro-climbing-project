@@ -95,7 +95,7 @@ public class ContactService {
             senderEmail = user.getEmail();
             language = normalizeLanguage(request.language(), user.getPreferredLanguage());
         } else {
-            String name = StoredText.trimAndCap(request.name(), ContactConversation.MAX_GUEST_NAME_LENGTH);
+            String name = StoredText.singleLineAndCap(request.name(), ContactConversation.MAX_GUEST_NAME_LENGTH);
             String email = request.email() == null ? null : request.email().trim();
             if (name == null) throw new LocalizedMessage.Rejected("contact.name.required");
             if (email == null || email.isEmpty()) throw new LocalizedMessage.Rejected("contact.email.required");
@@ -118,8 +118,12 @@ public class ContactService {
         messageRepository.save(message);
         conversation.recordInbound(now);
 
-        mailService.sendInboundToStaff(conversation.getId(), senderName, senderEmail, user != null,
-            body, mailContext(message), language);
+        // Past the hourly guest-mail ceiling the message is kept and the panel badge still lights;
+        // only the mail is skipped (see ContactSendThrottle). Account holders are never cut off.
+        if (user != null || throttle.tryForwardGuestMail()) {
+            mailService.sendInboundToStaff(conversation.getId(), senderName, senderEmail, user != null,
+                body, mailContext(message), language);
+        }
         return new ContactSentDto(user != null);
     }
 

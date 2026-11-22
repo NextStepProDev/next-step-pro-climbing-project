@@ -48,6 +48,22 @@ public final class StoredText {
         return trimmed.length() > maxLength ? trimmed.substring(0, backOffSurrogate(trimmed, maxLength)) : trimmed;
     }
 
+    /**
+     * One line: control characters (CR, LF, tab) become spaces and runs of whitespace collapse,
+     * then trimmed and cut. For a name a stranger types that lands in a mail SUBJECT and in a
+     * one-line list row — Jakarta Mail folds a CRLF there rather than starting a new header, but a
+     * subject or a row broken in two is still broken. Same rule as {@code OAuth2UserService.cleanName}.
+     */
+    public static @Nullable String singleLineAndCap(@Nullable String text, int maxLength) {
+        if (text == null) return null;
+        String oneLine = text.codePoints()
+            .map(cp -> Character.isISOControl(cp) ? ' ' : cp)
+            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+            .toString()
+            .replaceAll("\\s+", " ");
+        return trimAndCap(oneLine, maxLength);
+    }
+
     /** An emoji is two chars; a cut between them stores half a character. */
     private static int backOffSurrogate(String text, int end) {
         return Character.isHighSurrogate(text.charAt(end - 1)) ? end - 1 : end;

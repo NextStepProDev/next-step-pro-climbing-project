@@ -45,6 +45,7 @@ class ContactMessagesIntegrationTest extends BaseIntegrationTest {
     @Autowired private ContactMessageRepository messageRepository;
     @Autowired private CourseRepository courseRepository;
     @Autowired private AccountConfirmation accountConfirmation;
+    @Autowired private pl.nextsteppro.climbing.api.user.UserService userService;
 
     @MockitoBean private ContactMailService contactMailService;
 
@@ -63,6 +64,17 @@ class ContactMessagesIntegrationTest extends BaseIntegrationTest {
         assertEquals(ContactContextType.GENERAL, messages.getFirst().getContextType());
         verify(contactMailService).sendInboundToStaff(eq(conversation.getId()), eq("Ola"), eq(email), eq(false),
             eq("Czy macie kurs dla dzieci?"), any(), eq("pl"));
+    }
+
+    @Test
+    void shouldStoreAGuestNameOnOneLine() {
+        String email = uniqueEmail();
+
+        contactService.send(null, uniqueIp(), guest("Ola\r\nBcc: someone@example.com\t K.", email, "Hej"));
+
+        assertEquals("Ola Bcc: someone@example.com K.",
+            conversationRepository.findByGuestEmail(email).orElseThrow().getGuestName(),
+            "the name goes into a mail subject and a one-line list row");
     }
 
     @Test
@@ -190,6 +202,35 @@ class ContactMessagesIntegrationTest extends BaseIntegrationTest {
         assertTrue(conversationRepository.findByGuestEmail(email).isEmpty());
         assertTrue(userRepository.findById(user.getId()).orElseThrow().getEmailVerifiedAt() != null,
             "the confirmation itself must survive the merge");
+    }
+
+    @Test
+    void shouldEraseWhatAConfirmedPersonWroteAsAGuestWhenTheyDeleteTheirAccount() {
+        String email = uniqueEmail();
+        User user = userRepository.save(verifiedUser(email));
+        // Signed out, writing from the contact page under their own address
+        contactService.send(null, uniqueIp(), guest("Jan", email, "Pytanie bez logowania"));
+        conversationRepository.flush();
+
+        userService.deleteAccount(user.getId(), null);
+        conversationRepository.flush();
+
+        assertTrue(conversationRepository.findByGuestEmail(email).isEmpty(),
+            "the policy promises messages go with the account");
+    }
+
+    @Test
+    void shouldNotEraseAStrangersGuestConversationWhenAnUnconfirmedAccountGoes() {
+        String email = uniqueEmail();
+        contactService.send(null, uniqueIp(), guest("Prawdziwa Ola", email, "Moja wiadomość"));
+        // Somebody registered with Ola's address and never confirmed it
+        User impostor = userRepository.save(new User(email, "Ktoś", "Inny", "+48123456789", "x" + UUID.randomUUID().toString().substring(0, 6)));
+        conversationRepository.flush();
+
+        userService.deleteAccount(impostor.getId(), null);
+        conversationRepository.flush();
+
+        assertTrue(conversationRepository.findByGuestEmail(email).isPresent());
     }
 
     @Test

@@ -116,7 +116,8 @@ class AdminServiceEditMailCountTest {
             trainingCalendarService,
             null, // unassigned-session count: notifications only, not exercised here
             null, // reschedule requests: only the cancel paths and notifications touch them
-            null  // contact conversations: notifications only
+            null, // contact conversations: notifications only
+            null  // contact erasure: account deletion only
         );
 
         adminId = UUID.randomUUID();

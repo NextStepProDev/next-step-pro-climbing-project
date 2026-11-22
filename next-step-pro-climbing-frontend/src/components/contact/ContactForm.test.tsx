@@ -125,5 +125,7 @@ describe('ContactForm', () => {
     const trap = screen.getByLabelText('contactForm.honeypot', { selector: 'input' })
     expect(trap).toHaveAttribute('tabindex', '-1')
     expect(trap.closest('[aria-hidden="true"]')).not.toBeNull()
+    // Form-filling bots pick fields by name; an unnamed input is one many of them never touch
+    expect(trap).toHaveAttribute('name', 'website')
   })
 })

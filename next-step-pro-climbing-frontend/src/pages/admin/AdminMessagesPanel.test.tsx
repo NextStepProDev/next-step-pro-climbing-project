@@ -92,6 +92,14 @@ describe('AdminMessagesPanel', () => {
     expect(markRead).toHaveBeenCalledTimes(1)
   })
 
+  it('says "unread" in words, not only with a red dot', async () => {
+    renderPanel()
+
+    // An aria-label on a role-less <span> is ignored by screen readers; the state has to be text
+    const row = (await screen.findByText('Ola Gość')).closest('button')!
+    expect(within(row).getByText('contactMessages.unread')).toBeInTheDocument()
+  })
+
   it('links an account to its user card and tells that a guest only gets mail', async () => {
     renderPanel('/admin/messages?conversation=c-user')
     expect(await screen.findByRole('link', { name: /contactMessages.userCard/ })).toHaveAttribute('href', '/admin/users/u-1')

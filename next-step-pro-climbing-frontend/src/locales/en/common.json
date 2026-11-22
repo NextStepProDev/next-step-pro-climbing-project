@@ -228,7 +228,7 @@
     "consent": "I understand my name, e-mail address and message will be used to reply to me. Details in the <1>privacy policy</1>.",
     "send": "Send message",
     "sentTitle": "Thanks, your message is on its way!",
-    "sentInApp": "You will find the reply under Messages in My reservations — we will also let you know by e-mail.",
+    "sentInApp": "You will find the reply under Messages in My reservations (and by e-mail, if you have notifications on).",
     "sentGuest": "We will reply to the e-mail address you gave.",
     "openConversation": "Go to the conversation",
     "writeAnother": "Write another message",

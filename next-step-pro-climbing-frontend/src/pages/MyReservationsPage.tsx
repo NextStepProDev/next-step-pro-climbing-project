@@ -310,10 +310,11 @@ export function MyReservationsPage() {
         >
           {t('messages.tab')}
           {messagesBadge && (
-            <span
-              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-rose-500 rounded-full"
-              aria-label={t('messages.newReply')}
-            />
+            <>
+              {/* Dot for eyes, words for a screen reader (an aria-label on a bare span is ignored) */}
+              <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-rose-500 rounded-full" aria-hidden="true" />
+              <span className="sr-only">{t('messages.newReply')}</span>
+            </>
           )}
         </button>
       </div>

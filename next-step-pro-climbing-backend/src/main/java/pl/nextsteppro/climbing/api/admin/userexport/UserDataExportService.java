@@ -178,7 +178,7 @@ public class UserDataExportService {
                 .toList(),
             ascentRepository.findByAthleteIdOrderByClimbedOnAscCreatedAtAsc(userId).stream()
                 .map(UserDataExportService::toAscent).toList(),
-            contactMessages(userId));
+            contactMessages(user));
 
         // Logged after the reads, so the export's own entry is not part of the file it describes.
         User admin = userRepository.findById(adminId).orElseThrow();
@@ -186,9 +186,11 @@ public class UserDataExportService {
         return Optional.of(dto);
     }
 
-    private List<ExportContactMessageDto> contactMessages(UUID userId) {
-        // One query for the section, like every other: the conversation is reached through its owner.
-        return contactMessageRepository.findByConversationUserId(userId).stream()
+    private List<ExportContactMessageDto> contactMessages(User user) {
+        // One query for the section, like every other — including what they wrote signed out under
+        // their confirmed address (see ContactConversationErasure: the same rows go on deletion).
+        return contactMessageRepository.findAllWrittenBy(user.getId(),
+                user.getEmailVerifiedAt() != null ? user.getEmail() : null).stream()
             .map(m -> new ExportContactMessageDto(m.getId(), m.isFromStaff() ? "COACH" : "ME", m.getBody(),
                 m.getContextType().name(), m.getCourseTitle(), m.getContextDate(), m.getCreatedAt()))
             .toList();
