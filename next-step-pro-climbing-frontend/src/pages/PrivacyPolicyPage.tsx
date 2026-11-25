@@ -153,7 +153,11 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               odpowiada, a odpowiedź przychodzi na podany adres e-mail. Wiadomość osoby zalogowanej i odpowiedź
               na nią są tylko w aplikacji (Czat) — nie wysyłamy ich mailem. Administrator może też sam
               napisać w Czacie do osoby, która ma konto z potwierdzonym adresem; do osoby bez konta nie
-              piszemy z własnej inicjatywy.
+              piszemy z własnej inicjatywy. Jeśli odpowiedź w Czacie czeka nieprzeczytana 2 dni, wysyłamy
+              jedno przypomnienie mailem (między 9 a 20) — bez treści wiadomości, tylko z linkiem do Czatu.
+              Kolejne przyjdzie dopiero po tym, jak zajrzysz do Czatu i znów zostawisz odpowiedź
+              nieprzeczytaną. Takie
+              przypomnienia wyłącza się w ustawieniach konta, w sekcji Powiadomienia email.
             </p>
             <DataList items={[
               'Imię i adres e-mail — jeśli piszesz bez logowania; wiadomość zalogowanej osoby jest przypisana do jej konta',
@@ -713,7 +717,11 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               panel used to answer it, and the reply goes to the e-mail address given. A signed-in person’s
               message and the reply to it stay in the app only (Chat) — we do not send them by e-mail. The
               administrator may also write first in Chat to someone with an account and a confirmed
-              address; we never write first to someone without an account.
+              address; we never write first to someone without an account. If a reply in Chat stays unread
+              for 2 days, we send one reminder by e-mail (between 9 am and 8 pm, Polish time) — without the
+              message, only a link to Chat. Another comes only after you have looked into Chat and left a
+              reply unread again. These
+              reminders are turned off in account settings, under Email notifications.
             </p>
             <DataList items={[
               'Name and e-mail address — if you write without signing in; a signed-in person’s message is attached to their account',

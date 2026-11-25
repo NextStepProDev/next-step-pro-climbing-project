@@ -230,7 +230,7 @@
     "consent": "I understand my name, e-mail address and message will be used to reply to me. Details in the <1>privacy policy</1>.",
     "send": "Send message",
     "sentTitle": "Thanks, your message is on its way!",
-    "sentInApp": "The reply will appear in Chat — a red dot at the top of the page will tell you. We don't send it by e-mail.",
+    "sentInApp": "The reply will appear in Chat — a red dot at the top of the page will tell you. We don't send it by e-mail; if you don't look in for 2 days, we send a reminder by e-mail.",
     "sentGuest": "We will reply to the e-mail address you gave.",
     "openConversation": "Go to the conversation",
     "writeAnother": "Write another message",

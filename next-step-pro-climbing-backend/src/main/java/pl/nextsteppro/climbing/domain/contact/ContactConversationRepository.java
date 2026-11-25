@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -56,6 +58,24 @@ public interface ContactConversationRepository extends JpaRepository<ContactConv
         WHERE c.lastInboundAt IS NOT NULL AND (c.staffReadAt IS NULL OR c.lastInboundAt > c.staffReadAt)
         """)
     int countUnreadForStaff();
+
+    /**
+     * Account conversations whose newest answer from the team has waited unseen since before
+     * {@code dueBefore} and is newer than {@code notOlderThan} - and that have had no reminder
+     * since the person last opened the chat. A reminder counts until they look in: more answers
+     * after it do not earn another one, so somebody who does not react gets one mail, not one
+     * every few days. (The newest answer is the clock, so several messages in a row are one.)
+     */
+    @Query("""
+        SELECT c FROM ContactConversation c JOIN FETCH c.user u
+        WHERE c.lastReplyAt IS NOT NULL
+          AND c.lastReplyAt <= :dueBefore
+          AND c.lastReplyAt > :notOlderThan
+          AND (c.userSeenAt IS NULL OR c.userSeenAt < c.lastReplyAt)
+          AND (c.unseenReminderSentAt IS NULL
+               OR (c.userSeenAt IS NOT NULL AND c.unseenReminderSentAt < c.userSeenAt))
+        """)
+    List<ContactConversation> findDueForUnseenReminder(Instant dueBefore, Instant notOlderThan);
 
     /** Conversations left with no message once the retention sweep has run. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

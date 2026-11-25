@@ -59,6 +59,11 @@ public class ContactConversation {
     @Column(name = "last_activity_at", nullable = false)
     private Instant lastActivityAt;
 
+    /** When the person was last reminded by mail of an unseen answer (V110); one reminder per answer. */
+    @Column(name = "unseen_reminder_sent_at")
+    @Nullable
+    private Instant unseenReminderSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -126,6 +131,14 @@ public class ContactConversation {
 
     public void markSeenByUser(Instant at) {
         userSeenAt = at;
+    }
+
+    public void markUnseenReminderSent(Instant at) {
+        unseenReminderSentAt = at;
+    }
+
+    public @Nullable Instant getUnseenReminderSentAt() {
+        return unseenReminderSentAt;
     }
 
     public void renameGuest(String name) {

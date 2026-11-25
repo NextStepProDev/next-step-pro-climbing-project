@@ -58,7 +58,7 @@
   "notifications": {
     "title": "Email notifications",
     "reservations": "Reservation notifications",
-    "description": "Booking and cancellation confirmations, schedule changes, invitations and waitlist notifications. If we cancel your booking, we always email you.",
+    "description": "Booking and cancellation confirmations, schedule changes, invitations, waitlist notifications and a reminder of a chat reply you haven't read for 2 days. If we cancel your booking, we always email you.",
     "success": "Notification settings saved"
   },
   "newsletter": {
