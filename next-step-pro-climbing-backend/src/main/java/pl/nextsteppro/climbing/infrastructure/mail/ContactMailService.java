@@ -103,6 +103,10 @@ public class ContactMailService {
      * The team's answer to a guest - mail is the only place they can read it. A reply to this
      * mail lands in the team's inbox (From is the team). Account holders never get this mail:
      * their answer waits in the app.
+     *
+     * <p>The answer is written in the panel's rich-text editor, so it goes through
+     * {@link MailRichText} - the server twin of the front's renderer, which escapes on its own -
+     * or the guest would read raw {@code **markers**}.
      */
     @Async("mailExecutor")
     public void sendReply(String to, String recipientName, String body, String language) {
@@ -114,7 +118,7 @@ public class ContactMailService {
                         <p style="color: #666; font-size: 14px; margin-top: 20px;">%s</p>
             """.formatted(
             esc(msg.getForLang("email.contact.reply.greeting", language, recipientName)),
-            multiline(body),
+            MailRichText.toHtml(body, "#312e2b"),
             esc(msg.getForLang("email.contact.reply.hint", language)),
             esc(msg.getForLang("email.reservation.team", language))
         ));

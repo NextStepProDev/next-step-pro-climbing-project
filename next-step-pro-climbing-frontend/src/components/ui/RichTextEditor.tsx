@@ -65,6 +65,8 @@ interface RichTextEditorProps {
   autoFocus?: boolean
   /** Textarea classes, for call sites whose field is styled differently from the CMS panels. */
   inputClassName?: string
+  /** The textarea's id, so a `<label htmlFor>` names the field for a screen reader. */
+  id?: string
 }
 
 interface ToolbarButtonProps {
@@ -108,6 +110,7 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
   maxLength,
   autoFocus,
   inputClassName,
+  id,
 }, forwardedRef) {
   const { t } = useTranslation('common')
   // Writing happens in a plain textarea, so the markers stay literal until you ask to see the
@@ -360,6 +363,7 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
         </div>
       ) : (
       <textarea
+        id={id}
         ref={internalRef}
         value={value}
         onChange={handleChange}

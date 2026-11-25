@@ -48,6 +48,22 @@ class ContactMailServiceTest {
         assertEquals(-1, body.indexOf("email.contact.reply"), "no part of the reply mail, which carries the message");
     }
 
+    // The reply is written in the panel's rich-text editor: a guest must get the formatting, not
+    // raw **markers** - and what the editor cannot produce (<script>) stays text.
+    @Test
+    void shouldFormatAGuestReplyAndKeepMarkupOut() {
+        service.sendReply("gosc@example.com", "Ola", "**Ważne:** zabierz\n• kask\n• uprząż\n<script>x</script>", "pl");
+
+        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
+        verify(dispatcher).sendHtml(eq("gosc@example.com"), anyString(), html.capture());
+        String body = html.getValue();
+        assertTrue(body.contains("<strong>Ważne:</strong>"), body);
+        assertTrue(body.contains("<li>kask</li>") && body.contains("<li>uprząż</li>"), body);
+        assertFalse(body.contains("**"), "no raw markers");
+        assertFalse(body.contains("<script>"));
+        assertTrue(body.contains("&lt;script&gt;"));
+    }
+
     // A name from Google arrives unvalidated; in a mail it is data, never markup.
     @Test
     void shouldEscapeTheNameInTheGreeting() {
