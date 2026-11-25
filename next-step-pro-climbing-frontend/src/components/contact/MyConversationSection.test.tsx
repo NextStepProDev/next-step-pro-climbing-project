@@ -106,6 +106,21 @@ describe('MyConversationSection', () => {
     expect(screen.getByText(/messages.fromTeam/)).toBeInTheDocument()
   })
 
+  // The editor writes markers; the bubble must show what they mean, and a list cannot live in a p.
+  it('renders formatting in the bubble and keeps typed markup as text', async () => {
+    renderSection({
+      messages: [message({ body: '**Ważne:** zabierz\n• kask\n• uprząż\n<b>x</b>', fromStaff: true })],
+      unseenReply: false,
+    })
+
+    const bold = await screen.findByText('Ważne:')
+    expect(bold.tagName).toBe('STRONG')
+    expect(screen.getByText('kask').tagName).toBe('LI')
+    expect(bold.closest('p')).toBeNull()
+    expect(screen.queryByText('**Ważne:**', { exact: false })).toBeNull()
+    expect(screen.getByText(/<b>x<\/b>/)).toBeInTheDocument()
+  })
+
   it('marks an unseen answer as seen once it is on the screen', async () => {
     renderSection({ messages: [message({ body: 'Odpowiedź', fromStaff: true })], unseenReply: true })
 

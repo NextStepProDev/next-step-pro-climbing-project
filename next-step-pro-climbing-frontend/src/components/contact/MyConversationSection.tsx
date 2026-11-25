@@ -17,6 +17,8 @@ import { ChatScroller } from './ChatScroller'
 import { useChatWindow } from './useChatWindow'
 import { useStagedChatFiles } from './useStagedChatFiles'
 import { ChatAttachPicker, ChatMessageFiles } from './ChatAttachments'
+import { RichTextEditor } from '../ui/RichTextEditor'
+import { renderRichText } from '../../utils/renderRichText'
 import type { ChatMessage } from '../../utils/chatMessages'
 import type { ConversationMessage } from '../../types'
 
@@ -137,7 +139,14 @@ export function MyConversationSection() {
                     <ContextChip stored={m} compact />
                   </div>
                 )}
-                {m.body !== null && <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">{m.body}</p>}
+                {/* A div, never a p: the renderer returns lists, which a p cannot hold. The body is stored
+                    unescaped, and the renderer escapes it itself. */}
+                {m.body !== null && (
+                  <div
+                    className="text-sm text-surface-100 whitespace-pre-wrap break-words"
+                    dangerouslySetInnerHTML={{ __html: renderRichText(m.body) }}
+                  />
+                )}
                 <ChatMessageFiles files={m.files} onDelete={(fileId) => deleteFileMutation.mutate(fileId)} />
               </div>
             </li>
@@ -157,13 +166,12 @@ export function MyConversationSection() {
         <label htmlFor="conversation-reply" className="block text-sm font-medium text-surface-300">
           {messages.length === 0 ? t('messages.writeFirst') : t('messages.reply')}
         </label>
-        <textarea
+        <RichTextEditor
           id="conversation-reply"
           rows={4}
           maxLength={CONTACT_BODY_MAX}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
+          onChange={setDraft}
         />
         <ChatAttachPicker
           staged={attachments.staged}

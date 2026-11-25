@@ -21,6 +21,8 @@ import { ChatScroller } from '../../components/contact/ChatScroller'
 import { useChatWindow } from '../../components/contact/useChatWindow'
 import { useStagedChatFiles } from '../../components/contact/useStagedChatFiles'
 import { ChatAttachPicker, ChatMessageFiles } from '../../components/contact/ChatAttachments'
+import { RichTextEditor } from '../../components/ui/RichTextEditor'
+import { renderRichText, toPlainText } from '../../utils/renderRichText'
 
 type Filter = 'unread' | 'all'
 
@@ -250,7 +252,7 @@ function ConversationRow({ summary, active, onSelect }: {
               <Paperclip className="w-3.5 h-3.5" aria-hidden="true" />
               {t('contactMessages.previewFile')}
             </span>
-          ) : summary.preview}
+          ) : toPlainText(summary.preview ?? '')}
         </p>
       )}
       <div className="mt-2 flex items-center justify-between gap-2">
@@ -446,7 +448,13 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
                   <ContextChip stored={m} compact />
                 </div>
               )}
-              {m.body !== null && <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">{m.body}</p>}
+              {/* A div, never a p: the renderer returns lists. Stored unescaped; the renderer escapes. */}
+              {m.body !== null && (
+                <div
+                  className="text-sm text-surface-100 whitespace-pre-wrap break-words"
+                  dangerouslySetInnerHTML={{ __html: renderRichText(m.body) }}
+                />
+              )}
               <ChatMessageFiles files={m.files} onDelete={(fileId) => deleteFileMutation.mutate(fileId)} />
             </div>
           </li>
@@ -464,13 +472,12 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
         <label htmlFor="admin-contact-reply" className="block text-sm font-medium text-surface-300">
           {t('contactMessages.reply')}
         </label>
-        <textarea
+        <RichTextEditor
           id="admin-contact-reply"
           rows={4}
           maxLength={CONTACT_BODY_MAX}
           value={draft}
-          onChange={(e) => { setDraft(e.target.value); setLastResult(null) }}
-          className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
+          onChange={(value) => { setDraft(value); setLastResult(null) }}
         />
         {/* Files only in an account's chat: a guest is reached by mail alone (the server refuses too) */}
         {summary.userId && (
@@ -685,13 +692,12 @@ function NewConversation({ preselectedUserId, onOpen, onCancel }: {
           <label htmlFor="admin-contact-new-body" className="block text-sm font-medium text-surface-300 mb-1">
             {t('contactMessages.firstMessage')}
           </label>
-          <textarea
+          <RichTextEditor
             id="admin-contact-new-body"
             rows={5}
             maxLength={CONTACT_BODY_MAX}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
+            onChange={setDraft}
           />
         </div>
 

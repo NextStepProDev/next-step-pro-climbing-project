@@ -249,6 +249,32 @@ describe('AdminMessagesPanel — message centre', () => {
     expect(screen.queryByText('contactMessages.awaiting')).not.toBeInTheDocument()
   })
 
+  it('shows a formatted reply in the list as plain text', async () => {
+    const formatted = summary({
+      id: 'c-f', userId: 'u-f', name: 'Iga Lis', unread: false, answered: true,
+      lastInboundAt: null, lastReplyAt: '2026-11-23T09:00:00Z', lastActivityAt: '2026-11-23T09:00:00Z',
+      preview: '**Plan** na sobotę', previewFromStaff: true, previewContextType: 'GENERAL',
+    })
+    list.mockResolvedValue({ content: [formatted], totalElements: 1, totalPages: 1, page: 0 })
+    renderPanel()
+
+    const row = (await screen.findByText('Iga Lis')).closest('button')!
+    expect(row).toHaveTextContent('Plan na sobotę')
+    expect(row).not.toHaveTextContent('**')
+  })
+
+  it('renders formatting in a message bubble', async () => {
+    reply.mockResolvedValueOnce({ message: staffMessage('r-2', '**Tak**, w sobotę'), mailed: true })
+    const user = userEvent.setup()
+    renderPanel('/admin/messages?conversation=c-guest')
+
+    await user.type(await screen.findByLabelText('contactMessages.reply'), 'x')
+    await user.click(screen.getByText('contactMessages.send'))
+
+    const bold = await screen.findByText('Tak', { selector: 'li strong' })
+    expect(bold.closest('p')).toBeNull()
+  })
+
   it('searches on the server once typing pauses, from the first page', async () => {
     const user = userEvent.setup()
     renderPanel()
@@ -334,7 +360,7 @@ describe('AdminMessagesPanel — chat window', () => {
     await user.type(await screen.findByLabelText('contactMessages.reply'), 'Tak, w sobotę')
     await user.click(screen.getByText('contactMessages.send'))
 
-    expect(await screen.findByText('Tak, w sobotę', { selector: 'p' })).toBeInTheDocument()
+    expect(await screen.findByText('Tak, w sobotę', { selector: 'li div' })).toBeInTheDocument()
     expect(get.mock.calls.filter(([id]) => id === 'c-guest')).toHaveLength(1)
   })
 
