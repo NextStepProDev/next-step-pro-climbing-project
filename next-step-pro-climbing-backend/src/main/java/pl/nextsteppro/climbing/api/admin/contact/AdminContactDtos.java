@@ -5,7 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.contact.ContactContextType;
+import pl.nextsteppro.climbing.api.contact.ContactFileDto;
+import pl.nextsteppro.climbing.api.contact.ContactFileSupport;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFile;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,6 +34,8 @@ record ConversationSummaryDto(
     @Nullable Instant lastInboundAt,
     @Nullable Instant lastReplyAt,
     @Nullable String preview,
+    /* the newest message is only files (no text to preview) */
+    boolean previewIsFile,
     boolean previewFromStaff,
     @Nullable ContactContextType previewContextType,
     @Nullable String previewCourseTitle,
@@ -44,20 +49,26 @@ record AdminConversationMessageDto(
     UUID id,
     boolean fromStaff,
     @Nullable String staffAuthorName,
-    String body,
+    @Nullable String body,
     ContactContextType contextType,
     @Nullable UUID courseId,
     @Nullable String courseTitle,
     @Nullable LocalDate date,
     String language,
-    Instant createdAt
+    Instant createdAt,
+    List<ContactFileDto> files
 ) {
-    static AdminConversationMessageDto from(ContactMessage m) {
+    /** Where the panel serves a file - its own endpoint, never the person's. */
+    static final String FILE_URL = "/api/admin/contact/files/";
+
+    /** The team may remove any file in a conversation it answers, as in the training threads. */
+    static AdminConversationMessageDto from(ContactMessage m, List<ContactMessageFile> files) {
         return new AdminConversationMessageDto(m.getId(), m.isFromStaff(),
             m.getStaffAuthor() != null ? m.getStaffAuthor().getFullName() : null,
             m.getBody(), m.getContextType(),
             m.getCourse() != null ? m.getCourse().getId() : null, m.getCourseTitle(), m.getContextDate(),
-            m.getLanguage(), m.getCreatedAt());
+            m.getLanguage(), m.getCreatedAt(),
+            files.stream().map(f -> ContactFileSupport.toDto(f, FILE_URL, true)).toList());
     }
 }
 

@@ -164,6 +164,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               'Treść wiadomości i to, czego dotyczy (kurs albo dzień w kalendarzu)',
               'Język strony, z której wysłano wiadomość',
               'Odpowiedzi administratora i wiadomości, które sam napisał w Czacie',
+              'Zdjęcia i pliki PDF dołączone w Czacie (tylko przy koncie) — zdjęcia są przekodowywane, co usuwa z nich metadane, w tym lokalizację; plik, który sam wysłałeś, możesz usunąć',
             ]} />
             <p className="text-surface-400 text-sm leading-relaxed mt-3">
               Jeśli później założysz konto na ten sam adres e-mail i go potwierdzisz, wcześniejsze wiadomości
@@ -478,9 +479,9 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             </p>
             <p>
               <span className="text-surface-200 font-medium">Wiadomości z formularza „Napisz do nas”</span> — każda
-              wiadomość i każda odpowiedź jest usuwana automatycznie po roku od wysłania. Wcześniej znika razem
-              z kontem albo gdy administrator usunie rozmowę. Kopia wiadomości, która trafiła mailem do skrzynki
-              administratora, zostaje w tej skrzynce.
+              wiadomość i każda odpowiedź, razem z dołączonymi zdjęciami i plikami PDF, jest usuwana automatycznie
+              po roku od wysłania. Wcześniej znika razem z kontem albo gdy administrator usunie rozmowę. Kopia
+              wiadomości, która trafiła mailem do skrzynki administratora, zostaje w tej skrzynce.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Zdjęcie profilowe (awatar)</span> — przechowywane do momentu jego
@@ -728,6 +729,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               'The message and what it is about (a course or a day in the calendar)',
               'The language of the page the message was sent from',
               'The administrator’s replies, and messages they wrote first in Chat',
+              'Photos and PDF files attached in Chat (with an account only) — photos are re-encoded, which strips their metadata, location included; a file you sent yourself you can remove',
             ]} />
             <p className="text-surface-400 text-sm leading-relaxed mt-3">
               If you later create an account with the same e-mail address and confirm it, your earlier messages
@@ -1039,7 +1041,8 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             </p>
             <p>
               <span className="text-surface-200 font-medium">Messages from the “Write to us” form</span> — every
-              message and every reply is deleted automatically a year after it was sent. Before that it goes
+              message and every reply, with the photos and PDF files attached to it, is deleted automatically a
+              year after it was sent. Before that it goes
               together with the account, or when the administrator deletes the conversation. The copy of a
               message that reached the administrator’s mailbox by e-mail stays in that mailbox.
             </p>

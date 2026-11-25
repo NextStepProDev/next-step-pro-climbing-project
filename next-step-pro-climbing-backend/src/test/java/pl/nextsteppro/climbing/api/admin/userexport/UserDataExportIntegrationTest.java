@@ -29,6 +29,8 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFile;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFileRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRole;
@@ -67,6 +69,7 @@ class UserDataExportIntegrationTest extends BaseIntegrationTest {
     @Autowired private AdminPrivateNoteRepository noteRepository;
     @Autowired private ContactConversationRepository contactConversationRepository;
     @Autowired private ContactMessageRepository contactMessageRepository;
+    @Autowired private ContactMessageFileRepository contactFileRepository;
 
     private User user;
     private User admin;
@@ -142,6 +145,24 @@ class UserDataExportIntegrationTest extends BaseIntegrationTest {
 
         assertEquals(List.of("Z konta", "Bez logowania"),
             export.contactMessages().stream().map(ExportContactMessageDto::body).toList());
+    }
+
+    // A section of the person's data left out is an incomplete answer to an access request, with no
+    // symptom anywhere - so the chat's files (V111) are named in the export like the threads' files.
+    @Test
+    void shouldExportTheFilesOfTheChatAndAMessageThatIsOnlyAFile() {
+        ContactConversation own = contactConversationRepository.save(ContactConversation.forUser(user, Instant.now()));
+        ContactMessage onlyFile = contactMessageRepository.save(ContactMessage.general(own, null, "pl", Instant.now()));
+        contactFileRepository.save(new ContactMessageFile(onlyFile, UUID.randomUUID() + ".jpg", "droga.jpg",
+            "image/jpeg", 1234, 400, 300, 0, Instant.now().plusSeconds(3600)));
+        contactFileRepository.flush();
+
+        UserDataExportDto export = service.export(user.getId(), admin.getId()).orElseThrow();
+
+        ExportContactMessageDto message = export.contactMessages().getFirst();
+        assertNull(message.body());
+        assertEquals(List.of("droga.jpg"), message.files().stream().map(ExportFileDto::name).toList());
+        assertEquals("image/jpeg", message.files().getFirst().mimeType());
     }
 
     @Test

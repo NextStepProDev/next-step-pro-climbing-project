@@ -7,6 +7,7 @@ import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.contact.ContactContextType;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFile;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -41,17 +42,28 @@ record ContactSentDto(boolean inConversation) {}
 record ConversationMessageDto(
     UUID id,
     boolean fromStaff,
-    String body,
+    /* null for a message that is only files */
+    @Nullable String body,
     ContactContextType contextType,
     @Nullable UUID courseId,
     @Nullable String courseTitle,
     @Nullable LocalDate date,
-    Instant createdAt
+    Instant createdAt,
+    List<ContactFileDto> files
 ) {
-    static ConversationMessageDto from(ContactMessage m) {
+    /** Where the person's own chat serves a file - never the panel's endpoint. */
+    static final String FILE_URL = "/api/conversation/files/";
+
+    /**
+     * @param files this message's files; the person may delete only what THEY sent - what the team
+     *              sent them is not theirs to remove
+     */
+    static ConversationMessageDto from(ContactMessage m, List<ContactMessageFile> files) {
+        boolean own = !m.isFromStaff();
         return new ConversationMessageDto(m.getId(), m.isFromStaff(), m.getBody(), m.getContextType(),
             m.getCourse() != null ? m.getCourse().getId() : null, m.getCourseTitle(), m.getContextDate(),
-            m.getCreatedAt());
+            m.getCreatedAt(),
+            files.stream().map(f -> ContactFileSupport.toDto(f, FILE_URL, own)).toList());
     }
 }
 

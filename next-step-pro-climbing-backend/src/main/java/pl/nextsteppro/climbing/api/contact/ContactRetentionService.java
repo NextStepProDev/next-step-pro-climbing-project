@@ -23,20 +23,41 @@ public class ContactRetentionService {
 
     public static final Duration RETENTION = Duration.ofDays(365);
 
+    /** An upload this young is spared by the orphan pass: its row may not be committed yet. */
+    static final Duration ORPHAN_GRACE = Duration.ofHours(6);
+
     private final ContactMessageRepository messageRepository;
     private final ContactConversationRepository conversationRepository;
+    private final ContactFileSupport files;
 
     public ContactRetentionService(ContactMessageRepository messageRepository,
-                                   ContactConversationRepository conversationRepository) {
+                                   ContactConversationRepository conversationRepository,
+                                   ContactFileSupport files) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
+        this.files = files;
     }
 
-    /** @return messages deleted */
+    /**
+     * Files first (V111): each one's own year is up by its stored date, and the files of messages
+     * about to go must be named before the bulk delete - their rows leave by the database cascade,
+     * which nothing in Hibernate sees. Then the orphan pass, which is what makes "gone after a
+     * year" checkable when an unlink failed.
+     *
+     * @return messages deleted
+     */
     @Transactional
     public int deleteExpired(Instant now) {
-        int messages = messageRepository.deleteOlderThan(now.minus(RETENTION));
+        files.deleteExpired(now);
+        Instant cutoff = now.minus(RETENTION);
+        files.purgeForMessagesBefore(cutoff);
+        int messages = messageRepository.deleteOlderThan(cutoff);
         conversationRepository.deleteEmpty();
         return messages;
+    }
+
+    /** Separate from the delete, so a failing folder listing cannot roll back the year's sweep. */
+    public int sweepOrphanFiles() {
+        return files.sweepOrphans(ORPHAN_GRACE);
     }
 }

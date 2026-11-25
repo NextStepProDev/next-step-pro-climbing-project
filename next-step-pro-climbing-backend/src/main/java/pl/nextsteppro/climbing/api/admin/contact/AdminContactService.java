@@ -6,10 +6,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import pl.nextsteppro.climbing.api.contact.ContactFileSupport;
 import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFile;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
 import pl.nextsteppro.climbing.domain.contact.MessageWindow;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -41,15 +44,18 @@ public class AdminContactService {
     private final ContactMessageRepository messageRepository;
     private final UserRepository userRepository;
     private final ContactMailService mailService;
+    private final ContactFileSupport files;
 
     public AdminContactService(ContactConversationRepository conversationRepository,
                                ContactMessageRepository messageRepository,
                                UserRepository userRepository,
-                               ContactMailService mailService) {
+                               ContactMailService mailService,
+                               ContactFileSupport files) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.mailService = mailService;
+        this.files = files;
     }
 
     @Transactional(readOnly = true)
@@ -73,16 +79,14 @@ public class AdminContactService {
         MessageWindow window = messageRepository.latest(conversationId);
         List<ContactMessage> messages = window.messages();
         ContactMessage last = messages.isEmpty() ? null : messages.getLast();
-        return new ConversationDetailDto(summary(conversation, last),
-            messages.stream().map(AdminConversationMessageDto::from).toList(), window.hasOlder());
+        return new ConversationDetailDto(summary(conversation, last), toDtos(messages), window.hasOlder());
     }
 
     @Transactional(readOnly = true)
     public AdminMessagePageDto older(UUID conversationId, Instant at, UUID messageId) {
         require(conversationId);
         MessageWindow window = messageRepository.olderThan(conversationId, at, messageId);
-        return new AdminMessagePageDto(
-            window.messages().stream().map(AdminConversationMessageDto::from).toList(), window.hasOlder());
+        return new AdminMessagePageDto(toDtos(window.messages()), window.hasOlder());
     }
 
     @Transactional(readOnly = true)
@@ -92,8 +96,7 @@ public class AdminContactService {
         // The summary's preview is the newest message overall; when nothing arrived, read just that one.
         ContactMessage last = !messages.isEmpty() ? messages.getLast()
             : messageRepository.findNewestFirst(conversationId, PageRequest.of(0, 1)).stream().findFirst().orElse(null);
-        return new AdminConversationUpdateDto(summary(conversation, last),
-            messages.stream().map(AdminConversationMessageDto::from).toList());
+        return new AdminConversationUpdateDto(summary(conversation, last), toDtos(messages));
     }
 
     /** Opening a conversation is reading it; the front calls this when the conversation is shown. */
@@ -137,13 +140,28 @@ public class AdminContactService {
         ContactConversation conversation = conversationRepository.save(ContactConversation.startedByStaff(person, now));
         ContactMessage first = messageRepository.save(
             ContactMessage.reply(conversation, admin, body, person.getPreferredLanguage(), now));
-        return new StartConversationResultDto(conversation.getId(), AdminConversationMessageDto.from(first));
+        return new StartConversationResultDto(conversation.getId(), AdminConversationMessageDto.from(first, List.of()));
     }
 
     @Transactional
     public ReplyResultDto reply(UUID conversationId, UUID adminId, String rawBody) {
+        return replyWithFiles(conversationId, adminId, rawBody, List.of());
+    }
+
+    /**
+     * A reply with optional files (V111). Text, files or both, never neither. Files only in an
+     * account's chat: a guest is reached by mail alone, and the chat never mails a file.
+     */
+    @Transactional
+    public ReplyResultDto replyWithFiles(UUID conversationId, UUID adminId, @Nullable String rawBody,
+                                         List<MultipartFile> attachments) {
         ContactConversation conversation = require(conversationId);
-        String body = requireBody(rawBody);
+        String body = StoredText.trimAndCap(rawBody, ContactMessage.MAX_BODY_LENGTH);
+        if (body == null && attachments.isEmpty()) throw new LocalizedMessage.Rejected("contact.body.required");
+        if (!attachments.isEmpty()) {
+            if (conversation.getUser() == null) throw new LocalizedMessage.Rejected("contact.file.guest");
+            files.checkLimits(conversationId, attachments);
+        }
         User admin = userRepository.findById(adminId).orElseThrow();
 
         User owner = conversation.getUser();
@@ -155,6 +173,7 @@ public class AdminContactService {
 
         Instant now = Instant.now();
         ContactMessage reply = messageRepository.save(ContactMessage.reply(conversation, admin, body, language, now));
+        List<ContactMessageFile> saved = attachments.isEmpty() ? List.of() : files.attach(reply, attachments);
         conversation.recordReply(now);
 
         // A guest has no other way to read the answer, so they always get it by mail. An account
@@ -162,22 +181,43 @@ public class AdminContactService {
         // signed in - the unread dot lights and no mail goes, whatever their notification switch.
         boolean mailed = owner == null;
         if (mailed) {
+            // Never null here: a guest's reply cannot be files only (refused above).
             mailService.sendReply(Objects.requireNonNull(conversation.getGuestEmail()), Objects.requireNonNull(conversation.getGuestName()),
-                body, language);
+                Objects.requireNonNull(body), language);
         }
-        return new ReplyResultDto(AdminConversationMessageDto.from(reply), mailed);
+        return new ReplyResultDto(AdminConversationMessageDto.from(reply, saved), mailed);
+    }
+
+    @Transactional(readOnly = true)
+    public ContactFileSupport.FileStream openFile(UUID fileId) {
+        return files.stream(files.requireFile(fileId));
+    }
+
+    /** The team may remove any file in a conversation it answers, as in the training threads. */
+    @Transactional
+    public void deleteFile(UUID fileId) {
+        files.deleteFile(files.requireFile(fileId));
     }
 
     /**
-     * For spam, mostly. The messages go first, explicitly: the table cascades, but a message
-     * already loaded in this persistence context would otherwise be flushed pointing at a deleted
-     * conversation.
+     * For spam, mostly. The files are unlinked first - their rows go by the database cascade,
+     * which Hibernate never loads, so nothing after the delete could name them. Then the messages,
+     * explicitly: the table cascades, but a message already loaded in this persistence context
+     * would otherwise be flushed pointing at a deleted conversation.
      */
     @Transactional
     public void delete(UUID conversationId) {
         require(conversationId);
+        files.purgeForConversation(conversationId);
         messageRepository.deleteByConversationId(conversationId);
         conversationRepository.deleteById(conversationId);
+    }
+
+    private List<AdminConversationMessageDto> toDtos(List<ContactMessage> messages) {
+        Map<UUID, List<ContactMessageFile>> byMessage = files.filesOf(messages.stream().map(ContactMessage::getId).toList());
+        return messages.stream()
+            .map(m -> AdminConversationMessageDto.from(m, byMessage.getOrDefault(m.getId(), List.of())))
+            .toList();
     }
 
     private ConversationSummaryDto summary(ContactConversation c, @Nullable ContactMessage last) {
@@ -194,7 +234,8 @@ public class AdminContactService {
             c.getLastActivityAt(),
             c.getLastInboundAt(),
             c.getLastReplyAt(),
-            last != null ? preview(last.getBody()) : null,
+            last != null && last.getBody() != null ? preview(last.getBody()) : null,
+            last != null && last.getBody() == null,
             last != null && last.isFromStaff(),
             last != null ? last.getContextType() : null,
             last != null ? last.getCourseTitle() : null,

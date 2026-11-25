@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import clsx from 'clsx'
-import { ChevronLeft, ChevronRight, ExternalLink, Mail, MailWarning, MessageSquare, Plus, Search, Trash2, User, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, Mail, MailWarning, MessageSquare, Paperclip, Plus, Search, Trash2, User, X } from 'lucide-react'
 import { adminApi, adminContactApi } from '../../api/client'
 import { matchesPersonQuery } from '../../utils/personSearch'
 import { useDateLocale } from '../../utils/dateFnsLocale'
@@ -19,6 +19,8 @@ import type { AdminConversationMessage, AdminConversationSummary, ContactReplyRe
 import type { ChatMessage } from '../../utils/chatMessages'
 import { ChatScroller } from '../../components/contact/ChatScroller'
 import { useChatWindow } from '../../components/contact/useChatWindow'
+import { useStagedChatFiles } from '../../components/contact/useStagedChatFiles'
+import { ChatAttachPicker, ChatMessageFiles } from '../../components/contact/ChatAttachments'
 
 type Filter = 'unread' | 'all'
 
@@ -240,10 +242,15 @@ function ConversationRow({ summary, active, onSelect }: {
           {format(new Date(summary.lastActivityAt), 'd MMM, HH:mm', { locale })}
         </span>
       </div>
-      {summary.preview && (
+      {(summary.preview || summary.previewIsFile) && (
         <p className="mt-2 text-sm text-surface-400 line-clamp-2 break-words">
           {summary.previewFromStaff && <span className="text-surface-500">{t('contactMessages.you')} </span>}
-          {summary.preview}
+          {summary.previewIsFile ? (
+            <span className="inline-flex items-center gap-1 italic">
+              <Paperclip className="w-3.5 h-3.5" aria-hidden="true" />
+              {t('contactMessages.previewFile')}
+            </span>
+          ) : summary.preview}
         </p>
       )}
       <div className="mt-2 flex items-center justify-between gap-2">
@@ -308,15 +315,34 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
   }, [unreadMarker, markRead])
 
   const { addMessage } = chat
+  const attachments = useStagedChatFiles()
+  const { hideFile } = chat
+  // Text alone by the plain endpoint (outside the upload rate limit); with files, multipart.
   const replyMutation = useMutation({
-    mutationFn: () => adminContactApi.reply(conversationId, draft.trim()),
+    mutationFn: () => {
+      const body = draft.trim()
+      return attachments.staged.length > 0
+        ? adminContactApi.replyWithFiles(conversationId, body || null, attachments.staged)
+        : adminContactApi.reply(conversationId, body)
+    },
     onSuccess: (result) => {
       setDraft('')
+      attachments.clear()
       setLastResult(result)
       addMessage(result.message)
       invalidateAround()
     },
   })
+
+  const deleteFileMutation = useMutation({
+    mutationFn: (fileId: string) => adminContactApi.deleteFile(fileId),
+    onSuccess: (_, fileId) => {
+      hideFile(fileId)
+      invalidateAround()
+    },
+  })
+
+  const canReply = (draft.trim().length > 0 || attachments.staged.length > 0) && !attachments.picking
 
   const deleteMutation = useMutation({
     mutationFn: () => adminContactApi.delete(conversationId),
@@ -420,7 +446,8 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
                   <ContextChip stored={m} compact />
                 </div>
               )}
-              <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">{m.body}</p>
+              {m.body !== null && <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">{m.body}</p>}
+              <ChatMessageFiles files={m.files} onDelete={(fileId) => deleteFileMutation.mutate(fileId)} />
             </div>
           </li>
         ))}
@@ -430,7 +457,7 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          if (draft.trim() && !replyMutation.isPending) replyMutation.mutate()
+          if (canReply && !replyMutation.isPending) replyMutation.mutate()
         }}
         className="p-4 border-t border-surface-800 space-y-3"
       >
@@ -445,8 +472,22 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
           onChange={(e) => { setDraft(e.target.value); setLastResult(null) }}
           className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
         />
+        {/* Files only in an account's chat: a guest is reached by mail alone (the server refuses too) */}
+        {summary.userId && (
+          <ChatAttachPicker
+            staged={attachments.staged}
+            picking={attachments.picking}
+            error={attachments.error}
+            onPick={attachments.pick}
+            onRemove={attachments.remove}
+            disabled={replyMutation.isPending}
+          />
+        )}
         {replyMutation.isError && (
           <p role="alert" className="text-sm text-rose-400">{getErrorMessage(replyMutation.error)}</p>
+        )}
+        {deleteFileMutation.isError && (
+          <p role="alert" className="text-sm text-rose-400">{getErrorMessage(deleteFileMutation.error)}</p>
         )}
         {lastResult && (
           // Both outcomes are success: an account holder's reply staying in the app is the design,
@@ -459,7 +500,7 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
           <p className="text-xs text-surface-500">
             {summary.userId ? t('contactMessages.replyHintUser') : t('contactMessages.replyHintGuest')}
           </p>
-          <Button type="submit" loading={replyMutation.isPending} disabled={!draft.trim()}>
+          <Button type="submit" loading={replyMutation.isPending} disabled={!canReply}>
             {t('contactMessages.send')}
           </Button>
         </div>

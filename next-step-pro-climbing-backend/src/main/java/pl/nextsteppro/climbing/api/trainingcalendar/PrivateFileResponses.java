@@ -10,20 +10,21 @@ import org.springframework.http.ResponseEntity;
 import java.io.InputStream;
 
 /**
- * The one place that builds a response for a training file. Both streams — the coach's materials
- * and the attachments people send in a thread — go through here so their headers cannot drift
- * apart, which is the failure mode CLAUDE.md records for every twinned pair in this codebase.
+ * The one place that builds a response for a private file. Every stream — the coach's materials,
+ * the attachments people send in a training thread, and the files in the chat with the team —
+ * goes through here so their headers cannot drift apart, which is the failure mode CLAUDE.md
+ * records for every twinned pair in this codebase. Public for the chat's two controllers.
  *
  * <p>Deliberately unlike {@code /api/files}, which serves public media with a week of shared cache:
  * these belong to one coach/athlete pair. {@code no-store} keeps them out of Cloudflare, out of any
  * proxy in between and off the reader's disk, which costs nothing — the client holds the bytes in
  * memory for as long as the page is open.
  */
-final class PrivateFileResponses {
+public final class PrivateFileResponses {
 
     private PrivateFileResponses() {}
 
-    static ResponseEntity<Resource> stream(InputStream body, long size, String mimeType,
+    public static ResponseEntity<Resource> stream(InputStream body, long size, String mimeType,
                                            @Nullable String downloadName) {
         MediaType contentType = MediaType.parseMediaType(mimeType);
         boolean isImage = "image".equalsIgnoreCase(contentType.getType());

@@ -1436,6 +1436,7 @@
     "send": "Wyślij odpowiedź",
     "sentMailed": "Wysłano — gość dostał odpowiedź mailem.",
     "sentInAppOnly": "Zapisano w czacie — klient zobaczy odpowiedź w aplikacji (bez maila).",
+    "previewFile": "Plik",
     "searchLabel": "Szukaj rozmowy",
     "searchPlaceholder": "Imię, nazwisko albo e-mail…",
     "emptySearch": "Żadna rozmowa nie pasuje do „{{query}}”.",

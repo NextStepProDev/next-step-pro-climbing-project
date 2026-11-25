@@ -1412,6 +1412,7 @@
     "send": "Send reply",
     "sentMailed": "Sent — the guest got the reply by e-mail.",
     "sentInAppOnly": "Saved in the chat — the client will see the reply in the app (no e-mail).",
+    "previewFile": "File",
     "searchLabel": "Search conversations",
     "searchPlaceholder": "Name or e-mail…",
     "emptySearch": "No conversation matches “{{query}}”.",

@@ -134,6 +134,7 @@ import type {
   AdminRescheduleList,
   SendContactMessage,
   MyConversation,
+  ConversationMessage,
   AdminConversationPage,
   AdminConversationDetail,
   ContactReplyResult,
@@ -594,6 +595,21 @@ export const contactApi = {
 
   getNewer: (at: string, id: string) =>
     fetchApi<MyConversationUpdate>(`/conversation/messages/newer?${cursorQuery(at, id)}`),
+
+  /**
+   * A chat message with photos or PDFs (multipart). Text alone keeps going through `send`, which
+   * stays out of the upload rate-limit bucket. Returns the message so the chat can show it at once.
+   */
+  sendWithFiles: (body: string | null, language: string, files: File[]) => {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file, file.name))
+    if (body) formData.append('body', body)
+    formData.append('language', language)
+    return fetchApi<ConversationMessage>('/conversation/messages/attachments', { method: 'POST', body: formData })
+  },
+
+  deleteFile: (fileId: string) =>
+    fetchApi<void>(`/conversation/files/${fileId}`, { method: 'DELETE' }),
 
   getUnseen: () => fetchApi<{ unseenReply: boolean }>('/conversation/unseen'),
 
@@ -1229,6 +1245,20 @@ export const adminContactApi = {
 
   newer: (conversationId: string, at: string, id: string) =>
     fetchApi<AdminConversationUpdate>(`/admin/contact/conversations/${conversationId}/messages/newer?${cursorQuery(at, id)}`),
+
+  /** A reply with photos or PDFs (multipart). Refused for a guest: they are reached by mail alone. */
+  replyWithFiles: (conversationId: string, body: string | null, files: File[]) => {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file, file.name))
+    if (body) formData.append('body', body)
+    return fetchApi<ContactReplyResult>(`/admin/contact/conversations/${conversationId}/replies/attachments`, {
+      method: 'POST',
+      body: formData,
+    })
+  },
+
+  deleteFile: (fileId: string) =>
+    fetchApi<void>(`/admin/contact/files/${fileId}`, { method: 'DELETE' }),
 
   markRead: (conversationId: string) =>
     fetchApi<void>(`/admin/contact/conversations/${conversationId}/read`, { method: 'POST' }),

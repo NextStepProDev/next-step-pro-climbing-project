@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.activitylog.ActivityLog;
+import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFileRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
 import pl.nextsteppro.climbing.domain.activitylog.ActivityLogRepository;
 import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal;
@@ -97,6 +99,7 @@ public class UserDataExportService {
     private final ClimbingAscentRepository ascentRepository;
     private final ActivityLogService activityLogService;
     private final ContactMessageRepository contactMessageRepository;
+    private final ContactMessageFileRepository contactFileRepository;
 
     public UserDataExportService(UserRepository userRepository,
                                  NewsletterConsentLogRepository consentLogRepository,
@@ -117,8 +120,10 @@ public class UserDataExportService {
                                  ClimbingAscentRepository ascentRepository,
                                  ActivityLogService activityLogService,
                                  RescheduleRequestRepository rescheduleRequestRepository,
-                                 ContactMessageRepository contactMessageRepository) {
+                                 ContactMessageRepository contactMessageRepository,
+                                 ContactMessageFileRepository contactFileRepository) {
         this.contactMessageRepository = contactMessageRepository;
+        this.contactFileRepository = contactFileRepository;
         this.rescheduleRequestRepository = rescheduleRequestRepository;
         this.userRepository = userRepository;
         this.consentLogRepository = consentLogRepository;
@@ -189,10 +194,18 @@ public class UserDataExportService {
     private List<ExportContactMessageDto> contactMessages(User user) {
         // One query for the section, like every other — including what they wrote signed out under
         // their confirmed address (see ContactConversationErasure: the same rows go on deletion).
-        return contactMessageRepository.findAllWrittenBy(user.getId(),
-                user.getEmailVerifiedAt() != null ? user.getEmail() : null).stream()
+        List<ContactMessage> messages = contactMessageRepository.findAllWrittenBy(user.getId(),
+                user.getEmailVerifiedAt() != null ? user.getEmail() : null);
+        // The chat's files in one read for the whole section, like the training threads' files.
+        Map<UUID, List<ExportFileDto>> files = messages.isEmpty() ? Map.of()
+            : contactFileRepository.findByMessageIds(messages.stream().map(ContactMessage::getId).toList()).stream()
+                .collect(Collectors.groupingBy(f -> f.getMessage().getId(),
+                    Collectors.mapping(f -> new ExportFileDto("FILE", null, plainOrNull(f.getOriginalName()),
+                        f.getMimeType(), f.getSizeBytes(), f.getExpiresAt(), f.getCreatedAt()), Collectors.toList())));
+        return messages.stream()
             .map(m -> new ExportContactMessageDto(m.getId(), m.isFromStaff() ? "COACH" : "ME", m.getBody(),
-                m.getContextType().name(), m.getCourseTitle(), m.getContextDate(), m.getCreatedAt()))
+                m.getContextType().name(), m.getCourseTitle(), m.getContextDate(), m.getCreatedAt(),
+                files.getOrDefault(m.getId(), List.of())))
             .toList();
     }
 
