@@ -12,7 +12,6 @@ import pl.nextsteppro.climbing.infrastructure.mail.ContactMailService;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -44,6 +43,6 @@ class ContactServiceMailCeilingTest {
         }
 
         verify(messages, times(4)).save(any(ContactMessage.class));
-        verify(mail, times(2)).sendInboundToStaff(any(), anyString(), anyString(), anyBoolean(), anyString(), any(), anyString());
+        verify(mail, times(2)).sendInboundToStaff(any(), anyString(), anyString(), anyString(), any(), anyString());
     }
 }

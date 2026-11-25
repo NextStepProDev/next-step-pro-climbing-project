@@ -60,8 +60,8 @@ record AdminConversationMessageDto(
 record ConversationDetailDto(ConversationSummaryDto summary, List<AdminConversationMessageDto> messages) {}
 
 /**
- * @param mailed whether the reply went out by mail - false only for an account holder with mail
- *               notifications off, who will see it in the app instead
+ * @param mailed whether the reply went out by mail - true for a guest, false for an account
+ *               holder, whose conversation is an in-app chat that never mails
  */
 record ReplyResultDto(AdminConversationMessageDto message, boolean mailed) {}
 

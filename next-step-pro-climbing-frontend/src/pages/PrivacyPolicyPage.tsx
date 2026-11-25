@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom'
 import { useThemeLogo } from '../hooks/useThemeLogo'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '22 listopada 2026'
-const LAST_UPDATED_EN = '22 November 2026'
+const LAST_UPDATED_PL = '24 listopada 2026'
+const LAST_UPDATED_EN = '24 November 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -148,8 +148,10 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
 
           <SubSection title="Wiadomość przez formularz „Napisz do nas”">
             <p className="text-surface-400 text-sm leading-relaxed mb-3">
-              Formularz jest na stronie Kontakt, przy kursach i w kalendarzu. Wiadomość trafia mailem do
-              administratora oraz do panelu, z którego na nią odpowiada. Można z niego korzystać bez konta.
+              Formularz jest na stronie Kontakt, przy kursach i w kalendarzu. Można z niego korzystać bez konta.
+              Wiadomość osoby bez konta trafia mailem do administratora oraz do panelu, z którego na nią
+              odpowiada, a odpowiedź przychodzi na podany adres e-mail. Wiadomość osoby zalogowanej i odpowiedź
+              na nią są tylko w aplikacji (Czat) — nie wysyłamy ich mailem.
             </p>
             <DataList items={[
               'Imię i adres e-mail — jeśli piszesz bez logowania; wiadomość zalogowanej osoby jest przypisana do jej konta',
@@ -704,8 +706,10 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           </SubSection>
           <SubSection title="A message through the “Write to us” form">
             <p className="text-surface-400 text-sm leading-relaxed mb-3">
-              The form is on the Contact page, on course pages and in the calendar. The message reaches the
-              administrator by e-mail and in the panel used to answer it. It can be used without an account.
+              The form is on the Contact page, on course pages and in the calendar. It can be used without an
+              account. A message from someone without an account reaches the administrator by e-mail and in the
+              panel used to answer it, and the reply goes to the e-mail address given. A signed-in person’s
+              message and the reply to it stay in the app only (Chat) — we do not send them by e-mail.
             </p>
             <DataList items={[
               'Name and e-mail address — if you write without signing in; a signed-in person’s message is attached to their account',

@@ -26,7 +26,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -62,7 +61,7 @@ class ContactMessagesIntegrationTest extends BaseIntegrationTest {
         List<ContactMessage> messages = messageRepository.findByConversationId(conversation.getId());
         assertEquals(1, messages.size());
         assertEquals(ContactContextType.GENERAL, messages.getFirst().getContextType());
-        verify(contactMailService).sendInboundToStaff(eq(conversation.getId()), eq("Ola"), eq(email), eq(false),
+        verify(contactMailService).sendInboundToStaff(eq(conversation.getId()), eq("Ola"), eq(email),
             eq("Czy macie kurs dla dzieci?"), any(), eq("pl"));
     }
 
@@ -96,7 +95,7 @@ class ContactMessagesIntegrationTest extends BaseIntegrationTest {
         contactService.send(null, uniqueIp(), bot("Bot", email, "Buy now"));
 
         assertTrue(conversationRepository.findByGuestEmail(email).isEmpty());
-        verify(contactMailService, never()).sendInboundToStaff(any(), anyString(), anyString(), anyBoolean(),
+        verify(contactMailService, never()).sendInboundToStaff(any(), anyString(), anyString(),
             anyString(), any(), anyString());
     }
 
@@ -137,9 +136,10 @@ class ContactMessagesIntegrationTest extends BaseIntegrationTest {
         assertEquals("Kurs wspinaczki od podstaw", messages.get(0).getCourseTitle());
         assertEquals(ContactContextType.CALENDAR, messages.get(1).getContextType());
         assertEquals(day, messages.get(1).getContextDate());
-        verify(contactMailService).sendInboundToStaff(eq(conversation.getId()), eq(user.getFullName()),
-            eq(user.getEmail()), eq(true), eq("Ile osób w grupie?"),
-            eq(new ContactMailService.Context("COURSE", course.getId(), "Kurs wspinaczki od podstaw", null)), eq("pl"));
+        assertTrue(conversation.isUnreadByStaff(), "the panel badge is how the team hears about it");
+        // An account holder's conversation is an in-app chat: nothing goes to the team's inbox.
+        verify(contactMailService, never()).sendInboundToStaff(any(), anyString(), anyString(),
+            anyString(), any(), anyString());
     }
 
     @Test

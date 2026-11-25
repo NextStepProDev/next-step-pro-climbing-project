@@ -82,8 +82,9 @@ public class ContactService {
 
         User user = userId != null ? userRepository.findById(userId).orElse(null) : null;
         ContactConversation conversation;
-        String senderName;
-        String senderEmail;
+        // Only a guest is forwarded by mail, so only a guest needs a name and address for it.
+        @Nullable String guestName = null;
+        @Nullable String guestEmail = null;
         String language;
         if (user != null) {
             if (!throttle.tryAccount(user.getId().toString())) {
@@ -91,8 +92,6 @@ public class ContactService {
             }
             conversation = conversationRepository.findByUserId(user.getId())
                 .orElseGet(() -> conversationRepository.save(ContactConversation.forUser(user, now)));
-            senderName = user.getFullName();
-            senderEmail = user.getEmail();
             language = normalizeLanguage(request.language(), user.getPreferredLanguage());
         } else {
             String name = StoredText.singleLineAndCap(request.name(), ContactConversation.MAX_GUEST_NAME_LENGTH);
@@ -109,8 +108,8 @@ public class ContactService {
             } else {
                 conversation.renameGuest(name);
             }
-            senderName = name;
-            senderEmail = email;
+            guestName = name;
+            guestEmail = email;
             language = normalizeLanguage(request.language(), "pl");
         }
 
@@ -118,10 +117,12 @@ public class ContactService {
         messageRepository.save(message);
         conversation.recordInbound(now);
 
-        // Past the hourly guest-mail ceiling the message is kept and the panel badge still lights;
-        // only the mail is skipped (see ContactSendThrottle). Account holders are never cut off.
-        if (user != null || throttle.tryForwardGuestMail()) {
-            mailService.sendInboundToStaff(conversation.getId(), senderName, senderEmail, user != null,
+        // An account holder's conversation is an in-app chat: the team reads it in the panel
+        // (the unread badge lights either way) and no mail goes in either direction.
+        // Past the hourly guest-mail ceiling a guest's message is kept and the badge still
+        // lights; only the mail is skipped (see ContactSendThrottle).
+        if (guestName != null && guestEmail != null && throttle.tryForwardGuestMail()) {
+            mailService.sendInboundToStaff(conversation.getId(), guestName, guestEmail,
                 body, mailContext(message), language);
         }
         return new ContactSentDto(user != null);

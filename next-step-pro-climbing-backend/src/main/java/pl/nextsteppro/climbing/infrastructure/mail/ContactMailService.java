@@ -59,19 +59,17 @@ public class ContactMailService {
     }
 
     /**
-     * Forwards a new message to the team. Reply-To is the writer, so "Reply" in the team's inbox
-     * answers them directly - that path works even if nobody ever opens the panel.
-     *
-     * @param hasAccount whether the writer was signed in; the coach reads a guest differently
+     * Forwards a guest's new message to the team. Reply-To is the writer, so "Reply" in the team's
+     * inbox answers them directly - that path works even if nobody ever opens the panel.
+     * An account holder's message is never mailed: that conversation lives in the app only.
      */
     @Async("mailExecutor")
-    public void sendInboundToStaff(UUID conversationId, String senderName, String senderEmail, boolean hasAccount,
+    public void sendInboundToStaff(UUID conversationId, String senderName, String senderEmail,
                                    String body, Context context, String language) {
         String subject = msg.getForLang("email.contact.admin.subject", ADMIN_LANG,
             subjectTag(context), senderName);
         String contextLine = contextLine(context);
-        String accountLine = esc(msg.getForLang(hasAccount
-            ? "email.contact.admin.account" : "email.contact.admin.guest", ADMIN_LANG));
+        String accountLine = esc(msg.getForLang("email.contact.admin.guest", ADMIN_LANG));
         String html = page("""
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
@@ -102,34 +100,22 @@ public class ContactMailService {
     }
 
     /**
-     * The team's answer. A guest gets the whole reply - mail is the only place they can read it.
-     * An account holder gets it too, plus the way into the conversation in the app, where the
-     * history is. Either way a reply to this mail lands in the team's inbox (From is the team).
-     *
-     * @param inApp whether the recipient has an account, i.e. a conversation they can open
+     * The team's answer to a guest - mail is the only place they can read it. A reply to this
+     * mail lands in the team's inbox (From is the team). Account holders never get this mail:
+     * their answer waits in the app.
      */
     @Async("mailExecutor")
-    public void sendReply(String to, String recipientName, String body, String language, boolean inApp) {
+    public void sendReply(String to, String recipientName, String body, String language) {
         String subject = msg.getForLang("email.contact.reply.subject", language);
-        String appSection = inApp
-            ? """
-              <div style="margin-top: 20px; text-align: center;">
-                  <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
-              </div>
-              """.formatted(siteUrl + "/my-reservations?tab=messages",
-                esc(msg.getForLang("email.contact.reply.cta", language)))
-            : "";
         String html = page("""
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <div style="padding: 16px; border-left: 3px solid #7c3aed; color: #333;">%s</div>
                         <p style="margin-top: 16px; color: #6b7280; font-size: 13px;">%s</p>
-                        %s
                         <p style="color: #666; font-size: 14px; margin-top: 20px;">%s</p>
             """.formatted(
             esc(msg.getForLang("email.contact.reply.greeting", language, recipientName)),
             multiline(body),
             esc(msg.getForLang("email.contact.reply.hint", language)),
-            appSection,
             esc(msg.getForLang("email.reservation.team", language))
         ));
         mailDispatcher.sendHtml(to, subject, html);

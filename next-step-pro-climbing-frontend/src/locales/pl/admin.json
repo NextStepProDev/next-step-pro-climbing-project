@@ -1429,10 +1429,10 @@
     "messagesLabel": "Wiadomości w rozmowie",
     "team": "Zespół",
     "reply": "Odpowiedź",
-    "replyHintUser": "Trafi do rozmowy w aplikacji i mailem (jeśli klient ma włączone powiadomienia).",
+    "replyHintUser": "Trafi tylko do czatu w aplikacji — klient zobaczy czerwoną kropkę, bez maila.",
     "replyHintGuest": "Pójdzie mailem na adres gościa.",
     "send": "Wyślij odpowiedź",
-    "sentMailed": "Wysłano — odpowiedź poszła mailem.",
-    "sentInAppOnly": "Zapisano w rozmowie. Klient ma wyłączone powiadomienia mailowe, zobaczy odpowiedź w aplikacji."
+    "sentMailed": "Wysłano — gość dostał odpowiedź mailem.",
+    "sentInAppOnly": "Zapisano w czacie — klient zobaczy odpowiedź w aplikacji (bez maila)."
   }
 }
