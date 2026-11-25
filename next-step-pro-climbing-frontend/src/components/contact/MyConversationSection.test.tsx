@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { MyConversationSection } from './MyConversationSection'
-import type { ConversationMessage, MyConversation } from '../../types'
+import type { ContactFile, ConversationMessage, MyConversation } from '../../types'
 
 vi.mock('react-i18next', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-i18next')>()),
@@ -16,6 +16,8 @@ const getOlder = vi.fn()
 const getNewer = vi.fn()
 const markSeen = vi.fn()
 const send = vi.fn()
+const sendWithFiles = vi.fn()
+const deleteFile = vi.fn()
 vi.mock('../../api/client', () => ({
   contactApi: {
     getConversation: () => getConversation(),
@@ -23,8 +25,23 @@ vi.mock('../../api/client', () => ({
     getNewer: (...a: unknown[]) => getNewer(...a),
     markSeen: () => markSeen(),
     send: (...a: unknown[]) => send(...a),
+    sendWithFiles: (...a: unknown[]) => sendWithFiles(...a),
+    deleteFile: (id: string) => deleteFile(id),
   },
 }))
+
+// The private previews fetch bytes with the session; here they only need to say what they show.
+vi.mock('../training/PrivateFile', () => ({
+  PrivateImage: ({ alt }: { alt: string }) => <img alt={alt} />,
+  PrivateFileCard: ({ fileName }: { fileName: string | null }) => <span>{`pdf:${fileName}`}</span>,
+}))
+
+function file(over: Partial<ContactFile>): ContactFile {
+  return {
+    id: crypto.randomUUID(), url: '/api/conversation/files/x', mimeType: 'image/jpeg', fileName: 'zdjecie.jpg',
+    sizeBytes: 1000, width: 400, height: 300, expiresAt: '2027-11-25T10:00:00Z', canDelete: true, ...over,
+  }
+}
 
 function message(over: Partial<ConversationMessage>): ConversationMessage {
   return {
@@ -36,6 +53,7 @@ function message(over: Partial<ConversationMessage>): ConversationMessage {
     courseTitle: null,
     date: null,
     createdAt: '2026-11-22T10:00:00Z',
+    files: [],
     ...over,
   }
 }
@@ -61,6 +79,8 @@ beforeEach(() => {
   getNewer.mockReset()
   markSeen.mockReset().mockResolvedValue(undefined)
   send.mockReset().mockResolvedValue({ inConversation: true })
+  sendWithFiles.mockReset()
+  deleteFile.mockReset().mockResolvedValue(undefined)
 })
 
 describe('MyConversationSection', () => {
@@ -182,5 +202,56 @@ describe('MyConversationSection — chat window', () => {
     await user.click(screen.getByText('messages.send'))
 
     await waitFor(() => expect(getNewer.mock.calls.length).toBeGreaterThan(pollsBefore))
+  })
+})
+
+describe('MyConversationSection — files', () => {
+  it('shows a photo and a PDF of a message, and a message that is only a file', async () => {
+    renderSection({
+      messages: [
+        message({ id: 'm-1', body: 'Plan na sobotę', fromStaff: true, files: [file({ mimeType: 'application/pdf', fileName: 'plan.pdf', canDelete: false })] }),
+        message({ id: 'm-2', body: null, files: [file({ fileName: 'droga.jpg' })] }),
+      ],
+      unseenReply: false,
+    })
+
+    expect(await screen.findByText('pdf:plan.pdf')).toBeInTheDocument()
+    expect(screen.getByAltText('droga.jpg')).toBeInTheDocument()
+    // Only what the person sent can be withdrawn: one remove control, on their own photo
+    expect(screen.getAllByText('comments.fileDelete')).toHaveLength(1)
+  })
+
+  it('sends a picked file through the upload endpoint and shows the message at once', async () => {
+    const user = userEvent.setup()
+    sendWithFiles.mockResolvedValue(message({ id: 'm-new', body: null, files: [file({ mimeType: 'application/pdf', fileName: 'wynik.pdf' })] }))
+    const { container } = renderSection({ messages: [message({ id: 'm-1', body: 'Hej', fromStaff: true })], unseenReply: false })
+    await screen.findByText('Hej')
+
+    const pdf = new File(['%PDF-1.4'], 'wynik.pdf', { type: 'application/pdf' })
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, pdf)
+    await user.click(await screen.findByText('messages.send'))
+
+    expect(sendWithFiles).toHaveBeenCalledWith(null, 'pl', [pdf])
+    expect(send).not.toHaveBeenCalled()
+    expect(await screen.findByText('pdf:wynik.pdf')).toBeInTheDocument()
+  })
+
+  // Messages are otherwise immutable in the window: a removed file has to go from it at once, and a
+  // message that was only that file with it - as on the server.
+  it('takes a withdrawn file off the screen, and the message that was only that file', async () => {
+    const user = userEvent.setup()
+    renderSection({
+      messages: [
+        message({ id: 'm-1', body: 'Zostaje', fromStaff: true }),
+        message({ id: 'm-2', body: null, files: [file({ id: 'f-1', fileName: 'pomylka.jpg' })] }),
+      ],
+      unseenReply: false,
+    })
+
+    await user.click(await screen.findByText('comments.fileDelete'))
+
+    expect(deleteFile).toHaveBeenCalledWith('f-1')
+    await waitFor(() => expect(screen.queryByAltText('pomylka.jpg')).not.toBeInTheDocument())
+    expect(screen.getByText('Zostaje')).toBeInTheDocument()
   })
 })

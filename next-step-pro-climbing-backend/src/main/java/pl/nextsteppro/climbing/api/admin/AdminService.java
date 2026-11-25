@@ -1203,7 +1203,7 @@ public class AdminService {
         // path; these used to be left to the six-hourly orphan sweep.
         attachmentSupport.purgeForUser(userId);
         // And what they wrote from the contact form while signed out — shared with self-deletion.
-        contactConversationErasure.eraseGuestConversationOf(user);
+        contactConversationErasure.eraseChatOf(user);
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
         jwtAuthenticationFilter.evictUser(userId);

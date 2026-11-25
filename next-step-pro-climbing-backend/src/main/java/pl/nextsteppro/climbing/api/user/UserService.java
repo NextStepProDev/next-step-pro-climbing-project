@@ -231,7 +231,7 @@ public class UserService {
 
         // 7c. What they wrote from the contact form while signed out sits in a guest conversation
         //     under their address, out of reach of the cascade. Shared with the admin-side deletion.
-        contactConversationErasure.eraseGuestConversationOf(user);
+        contactConversationErasure.eraseChatOf(user);
 
         // 8. Delete tokens (bulk DELETE) and the user themselves.
         //    The DB cascades (ON DELETE CASCADE): cancelled reservations, waitlist entries, logs, stars.

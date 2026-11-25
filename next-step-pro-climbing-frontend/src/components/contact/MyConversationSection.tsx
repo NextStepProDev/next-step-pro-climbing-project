@@ -15,6 +15,8 @@ import { ContextChip } from './ContextChip'
 import { CONTACT_BODY_MAX } from './ContactForm'
 import { ChatScroller } from './ChatScroller'
 import { useChatWindow } from './useChatWindow'
+import { useStagedChatFiles } from './useStagedChatFiles'
+import { ChatAttachPicker, ChatMessageFiles } from './ChatAttachments'
 import type { ChatMessage } from '../../utils/chatMessages'
 import type { ConversationMessage } from '../../types'
 
@@ -58,20 +60,35 @@ export function MyConversationSection() {
     if (unseenMarker) markSeen()
   }, [unseenMarker, markSeen])
 
+  const attachments = useStagedChatFiles()
+  const { addMessage, hideFile, pollNow } = chat
+
+  // Text alone goes by the plain endpoint (outside the upload rate limit); with files, multipart.
   const sendMutation = useMutation({
-    mutationFn: () => contactApi.send({
-      body: draft.trim(),
-      consent: false,
-      contextType: 'GENERAL',
-      language: i18n.language,
-    }),
-    onSuccess: () => {
+    mutationFn: async () => {
+      const body = draft.trim()
+      if (attachments.staged.length > 0) {
+        return contactApi.sendWithFiles(body || null, i18n.language, attachments.staged)
+      }
+      await contactApi.send({ body, consent: false, contextType: 'GENERAL', language: i18n.language })
+      return null
+    },
+    onSuccess: (message) => {
       setDraft('')
-      // The send endpoint does not echo the message (it serves the signed-out form too), so ask
-      // for news at once rather than waiting up to a poll for one's own words to appear.
-      chat.pollNow()
+      attachments.clear()
+      // The multipart endpoint echoes the message; the plain one does not (it serves the signed-out
+      // form too), so then ask for news at once rather than waiting up to a poll.
+      if (message) addMessage(message)
+      else pollNow()
     },
   })
+
+  const deleteFileMutation = useMutation({
+    mutationFn: (fileId: string) => contactApi.deleteFile(fileId),
+    onSuccess: (_, fileId) => hideFile(fileId),
+  })
+
+  const canSend = (draft.trim().length > 0 || attachments.staged.length > 0) && !attachments.picking
 
   if (chat.isLoading) return <div className="py-16 flex justify-center"><LoadingSpinner /></div>
   if (chat.isError) return <QueryError error={chat.error} onRetry={() => chat.refetch()} />
@@ -120,7 +137,8 @@ export function MyConversationSection() {
                     <ContextChip stored={m} compact />
                   </div>
                 )}
-                <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">{m.body}</p>
+                {m.body !== null && <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">{m.body}</p>}
+                <ChatMessageFiles files={m.files} onDelete={(fileId) => deleteFileMutation.mutate(fileId)} />
               </div>
             </li>
           ))}
@@ -132,7 +150,7 @@ export function MyConversationSection() {
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          if (draft.trim() && !sendMutation.isPending) sendMutation.mutate()
+          if (canSend && !sendMutation.isPending) sendMutation.mutate()
         }}
         className="bg-surface-900 border border-surface-800 rounded-xl p-4 space-y-3"
       >
@@ -147,15 +165,26 @@ export function MyConversationSection() {
           onChange={(e) => setDraft(e.target.value)}
           className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
         />
+        <ChatAttachPicker
+          staged={attachments.staged}
+          picking={attachments.picking}
+          error={attachments.error}
+          onPick={attachments.pick}
+          onRemove={attachments.remove}
+          disabled={sendMutation.isPending}
+        />
         {sendMutation.isError && (
           <p role="alert" className="text-sm text-rose-400">{getErrorMessage(sendMutation.error)}</p>
+        )}
+        {deleteFileMutation.isError && (
+          <p role="alert" className="text-sm text-rose-400">{getErrorMessage(deleteFileMutation.error)}</p>
         )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-xs text-surface-500">
             {t('messages.hint')}{' '}
             <Link to="/kontakt" className="underline hover:text-surface-300">{t('messages.otherWays')}</Link>
           </p>
-          <Button type="submit" loading={sendMutation.isPending} disabled={!draft.trim()}>
+          <Button type="submit" loading={sendMutation.isPending} disabled={!canSend}>
             {t('messages.send')}
           </Button>
         </div>

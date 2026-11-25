@@ -23,6 +23,8 @@ const findForUser = vi.fn()
 const getAllUsers = vi.fn()
 const older = vi.fn()
 const newer = vi.fn()
+const replyWithFiles = vi.fn()
+const deleteFile = vi.fn()
 vi.mock('../../api/client', () => ({
   adminContactApi: {
     list: (...a: unknown[]) => list(...a),
@@ -34,10 +36,18 @@ vi.mock('../../api/client', () => ({
     delete: (id: string) => remove(id),
     start: (...a: unknown[]) => start(...a),
     findForUser: (id: string) => findForUser(id),
+    replyWithFiles: (...a: unknown[]) => replyWithFiles(...a),
+    deleteFile: (id: string) => deleteFile(id),
   },
   adminApi: {
     getAllUsers: () => getAllUsers(),
   },
+}))
+
+// The private previews fetch bytes with the session; here they only need to say what they show.
+vi.mock('../../components/training/PrivateFile', () => ({
+  PrivateImage: ({ alt }: { alt: string }) => <img alt={alt} />,
+  PrivateFileCard: ({ fileName }: { fileName: string | null }) => <span>{`pdf:${fileName}`}</span>,
 }))
 
 function person(over: Partial<AdminUser>): AdminUser {
@@ -65,6 +75,7 @@ function summary(over: Partial<AdminConversationSummary>): AdminConversationSumm
     lastInboundAt: '2026-11-22T10:00:00Z',
     lastReplyAt: null,
     preview: 'Pytanie',
+    previewIsFile: false,
     previewFromStaff: false,
     previewContextType: 'GENERAL',
     previewCourseTitle: null,
@@ -82,7 +93,7 @@ function detail(s: AdminConversationSummary): AdminConversationDetail {
     messages: [{
       id: `${s.id}-m1`, fromStaff: false, staffAuthorName: null, body: `Wiadomość od ${s.name}`,
       contextType: 'GENERAL', courseId: null, courseTitle: null, date: null, language: 'pl',
-      createdAt: '2026-11-22T10:00:00Z',
+      createdAt: '2026-11-22T10:00:00Z', files: [],
     }],
     hasOlder: false,
   }
@@ -91,7 +102,7 @@ function detail(s: AdminConversationSummary): AdminConversationDetail {
 function staffMessage(id: string, body: string, createdAt = '2026-11-22T11:00:00Z') {
   return {
     id, fromStaff: true, staffAuthorName: 'Trener', body, contextType: 'GENERAL' as const,
-    courseId: null, courseTitle: null, date: null, language: 'pl', createdAt,
+    courseId: null, courseTitle: null, date: null, language: 'pl', createdAt, files: [],
   }
 }
 
@@ -117,6 +128,8 @@ beforeEach(() => {
     Promise.resolve({ conversationId: id === JAN.id ? CLIENT.id : null }))
   getAllUsers.mockReset().mockResolvedValue([EWA, UNCONFIRMED, OTHER_ADMIN, JAN])
   older.mockReset()
+  replyWithFiles.mockReset()
+  deleteFile.mockReset().mockResolvedValue(undefined)
   // An idle poll: nothing new, the conversation's summary as it was
   newer.mockReset().mockImplementation((id: string) =>
     Promise.resolve({ summary: id === CLIENT.id ? CLIENT : GUEST, messages: [] }))
@@ -354,5 +367,49 @@ describe('AdminMessagesPanel — chat window', () => {
 
     expect(older).toHaveBeenCalledWith('c-guest', '2026-11-22T10:00:00Z', 'c-guest-m1')
     expect(await screen.findByText('Dawno temu')).toBeInTheDocument()
+  })
+})
+
+describe('AdminMessagesPanel — files', () => {
+  // A guest is reached by mail alone, so the panel does not offer what the server would refuse.
+  it('offers to attach a file only in an account holder\'s conversation', async () => {
+    renderPanel('/admin/messages?conversation=c-guest')
+    await screen.findByLabelText('contactMessages.reply')
+    expect(screen.queryByText('comments.fileAdd')).not.toBeInTheDocument()
+
+    renderPanel('/admin/messages?conversation=c-user')
+    expect(await screen.findByText('comments.fileAdd')).toBeInTheDocument()
+  })
+
+  it('replies with a picked file through the upload endpoint', async () => {
+    const user = userEvent.setup()
+    replyWithFiles.mockResolvedValue({
+      message: { ...staffMessage('r-1', 'plan'), files: [{
+        id: 'f-1', url: '/api/admin/contact/files/f-1', mimeType: 'application/pdf', fileName: 'plan.pdf',
+        sizeBytes: 10, width: null, height: null, expiresAt: '2027-11-22T10:00:00Z', canDelete: true,
+      }] },
+      mailed: false,
+    })
+    const { container } = renderPanel('/admin/messages?conversation=c-user')
+    await screen.findByText('comments.fileAdd')
+
+    const pdf = new File(['%PDF-1.4'], 'plan.pdf', { type: 'application/pdf' })
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, pdf)
+    await user.type(screen.getByLabelText('contactMessages.reply'), 'plan')
+    await user.click(screen.getByText('contactMessages.send'))
+
+    expect(replyWithFiles).toHaveBeenCalledWith('c-user', 'plan', [pdf])
+    expect(reply).not.toHaveBeenCalled()
+    expect(await screen.findByText('pdf:plan.pdf')).toBeInTheDocument()
+  })
+
+  it('says in the list that the newest message is a file', async () => {
+    list.mockResolvedValue({
+      content: [{ ...CLIENT, preview: null, previewIsFile: true }], totalElements: 1, totalPages: 1, page: 0,
+    })
+    renderPanel()
+
+    const row = (await screen.findByText('Jan Kowalski')).closest('button')!
+    expect(row).toHaveTextContent('contactMessages.previewFile')
   })
 })

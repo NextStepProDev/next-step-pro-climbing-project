@@ -27,5 +27,9 @@ public class ContactRetentionScheduler {
         if (deleted > 0) {
             log.info("Contact message sweep: {} message(s) older than a year removed", deleted);
         }
+        int orphans = retention.sweepOrphanFiles();
+        if (orphans > 0) {
+            log.info("Contact file sweep: {} file(s) on disk no message claims removed", orphans);
+        }
     }
 }

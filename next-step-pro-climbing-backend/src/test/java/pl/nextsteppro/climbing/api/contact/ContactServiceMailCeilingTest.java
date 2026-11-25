@@ -26,7 +26,7 @@ class ContactServiceMailCeilingTest {
         when(conversations.findByGuestEmail(anyString())).thenReturn(Optional.empty());
         when(conversations.save(any(ContactConversation.class))).thenAnswer(inv -> inv.getArgument(0));
         return new ContactService(conversations, messages, mock(UserRepository.class), mock(CourseRepository.class),
-            new ContactSendThrottle(guestMailPerHour), mail);
+            new ContactSendThrottle(guestMailPerHour), mail, mock(ContactFileSupport.class));
     }
 
     private static SendContactMessageRequest guest(int n) {

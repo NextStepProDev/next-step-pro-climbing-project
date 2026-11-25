@@ -5,12 +5,18 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import pl.nextsteppro.climbing.api.contact.ContactFileSupport;
+import pl.nextsteppro.climbing.api.trainingcalendar.PrivateFileResponses;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -90,6 +96,32 @@ public class AdminContactController {
             @Parameter(hidden = true) @CurrentUserId UUID adminId,
             @Valid @RequestBody ReplyRequest request) {
         return ResponseEntity.ok(contactService.reply(conversationId, adminId, request.body()));
+    }
+
+    @Operation(summary = "Reply with photos or PDFs",
+        description = "Multipart: optional text, up to 3 files (images or PDF, 5 MB each). Text, files or both, "
+            + "never neither. Only in an account's chat - a guest is reached by mail alone (400).")
+    @PostMapping(value = "/conversations/{conversationId}/replies/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ReplyResultDto> replyWithFiles(
+            @PathVariable UUID conversationId,
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @RequestParam(required = false) @Nullable String body,
+            @RequestParam(value = "files", required = false) @Nullable List<MultipartFile> files) {
+        return ResponseEntity.ok(contactService.replyWithFiles(conversationId, adminId, body, files == null ? List.of() : files));
+    }
+
+    @Operation(summary = "A file of a conversation", description = "Private stream, never under the public /api/files.")
+    @GetMapping("/files/{fileId}")
+    public ResponseEntity<Resource> file(@PathVariable UUID fileId) {
+        ContactFileSupport.FileStream file = contactService.openFile(fileId);
+        return PrivateFileResponses.stream(file.inputStream(), file.size(), file.mimeType(), file.fileName());
+    }
+
+    @Operation(summary = "Remove a file", description = "Any file in the chat; a message that was only the file goes with it.")
+    @DeleteMapping("/files/{fileId}")
+    public ResponseEntity<Void> deleteFile(@PathVariable UUID fileId) {
+        contactService.deleteFile(fileId);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Delete a conversation", description = "For spam; the messages go with it.")

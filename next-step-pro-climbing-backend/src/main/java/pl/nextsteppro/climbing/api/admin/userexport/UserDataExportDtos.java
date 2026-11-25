@@ -51,16 +51,20 @@ record UserDataExportDto(
  * only, like the training thread: which admin answered is not this person's data.
  *
  * @param author {@code "ME"} or {@code "COACH"}
+ * @param body   null for a message that is only files
  * @param about  {@code GENERAL}, {@code COURSE} or {@code CALENDAR}
+ * @param files  photos and PDFs attached in the chat (V111) - their names and dates, like the
+ *               training threads' files; the bytes are not part of the file
  */
 record ExportContactMessageDto(
     UUID id,
     String author,
-    String body,
+    @Nullable String body,
     String about,
     @Nullable String courseTitle,
     @Nullable LocalDate date,
-    Instant createdAt
+    Instant createdAt,
+    List<ExportFileDto> files
 ) {}
 
 /**

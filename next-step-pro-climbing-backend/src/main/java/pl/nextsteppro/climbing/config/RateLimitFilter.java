@@ -98,9 +98,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final String UPLOAD_PATH_SUFFIX = "/attachments/upload";
     // Attachments posted with a message. Distinct suffix, so it does not collide with the above.
     private static final String COMMENT_UPLOAD_SUFFIX = "/comments/attachments";
+    // Files posted with a chat message, by the person (/api/conversation/messages/attachments) and
+    // by the team (/api/admin/contact/conversations/{id}/replies/attachments). Text alone goes by
+    // the plain endpoints and stays out of this bucket.
+    private static final String CHAT_UPLOAD_SUFFIX = "/attachments";
+    private static final String CHAT_UPLOAD_PREFIX = "/api/conversation/";
+    private static final String CHAT_ADMIN_UPLOAD_PREFIX = "/api/admin/contact/";
     // Authenticated file streams (comment attachments and coach materials alike).
     private static final String COMMENT_FILE_PATH = "/api/training-calendar/comment-files/";
     private static final String MATERIAL_FILE_PATH = "/api/training-calendar/files/";
+    // The chat's files, on the person's side and the team's.
+    private static final String CHAT_FILE_PATH = "/api/conversation/files/";
+    private static final String CHAT_ADMIN_FILE_PATH = "/api/admin/contact/files/";
 
     /**
      * One bucket, one limit, one predicate — so a request can no longer be counted into one
@@ -113,7 +122,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     /** First match wins, so narrower rules (upload suffixes, private files) come first. */
     private static final List<Rule> RULES = List.of(
         new Rule("upload", UPLOAD_LIMIT,
-            path -> path.contains(UPLOAD_PATH_SUFFIX) || path.contains(COMMENT_UPLOAD_SUFFIX)),
+            path -> path.contains(UPLOAD_PATH_SUFFIX) || path.contains(COMMENT_UPLOAD_SUFFIX) || isChatUpload(path)),
         new Rule("privatefile", FILE_READ_LIMIT, RateLimitFilter::isPrivateFileRead),
         // Google sign-in is a sign-in attempt like any other, and lives outside /api entirely.
         new Rule("auth", AUTH_LIMIT, path -> under(path, "/api/auth")
@@ -243,7 +252,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     /** Checked before the training bucket, so a file read never counts against the calendar. */
     private static boolean isPrivateFileRead(String path) {
-        return path.startsWith(COMMENT_FILE_PATH) || path.startsWith(MATERIAL_FILE_PATH);
+        return path.startsWith(COMMENT_FILE_PATH) || path.startsWith(MATERIAL_FILE_PATH)
+            || path.startsWith(CHAT_FILE_PATH) || path.startsWith(CHAT_ADMIN_FILE_PATH);
+    }
+
+    private static boolean isChatUpload(String path) {
+        return path.endsWith(CHAT_UPLOAD_SUFFIX)
+            && (path.startsWith(CHAT_UPLOAD_PREFIX) || path.startsWith(CHAT_ADMIN_UPLOAD_PREFIX));
     }
 
     private Locale resolveLocale(HttpServletRequest request) {

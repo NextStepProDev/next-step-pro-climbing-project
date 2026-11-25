@@ -1418,6 +1418,7 @@
     "send": "Enviar respuesta",
     "sentMailed": "Enviado — el invitado recibió la respuesta por correo.",
     "sentInAppOnly": "Guardado en el chat — el cliente verá la respuesta en la aplicación (sin correo).",
+    "previewFile": "Archivo",
     "searchLabel": "Buscar conversaciones",
     "searchPlaceholder": "Nombre o correo…",
     "emptySearch": "Ninguna conversación coincide con «{{query}}».",

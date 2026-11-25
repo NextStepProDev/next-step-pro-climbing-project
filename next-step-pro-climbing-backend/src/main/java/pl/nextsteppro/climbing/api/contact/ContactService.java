@@ -5,11 +5,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.contact.ContactContextType;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFile;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
 import pl.nextsteppro.climbing.domain.contact.MessageWindow;
 import pl.nextsteppro.climbing.domain.course.Course;
@@ -24,6 +26,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -51,19 +54,22 @@ public class ContactService {
     private final CourseRepository courseRepository;
     private final ContactSendThrottle throttle;
     private final ContactMailService mailService;
+    private final ContactFileSupport files;
 
     public ContactService(ContactConversationRepository conversationRepository,
                           ContactMessageRepository messageRepository,
                           UserRepository userRepository,
                           CourseRepository courseRepository,
                           ContactSendThrottle throttle,
-                          ContactMailService mailService) {
+                          ContactMailService mailService,
+                          ContactFileSupport files) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.courseRepository = courseRepository;
         this.throttle = throttle;
         this.mailService = mailService;
+        this.files = files;
     }
 
     @Transactional
@@ -134,9 +140,7 @@ public class ContactService {
         return conversationRepository.findByUserId(userId)
             .map(c -> {
                 MessageWindow window = messageRepository.latest(c.getId());
-                return new MyConversationDto(
-                    window.messages().stream().map(ConversationMessageDto::from).toList(),
-                    c.isUnseenByUser(), window.hasOlder());
+                return new MyConversationDto(toDtos(window.messages()), c.isUnseenByUser(), window.hasOlder());
             })
             .orElseGet(() -> new MyConversationDto(List.of(), false, false));
     }
@@ -151,8 +155,7 @@ public class ContactService {
         return conversationRepository.findByUserId(userId)
             .map(c -> {
                 MessageWindow window = messageRepository.olderThan(c.getId(), at, messageId);
-                return new MyMessagePageDto(
-                    window.messages().stream().map(ConversationMessageDto::from).toList(), window.hasOlder());
+                return new MyMessagePageDto(toDtos(window.messages()), window.hasOlder());
             })
             .orElseGet(() -> new MyMessagePageDto(List.of(), false));
     }
@@ -162,9 +165,69 @@ public class ContactService {
     public MyConversationUpdateDto newerMine(UUID userId, Instant at, UUID messageId) {
         return conversationRepository.findByUserId(userId)
             .map(c -> new MyConversationUpdateDto(
-                messageRepository.newerThan(c.getId(), at, messageId).stream().map(ConversationMessageDto::from).toList(),
-                c.isUnseenByUser()))
+                toDtos(messageRepository.newerThan(c.getId(), at, messageId)), c.isUnseenByUser()))
             .orElseGet(() -> new MyConversationUpdateDto(List.of(), false));
+    }
+
+    /**
+     * A message from the person's own chat, with optional files (V111). Text, files or both - but
+     * not neither. The chat is an account's only: no mail goes anywhere, the team's badge lights.
+     */
+    @Transactional
+    public ConversationMessageDto sendInChat(UUID userId, @Nullable String rawBody, @Nullable String requestedLanguage,
+                                             List<MultipartFile> attachments) {
+        User user = userRepository.findById(userId).orElseThrow();
+        String body = StoredText.trimAndCap(rawBody, ContactMessage.MAX_BODY_LENGTH);
+        if (body == null && attachments.isEmpty()) {
+            throw new LocalizedMessage.Rejected("contact.body.required");
+        }
+        if (!throttle.tryAccount(user.getId().toString())) {
+            throw new LocalizedMessage.Conflict("contact.too.many");
+        }
+        Instant now = Instant.now();
+        ContactConversation conversation = conversationRepository.findByUserId(user.getId())
+            .orElseGet(() -> conversationRepository.save(ContactConversation.forUser(user, now)));
+        if (!attachments.isEmpty()) {
+            files.checkLimits(conversation.getId(), attachments);
+        }
+        String language = normalizeLanguage(requestedLanguage, user.getPreferredLanguage());
+        ContactMessage message = messageRepository.save(ContactMessage.general(conversation, body, language, now));
+        List<ContactMessageFile> saved = attachments.isEmpty() ? List.of() : files.attach(message, attachments);
+        conversation.recordInbound(now);
+        return ConversationMessageDto.from(message, saved);
+    }
+
+    /** A file of the person's OWN conversation, or "not found" - never a hint that another exists. */
+    @Transactional(readOnly = true)
+    public ContactMessageFile requireMyFile(UUID userId, UUID fileId) {
+        ContactMessageFile file = files.requireFile(fileId);
+        User owner = file.getMessage().getConversation().getUser();
+        if (owner == null || !owner.getId().equals(userId)) {
+            throw new LocalizedMessage.Rejected("contact.file.not.found");
+        }
+        return file;
+    }
+
+    @Transactional(readOnly = true)
+    public ContactFileSupport.FileStream openMyFile(UUID userId, UUID fileId) {
+        return files.stream(requireMyFile(userId, fileId));
+    }
+
+    /** The person withdraws a file THEY sent; what the team sent them is not theirs to remove. */
+    @Transactional
+    public void deleteMyFile(UUID userId, UUID fileId) {
+        ContactMessageFile file = requireMyFile(userId, fileId);
+        if (file.getMessage().isFromStaff()) {
+            throw new LocalizedMessage.Rejected("contact.file.not.found");
+        }
+        files.deleteFile(file);
+    }
+
+    private List<ConversationMessageDto> toDtos(List<ContactMessage> messages) {
+        Map<UUID, List<ContactMessageFile>> byMessage = files.filesOf(messages.stream().map(ContactMessage::getId).toList());
+        return messages.stream()
+            .map(m -> ConversationMessageDto.from(m, byMessage.getOrDefault(m.getId(), List.of())))
+            .toList();
     }
 
     @Transactional(readOnly = true)

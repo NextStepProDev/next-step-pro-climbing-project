@@ -2,17 +2,23 @@ package pl.nextsteppro.climbing.api.admin.contact;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.contact.ContactConversationClaim;
+import pl.nextsteppro.climbing.api.contact.ContactFileSupport;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
+import pl.nextsteppro.climbing.domain.contact.ContactMessageFileRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
 import pl.nextsteppro.climbing.domain.contact.MessageWindow;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRole;
 import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 import pl.nextsteppro.climbing.infrastructure.mail.ContactMailService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
+import pl.nextsteppro.climbing.infrastructure.storage.TestImages;
 import pl.nextsteppro.climbing.integration.BaseIntegrationTest;
 
 import java.time.Instant;
@@ -32,6 +38,8 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
     @Autowired private ContactConversationRepository conversationRepository;
     @Autowired private ContactMessageRepository messageRepository;
     @Autowired private ContactConversationClaim conversationClaim;
+    @Autowired private ContactMessageFileRepository fileRepository;
+    @Autowired private FileStorageService storage;
 
     @MockitoBean private ContactMailService contactMailService;
 
@@ -348,6 +356,64 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
         var refusal = assertThrows(LocalizedMessage.Rejected.class,
             () -> adminContactService.newer(UUID.randomUUID(), Instant.now(), UUID.randomUUID()));
         assertEquals("contact.conversation.not.found", refusal.messageKey());
+    }
+
+    // ---- files in the chat (V111), team side ----
+
+    @Test
+    void shouldReplyWithAFileToAnAccountWithoutMail() {
+        User admin = admin();
+        User client = verifiedClient("Ewa", "Plik");
+        UUID conversationId = adminContactService.start(admin.getId(), client.getId(), "Dzień dobry").conversationId();
+
+        ReplyResultDto result = adminContactService.replyWithFiles(conversationId, admin.getId(), null,
+            List.of(photo("plan.jpg")));
+
+        assertFalse(result.mailed());
+        assertNull(result.message().body(), "a reply may be only the file");
+        assertEquals(1, result.message().files().size());
+        assertTrue(result.message().files().getFirst().url().startsWith("/api/admin/contact/files/"), "the panel's own endpoint");
+        assertTrue(result.message().files().getFirst().canDelete());
+        assertTrue(conversationRepository.findById(conversationId).orElseThrow().isUnseenByUser());
+        conversationRepository.flush();
+        ConversationSummaryDto summary = adminContactService.get(conversationId).summary();
+        assertTrue(summary.previewIsFile(), "the list says the newest message is a file");
+        assertNull(summary.preview());
+    }
+
+    // A guest is reached by mail alone, and the chat never mails a file.
+    @Test
+    void shouldRefuseAFileForAGuest() {
+        User admin = admin();
+        ContactConversation guest = guestConversation("pl");
+
+        var refusal = assertThrows(LocalizedMessage.Rejected.class, () -> adminContactService.replyWithFiles(
+            guest.getId(), admin.getId(), "Proszę", List.of(photo("x.jpg"))));
+
+        assertEquals("contact.file.guest", refusal.messageKey());
+        verify(contactMailService, never()).sendReply(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void shouldTakeTheFilesOffTheDiskWithADeletedConversation() {
+        User admin = admin();
+        User client = verifiedClient("Jan", "Plik");
+        UUID conversationId = adminContactService.start(admin.getId(), client.getId(), "Hej").conversationId();
+        UUID fileId = adminContactService.replyWithFiles(conversationId, admin.getId(), "plan", List.of(photo("p.jpg")))
+            .message().files().getFirst().id();
+        String filename = fileRepository.findById(fileId).orElseThrow().getFilename();
+        conversationRepository.flush();
+
+        adminContactService.delete(conversationId);
+        conversationRepository.flush();
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
+
+        assertTrue(fileRepository.findById(fileId).isEmpty());
+        assertFalse(storage.exists(filename, ContactFileSupport.FOLDER));
+    }
+
+    private static MultipartFile photo(String name) {
+        return new MockMultipartFile("files", name, "image/jpeg", TestImages.jpeg(400, 300));
     }
 
     private int position(ContactConversation conversation) {

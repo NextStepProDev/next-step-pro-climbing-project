@@ -541,7 +541,7 @@ class AdminServiceInviteSyncTest {
         var inOrder = inOrder(userSeatReleaseService, contactConversationErasure, userRepository);
         inOrder.verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(victimId);
         // Twin of the self-deletion path: what they wrote signed out goes too, before the user row
-        inOrder.verify(contactConversationErasure).eraseGuestConversationOf(victim);
+        inOrder.verify(contactConversationErasure).eraseChatOf(victim);
         inOrder.verify(userRepository).delete(victim);
     }
 

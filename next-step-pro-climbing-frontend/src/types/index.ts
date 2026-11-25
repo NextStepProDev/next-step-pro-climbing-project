@@ -1175,15 +1175,31 @@ export interface SendContactMessage {
   language: string
 }
 
+/** A photo or PDF in a chat message (V111). `url` is the viewer's own private endpoint. */
+export interface ContactFile {
+  id: string
+  url: string
+  mimeType: string
+  /** The original name, HTML-escaped on the server — decode before display. */
+  fileName: string | null
+  sizeBytes: number
+  width: number | null
+  height: number | null
+  expiresAt: string
+  canDelete: boolean
+}
+
 export interface ConversationMessage {
   id: string
   fromStaff: boolean
-  body: string
+  /** Null for a message that is only files. */
+  body: string | null
   contextType: ContactContextType
   courseId: string | null
   courseTitle: string | null
   date: string | null
   createdAt: string
+  files: ContactFile[]
 }
 
 /** The chat as it opens: the newest page, oldest first. */
@@ -1220,6 +1236,8 @@ export interface AdminConversationSummary {
   lastInboundAt: string | null
   lastReplyAt: string | null
   preview: string | null
+  /** The newest message is only files, so there is no text to preview. */
+  previewIsFile: boolean
   previewFromStaff: boolean
   previewContextType: ContactContextType | null
   previewCourseTitle: string | null

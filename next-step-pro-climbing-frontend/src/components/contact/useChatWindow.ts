@@ -28,7 +28,10 @@ interface Options<M extends ChatMessage, L extends Page<M>, U extends { messages
  * sorted in the server's order every render, so an overlap - a poll racing a refetch, a sent
  * message coming back on the next poll - shows up once, in the right place.
  */
-export function useChatWindow<M extends ChatMessage, L extends Page<M>, U extends { messages: M[] }>(
+/** A chat message as the window needs it: its order, and the files a reader may remove. */
+type WindowMessage = ChatMessage & { body: string | null; files: { id: string }[] }
+
+export function useChatWindow<M extends WindowMessage, L extends Page<M>, U extends { messages: M[] }>(
   { latestKey, fetchLatest, fetchOlder, fetchNewer, pollMs = CHAT_POLL_MS }: Options<M, L, U>,
 ) {
   const latest = useQuery({
@@ -46,11 +49,21 @@ export function useChatWindow<M extends ChatMessage, L extends Page<M>, U extend
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [olderError, setOlderError] = useState<unknown>(null)
   const [arrived, setArrived] = useState<M[]>([])
+  const [hiddenFiles, setHiddenFiles] = useState<ReadonlySet<string>>(() => new Set())
 
-  const messages = useMemo(
-    () => mergeChatMessages(older, latest.data?.messages ?? [], arrived),
-    [older, latest.data, arrived],
-  )
+  // ⚠️ Messages are otherwise immutable (polls only ask for what is new), so a file the reader
+  // removed is taken out here; a message that was only that file goes with it, as on the server.
+  // The OTHER side sees the removal when it reopens the conversation - until then the thumbnail
+  // answers 404 and shows its "could not load" state.
+  const messages = useMemo(() => {
+    const merged = mergeChatMessages(older, latest.data?.messages ?? [], arrived)
+    if (hiddenFiles.size === 0) return merged
+    return merged
+      .map((m) => (m.files.some((f) => hiddenFiles.has(f.id))
+        ? { ...m, files: m.files.filter((f) => !hiddenFiles.has(f.id)) }
+        : m))
+      .filter((m) => m.body !== null || m.files.length > 0)
+  }, [older, latest.data, arrived, hiddenFiles])
 
   // Read by the poll's query function, which must not change identity with every new message.
   const newestRef = useRef<ChatMessage>(BEFORE_EVERYTHING)
@@ -105,6 +118,11 @@ export function useChatWindow<M extends ChatMessage, L extends Page<M>, U extend
     setArrived((current) => mergeChatMessages(current, [message]))
   }, [])
 
+  /** A file this reader has just removed: gone from the window at once. */
+  const hideFile = useCallback((fileId: string) => {
+    setHiddenFiles((current) => new Set(current).add(fileId))
+  }, [])
+
   const { refetch: refetchPoll } = poll
   /** Ask for news now, e.g. right after sending through an endpoint that does not echo the message. */
   const pollNow = useCallback(() => { void refetchPoll() }, [refetchPoll])
@@ -119,6 +137,7 @@ export function useChatWindow<M extends ChatMessage, L extends Page<M>, U extend
     loadingOlder,
     olderError,
     addMessage,
+    hideFile,
     pollNow,
     isLoading: latest.isLoading,
     isError: latest.isError,

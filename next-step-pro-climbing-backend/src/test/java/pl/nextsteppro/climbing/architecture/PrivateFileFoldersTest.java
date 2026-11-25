@@ -33,7 +33,7 @@ class PrivateFileFoldersTest {
      * Folders holding data about identifiable people's training and health. {@code training} is
      * the coach's materials; {@code commentfiles} is what people attach to thread messages.
      */
-    private static final List<String> PRIVATE_FOLDERS = List.of("training", "commentfiles");
+    private static final List<String> PRIVATE_FOLDERS = List.of("training", "commentfiles", "contactfiles");
 
     /** Path of any request mapping in the controller, e.g. {@code @GetMapping("/avatars/{filename}")}. */
     private static final Pattern MAPPING_PATH = Pattern.compile(

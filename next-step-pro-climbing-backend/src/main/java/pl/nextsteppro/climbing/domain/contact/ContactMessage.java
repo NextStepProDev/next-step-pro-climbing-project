@@ -33,7 +33,9 @@ public class ContactMessage {
     @Nullable
     private User staffAuthor;
 
-    @Column(name = "body", nullable = false, length = MAX_BODY_LENGTH)
+    /** Null only for a message that is nothing but files (V111) - never blank when present. */
+    @Column(name = "body", length = MAX_BODY_LENGTH)
+    @Nullable
     private String body;
 
     @Enumerated(EnumType.STRING)
@@ -62,7 +64,7 @@ public class ContactMessage {
     protected ContactMessage() {}
 
     private ContactMessage(ContactConversation conversation, boolean fromStaff, @Nullable User staffAuthor,
-                           String body, ContactContextType contextType, @Nullable Course course,
+                           @Nullable String body, ContactContextType contextType, @Nullable Course course,
                            @Nullable String courseTitle, @Nullable LocalDate contextDate, String language,
                            Instant createdAt) {
         this.conversation = conversation;
@@ -77,7 +79,8 @@ public class ContactMessage {
         this.createdAt = createdAt;
     }
 
-    public static ContactMessage general(ContactConversation conversation, String body, String language, Instant at) {
+    /** @param body null for a message that is only files - from an account's chat, never from the form */
+    public static ContactMessage general(ContactConversation conversation, @Nullable String body, String language, Instant at) {
         return new ContactMessage(conversation, false, null, body, ContactContextType.GENERAL,
             null, null, null, language, at);
     }
@@ -97,7 +100,8 @@ public class ContactMessage {
             null, null, day, language, at);
     }
 
-    public static ContactMessage reply(ContactConversation conversation, User author, String body,
+    /** @param body null for a reply that is only files (accounts only - a guest is reached by mail) */
+    public static ContactMessage reply(ContactConversation conversation, User author, @Nullable String body,
                                        String language, Instant at) {
         return new ContactMessage(conversation, true, author, body, ContactContextType.GENERAL,
             null, null, null, language, at);
@@ -124,7 +128,7 @@ public class ContactMessage {
         return staffAuthor;
     }
 
-    public String getBody() {
+    public @Nullable String getBody() {
         return body;
     }
 
