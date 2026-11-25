@@ -22,8 +22,9 @@ const PAGE_SIZE = 20
 
 /**
  * "Write to us" conversations: one per person (an account or a guest address), newest message
- * first. Opening a conversation marks it read for the whole team; a reply goes out by mail and
- * stays here. `?conversation=` is the deep link from the notification mail.
+ * first. Opening a conversation marks it read for the whole team; a reply stays here and goes out
+ * by mail only to a guest (an account holder's conversation is an in-app chat). `?conversation=`
+ * is the deep link from the notification mail, which only a guest's message sends.
  */
 export function AdminMessagesPanel() {
   const { t } = useTranslation('admin')
@@ -352,7 +353,9 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
           <p role="alert" className="text-sm text-rose-400">{getErrorMessage(replyMutation.error)}</p>
         )}
         {lastResult && (
-          <p role="status" className={clsx('text-sm', lastResult.mailed ? 'text-green-400' : 'text-amber-400')}>
+          // Both outcomes are success: an account holder's reply staying in the app is the design,
+          // not a missed mail, so it must not wear the warning colour.
+          <p role="status" className="text-sm text-green-400">
             {lastResult.mailed ? t('contactMessages.sentMailed') : t('contactMessages.sentInAppOnly')}
           </p>
         )}

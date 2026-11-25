@@ -303,6 +303,7 @@ Przy odrzuceniu użyć `findByIdWithUser` (JOIN FETCH) — mail leci async i czy
 
 - **Jedna rozmowa na osobę** (konto ALBO adres gościa, decyzja 2026-11-22); kontekst (kurs/dzień) niesie wiadomość, nie rozmowa. Kalendarz bez wybranego dnia = `CALENDAR` bez daty, nigdy „dziś”.
 - ⚠️ **Rozmowa gościa przechodzi na konto dopiero przy POTWIERDZENIU adresu** (`ContactConversationClaim` w `AccountConfirmation.confirm`), nigdy przy rejestracji — wpisanie cudzego adresu dawałoby wgląd w cudzą korespondencję. Ta sama reguła: usunięcie i eksport potwierdzonego konta obejmują rozmowę gościa pod jego adresem (`ContactConversationErasure`).
+- ⚠️ **Rozmowa kontowa to czat w aplikacji: zero maili w obie strony, także przy włączonych powiadomieniach** (2026-11-24). Sygnał = kropka (`unreadMessages`; u klienta ikona czatu w pasku i hamburger — admin jej nie ma). Mail tylko dla gościa; teksty pilnuje `accountChatCopy.test.ts`.
 - ⚠️ **Bez maila „dostaliśmy wiadomość” do piszącego** — publiczny formularz mailujący na dowolny adres to droga na blocklisty. Spam: honeypot + kubełek `contactsend` + godzinowy `ContactSendThrottle`.
 - Retencja rok (`ContactRetentionService.RETENTION`) jest wypisana w polityce prywatności PL i EN.
 
@@ -604,7 +605,7 @@ Frontend: Vitest (najgęściej w `components/training/`), TypeScript i ESLint mu
 
 ## Język komentarzy: angielski
 
-**Każdy komentarz w repo jest po angielsku** — Java, TS/TSX, CSS, Gradle, Dockerfile, compose, workflowy, skrypty, `loadtest/`, nagłówki sekcji w `messages*.properties` (we wszystkich trzech pakietach) i nowe migracje. Po polsku zostaje tylko to, co czyta użytkownik (tłumaczenia, maile, polityka), a w angielskim komentarzu wolno **cytować** polski tekst z UI w cudzysłowie albo backtickach. Do 19.11.2026 tej reguły nie było i repo się rozjechało (około 300 polskich linii w kilkudziesięciu plikach, obok angielskich w tych samych plikach).
+**Każdy komentarz w repo jest po angielsku** — Java, TS/TSX, CSS, Gradle, Dockerfile, compose, workflowy, skrypty, `loadtest/`, nagłówki sekcji w `messages*.properties` (we wszystkich trzech pakietach) i nowe migracje. Po polsku zostaje tylko to, co czyta użytkownik (tłumaczenia, maile, polityka), a w angielskim komentarzu wolno **cytować** polski tekst z UI w cudzysłowie albo backtickach.
 
 - Pilnują tego dwa testy: `CommentLanguageTest` (backend + `.github/` + hub; dlatego `ci-backend.yml` odpala się też na zmiany w tych katalogach, a `build.gradle` deklaruje je jako wejścia `test`, bo inaczej Gradle uznałby test za aktualny) i `src/__architecture__/commentLanguage.test.ts` (front). Heurystyka: zdejmuje tekst w cudzysłowie, a flaguje linię bez angielskiego słowa funkcyjnego, która ma polską literę albo dwa polskie słowa funkcyjne. **Fałszywy alarm → przeredaguj komentarz albo weź cytat w cudzysłów, nie dopisuj wyjątku.**
 - ⚠️ **Wyjątek: migracje do V106 włącznie** zostają po polsku (V107 i dalej już po angielsku). Są zastosowane na produkcji, a zmiana nawet komentarza zmienia checksum i Flyway nie wstaje (patrz „Baza danych — Flyway”). Test pomija je po numerze (`LAST_POLISH_MIGRATION`); **każda nowsza migracja jest sprawdzana**.

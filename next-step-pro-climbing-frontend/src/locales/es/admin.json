@@ -1411,10 +1411,10 @@
     "messagesLabel": "Mensajes de la conversación",
     "team": "Equipo",
     "reply": "Respuesta",
-    "replyHintUser": "Va a la conversación en la aplicación y por correo (si el cliente tiene las notificaciones activadas).",
+    "replyHintUser": "Va solo al chat de la aplicación — el cliente verá un punto rojo, sin correo.",
     "replyHintGuest": "Va por correo a la dirección del invitado.",
     "send": "Enviar respuesta",
-    "sentMailed": "Enviado — la respuesta salió por correo.",
-    "sentInAppOnly": "Guardado en la conversación. El cliente tiene desactivadas las notificaciones por correo y la verá en la aplicación."
+    "sentMailed": "Enviado — el invitado recibió la respuesta por correo.",
+    "sentInAppOnly": "Guardado en el chat — el cliente verá la respuesta en la aplicación (sin correo)."
   }
 }

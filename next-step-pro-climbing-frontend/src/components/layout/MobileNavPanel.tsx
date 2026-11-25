@@ -159,7 +159,7 @@ export function MobileNavPanel({ open, onClose, sections, isActive, onLogout }: 
   };
 
   return createPortal(
-    <div className="md:hidden fixed inset-0 z-[60]">
+    <div className="xl:hidden fixed inset-0 z-[60]">
       <button
         type="button"
         aria-label={t("nav.closeMenu")}

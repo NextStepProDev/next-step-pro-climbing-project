@@ -16,7 +16,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -41,7 +40,7 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
         assertEquals("We do, on Saturdays.", result.message().body());
         assertEquals(admin.getFullName(), result.message().staffAuthorName());
         verify(contactMailService).sendReply(eq(conversation.getGuestEmail()), eq("Ola"),
-            eq("We do, on Saturdays."), eq("en"), eq(false));
+            eq("We do, on Saturdays."), eq("en"));
     }
 
     @Test
@@ -74,10 +73,11 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void shouldNotMailAnAccountHolderWhoTurnedMailOffButStillLightTheirBadge() {
+    void shouldNeverMailAnAccountHolderEvenWithMailTurnedOnButStillLightTheirBadge() {
         User admin = admin();
         User client = new User(uniqueEmail(), "Jan", "Kowalski", "+48123456789", nick());
-        client.setEmailNotificationsEnabled(false);
+        // On purpose: the switch for every other mail does not reach this in-app chat.
+        client.setEmailNotificationsEnabled(true);
         userRepository.save(client);
         ContactConversation conversation = conversationRepository.save(ContactConversation.forUser(client, Instant.now()));
         messageRepository.save(ContactMessage.general(conversation, "Pytanie", "pl", Instant.now()));
@@ -85,7 +85,7 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
         ReplyResultDto result = adminContactService.reply(conversation.getId(), admin.getId(), "Odpowiedź");
 
         assertFalse(result.mailed());
-        verify(contactMailService, never()).sendReply(anyString(), anyString(), anyString(), anyString(), anyBoolean());
+        verify(contactMailService, never()).sendReply(anyString(), anyString(), anyString(), anyString());
         assertTrue(conversationRepository.findById(conversation.getId()).orElseThrow().isUnseenByUser());
     }
 

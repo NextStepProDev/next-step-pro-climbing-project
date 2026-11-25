@@ -99,18 +99,13 @@ public class AdminContactService {
         ContactMessage reply = messageRepository.save(ContactMessage.reply(conversation, admin, body, language, now));
         conversation.recordReply(now);
 
-        // A guest has no other way to read the answer, so they always get it. An account holder
-        // gets it under the same switch as every other mail from us, and sees it in the app either way.
-        boolean mailed;
-        if (owner == null) {
+        // A guest has no other way to read the answer, so they always get it by mail. An account
+        // holder's conversation is an in-app chat: they wrote signed in, so they read the answer
+        // signed in - the unread dot lights and no mail goes, whatever their notification switch.
+        boolean mailed = owner == null;
+        if (mailed) {
             mailService.sendReply(Objects.requireNonNull(conversation.getGuestEmail()), Objects.requireNonNull(conversation.getGuestName()),
-                body, language, false);
-            mailed = true;
-        } else if (owner.isEmailNotificationsEnabled()) {
-            mailService.sendReply(owner.getEmail(), owner.getFirstName(), body, language, true);
-            mailed = true;
-        } else {
-            mailed = false;
+                body, language);
         }
         return new ReplyResultDto(AdminConversationMessageDto.from(reply), mailed);
     }

@@ -9,6 +9,7 @@ import {
   LogOut,
   Mail,
   Menu,
+  MessageCircle,
   Moon,
   Newspaper,
   ShieldCheck,
@@ -55,6 +56,9 @@ type NavLink = {
   premium?: boolean;
 };
 
+const MY_RESERVATIONS_PATH = "/my-reservations";
+const CHAT_PATH = "/my-reservations?tab=messages";
+
 export function Navbar() {
   const { t } = useTranslation('common');
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -74,8 +78,15 @@ export function Navbar() {
   const mediaMenuRef = useRef<HTMLDivElement>(null);
   const teamMenuRef = useRef<HTMLDivElement>(null);
 
-  const isLinkActive = (path: string) =>
-    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+  // The chat is a tab of My Reservations, so it is the one link with a query: it is active only
+  // on its own tab, and My Reservations steps back there so a single link is lit at a time.
+  const onChatTab = location.pathname === MY_RESERVATIONS_PATH
+    && new URLSearchParams(location.search).get('tab') === 'messages';
+  const isLinkActive = (path: string) => {
+    if (path === CHAT_PATH) return onChatTab;
+    if (path === MY_RESERVATIONS_PATH && onChatTab) return false;
+    return path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+  };
 
   // Admin notifications (pending requests + new reservations) — a red dot on the Admin
   // link so it is visible right away that something is waiting. Same cache as the admin panel.
@@ -133,17 +144,20 @@ export function Navbar() {
   const trainingBadgeCount = user?.isAthlete ? (trainingNotifications?.newCount ?? 0) : 0;
 
   // An answer from the team in the "write to us" conversation, not seen yet. One conversation,
-  // so it counts as one. Cache shared with the Messages tab on My Reservations.
+  // so it counts as one. Cache shared with the Messages tab on My Reservations. For an account
+  // holder this dot is the only notice: the chat sends no mail. It lights on the Chat link only,
+  // not on My Reservations too, so one answer is not announced twice.
   const { data: conversationUnseen } = useQuery({
     queryKey: ['conversation', 'unseen'],
     queryFn: contactApi.getUnseen,
-    enabled: isAuthenticated,
+    // An admin gets no chat link (see chatLink), so nothing in the bar would show the answer.
+    enabled: isAuthenticated && !isAdmin,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });
-  const conversationBadgeCount = isAuthenticated && conversationUnseen?.unseenReply ? 1 : 0;
+  const conversationBadgeCount = isAuthenticated && !isAdmin && conversationUnseen?.unseenReply ? 1 : 0;
 
   const mediaLinks: NavLink[] = [
     { to: "/galeria", label: t('nav.gallery'), icon: Images },
@@ -163,16 +177,25 @@ export function Navbar() {
     { to: "/calendar", label: t('nav.calendar'), icon: CalendarDays },
     ...(isAuthenticated
       ? [{
-          to: "/my-reservations",
+          to: MY_RESERVATIONS_PATH,
           label: t('nav.myReservations'),
           icon: Star,
-          badge: invitationBadgeCount + trainingBadgeCount + conversationBadgeCount,
+          badge: invitationBadgeCount + trainingBadgeCount,
           premium: true,
         }]
       : []),
     { to: "/aktualnosci", label: t('nav.news'), icon: Newspaper },
     { to: "/kursy", label: t('nav.courses'), icon: GraduationCap },
   ];
+
+  // ⚠️ On desktop the chat is an ICON in the right cluster, not a text tab: the bar had no room
+  // for one more label (measured: a logged-in admin at 1280 px got a horizontal page scroll,
+  // "Twoja strefa" broke onto two lines at 1180-1279). The drawer has room, so it keeps the row.
+  // Not for an admin: the team answers in the panel (Messages tab), a chat with itself means
+  // nothing, and the admin bar is the one with no room left (the Admin tab and its badge).
+  const chatLink: NavLink | null = isAuthenticated && !isAdmin
+    ? { to: CHAT_PATH, label: t('nav.chat'), icon: MessageCircle, badge: conversationBadgeCount }
+    : null;
 
   const navLinksAfter: NavLink[] = [
     { to: "/kontakt", label: t('nav.contact'), icon: Mail },
@@ -188,7 +211,7 @@ export function Navbar() {
     { key: 'main', title: t('nav.sections.main'), items: navLinksBefore },
     { key: 'team', title: t('nav.team'), items: teamLinks },
     { key: 'media', title: t('nav.media'), items: mediaLinks },
-    { key: 'more', title: t('nav.sections.more'), items: navLinksAfter },
+    { key: 'more', title: t('nav.sections.more'), items: chatLink ? [chatLink, ...navLinksAfter] : navLinksAfter },
   ];
 
   const isMediaActive = mediaLinks.some((l) => isLinkActive(l.to));
@@ -288,7 +311,7 @@ export function Navbar() {
   });
 
   // The rest are geometry changes React does not know about, because no render is behind them:
-  // the row wrapping below `xl` when the window width changes, and a font finishing loading.
+  // the window width changing, and a font finishing loading.
   // ⚠️ ResizeObserver is the ONLY thing that catches them, but it does not replace the effect
   // above — delivery of its callbacks is paused in a background tab (zero render frames), so
   // relying on it for React-driven cases would move the whole measurement onto a mechanism that
@@ -303,7 +326,7 @@ export function Navbar() {
 
   // At the top of the homepage the navbar "sits" on the hero image as frosted glass,
   // so the photo shows through behind the logo/hamburger. After scrolling, with the menu
-  // open, and on desktop (md:) it returns to the normal dark background.
+  // open, and on desktop (xl:) it returns to the normal dark background.
   const heroOverlay = location.pathname === "/" && atTop && !mobileMenuOpen;
 
   const renderBadge = (link: NavLink) =>
@@ -336,12 +359,10 @@ export function Navbar() {
         data-nav-active={active || undefined}
         data-nav-premium={link.premium || undefined}
         className={clsx(
-          // ⚠️ `xl:whitespace-nowrap`, not `whitespace-nowrap`: forbidding line breaks is safe
-          // only where the row has room to spread out. Below xl the full bar (10 tabs + logo +
-          // the right cluster) does not fit in the window anyway — an unconditional nowrap would
-          // then turn wrapping into tabs SLIDING under the right cluster, i.e. overlapping
-          // elements instead of an ugly but readable break.
-          "px-2.5 xl:px-3 xl:whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
+          // `whitespace-nowrap` is safe only because the bar exists from `xl` up (see BAR_BREAKPOINT
+          // note at the row): below that the full bar does not fit, and nowrap there turned
+          // wrapping into tabs sliding under the right cluster.
+          "px-3 whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
           link.premium
             ? "hover:bg-surface-800/60"
             : active
@@ -376,7 +397,7 @@ export function Navbar() {
         <div className={clsx(
           "flex items-center justify-between",
           heroOverlay
-            ? "h-14 mx-6 sm:mx-0 rounded-full px-5 sm:px-6 border border-white/12 bg-surface-950/40 backdrop-blur-[2px] md:bg-surface-950/45"
+            ? "h-14 mx-6 sm:mx-0 rounded-full px-5 sm:px-6 border border-white/12 bg-surface-950/40 backdrop-blur-[2px] xl:bg-surface-950/45"
             : "h-18",
         )}>
           {/* Logo */}
@@ -391,8 +412,11 @@ export function Navbar() {
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div ref={navContainerRef} className="hidden md:flex items-center gap-1 relative">
+          {/* Desktop Navigation. BAR_BREAKPOINT: ⚠️ the bar starts at `xl`, and the same `xl` sits
+              on the right cluster, the hamburger (`xl:hidden`) and the drawer in MobileNavPanel —
+              change them together. It used to be `md`, and from 768 to 1279 px a signed-in bar did
+              not fit: tabs fell off the screen and the page scrolled sideways (measured, 2026-11-24). */}
+          <div ref={navContainerRef} className="hidden xl:flex items-center gap-1 relative">
             {hasIndicator && (
               <div
                 className={clsx(
@@ -410,7 +434,7 @@ export function Navbar() {
                 onClick={() => setTeamMenuOpen(!teamMenuOpen)}
                 data-nav-active={isTeamActive || undefined}
                 className={clsx(
-                  "flex items-center gap-1 px-2.5 xl:px-3 xl:whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
+                  "flex items-center gap-1 px-3 whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isTeamActive
                     ? "text-surface-100"
                     : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
@@ -454,7 +478,7 @@ export function Navbar() {
                 onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
                 data-nav-active={isMediaActive || undefined}
                 className={clsx(
-                  "flex items-center gap-1 px-2.5 xl:px-3 xl:whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
+                  "flex items-center gap-1 px-3 whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isMediaActive
                     ? "text-surface-100"
                     : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
@@ -496,7 +520,26 @@ export function Navbar() {
           </div>
 
           {/* User Actions */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden xl:flex items-center gap-2">
+            {chatLink && (
+              <Link
+                to={chatLink.to}
+                aria-current={isLinkActive(chatLink.to) ? "page" : undefined}
+                aria-label={conversationBadgeCount > 0 ? t('nav.chatUnread') : t('nav.chat')}
+                title={t('nav.chat')}
+                className={clsx(
+                  "relative p-2 rounded-lg transition-all duration-150 active:scale-95",
+                  isLinkActive(chatLink.to)
+                    ? "text-surface-100 bg-surface-800"
+                    : "text-surface-300 hover:text-surface-100 hover:bg-surface-800",
+                )}
+              >
+                <MessageCircle className="w-4.5 h-4.5" />
+                {conversationBadgeCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500" />
+                )}
+              </Link>
+            )}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-all duration-150 active:scale-95"
@@ -566,9 +609,10 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button (dot = admin notifications hidden in the closed menu) */}
+          {/* Mobile menu button (dot = any badge hidden in the closed menu). ⚠️ It must sum EVERY
+              link badge: the chat sends no mail, so on a phone this dot is the only sign of a reply. */}
           <button
-            className="md:hidden relative text-surface-300"
+            className="xl:hidden relative text-surface-300"
             aria-label={mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
@@ -577,7 +621,7 @@ export function Navbar() {
             ) : (
               <Menu className="w-6 h-6" />
             )}
-            {!mobileMenuOpen && (adminBadgeCount + invitationBadgeCount + trainingBadgeCount) > 0 && (
+            {!mobileMenuOpen && (adminBadgeCount + invitationBadgeCount + trainingBadgeCount + conversationBadgeCount) > 0 && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500" />
             )}
           </button>
