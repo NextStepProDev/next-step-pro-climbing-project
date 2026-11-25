@@ -11,6 +11,7 @@ import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
+import pl.nextsteppro.climbing.domain.contact.MessageWindow;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
@@ -25,7 +26,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * The team's side of the "write to us" conversations: the list, a conversation, the reply.
+ * The team's side of the "write to us" conversations - the message centre: the list (messenger
+ * order, search), a conversation, the reply, and starting a conversation with a registered person.
  *
  * <p>No activity log: like the private notes, the log audits actions that touch people's
  * bookings and accounts, and an entry per reply would turn the Activity tab into a second inbox.
@@ -51,11 +53,9 @@ public class AdminContactService {
     }
 
     @Transactional(readOnly = true)
-    public ConversationPageDto list(boolean unreadOnly, int page, int size) {
+    public ConversationPageDto list(boolean unreadOnly, @Nullable String query, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100));
-        Page<ContactConversation> rows = unreadOnly
-            ? conversationRepository.findUnreadForStaff(pageable)
-            : conversationRepository.findAllForStaff(pageable);
+        Page<ContactConversation> rows = conversationRepository.findForStaff(unreadOnly, likePattern(query), pageable);
         List<UUID> ids = rows.getContent().stream().map(ContactConversation::getId).toList();
         Map<UUID, ContactMessage> latest = ids.isEmpty() ? Map.of()
             : messageRepository.findLatestIn(ids).stream()
@@ -66,12 +66,33 @@ public class AdminContactService {
         return new ConversationPageDto(content, rows.getTotalElements(), rows.getTotalPages(), rows.getNumber());
     }
 
+    /** The chat window opens on the newest page; older pages come on scroll, newer ones on poll. */
     @Transactional(readOnly = true)
     public ConversationDetailDto get(UUID conversationId) {
         ContactConversation conversation = require(conversationId);
-        List<ContactMessage> messages = messageRepository.findByConversationId(conversationId);
+        MessageWindow window = messageRepository.latest(conversationId);
+        List<ContactMessage> messages = window.messages();
         ContactMessage last = messages.isEmpty() ? null : messages.getLast();
         return new ConversationDetailDto(summary(conversation, last),
+            messages.stream().map(AdminConversationMessageDto::from).toList(), window.hasOlder());
+    }
+
+    @Transactional(readOnly = true)
+    public AdminMessagePageDto older(UUID conversationId, Instant at, UUID messageId) {
+        require(conversationId);
+        MessageWindow window = messageRepository.olderThan(conversationId, at, messageId);
+        return new AdminMessagePageDto(
+            window.messages().stream().map(AdminConversationMessageDto::from).toList(), window.hasOlder());
+    }
+
+    @Transactional(readOnly = true)
+    public AdminConversationUpdateDto newer(UUID conversationId, Instant at, UUID messageId) {
+        ContactConversation conversation = require(conversationId);
+        List<ContactMessage> messages = messageRepository.newerThan(conversationId, at, messageId);
+        // The summary's preview is the newest message overall; when nothing arrived, read just that one.
+        ContactMessage last = !messages.isEmpty() ? messages.getLast()
+            : messageRepository.findNewestFirst(conversationId, PageRequest.of(0, 1)).stream().findFirst().orElse(null);
+        return new AdminConversationUpdateDto(summary(conversation, last),
             messages.stream().map(AdminConversationMessageDto::from).toList());
     }
 
@@ -81,11 +102,48 @@ public class AdminContactService {
         require(conversationId).markReadByStaff(Instant.now());
     }
 
+    /** The account's conversation, if there is one - for "Write" on a user's card. */
+    @Transactional(readOnly = true)
+    public ConversationLookupDto findForUser(UUID userId) {
+        return new ConversationLookupDto(
+            conversationRepository.findByUserId(userId).map(ContactConversation::getId).orElse(null));
+    }
+
+    /**
+     * The team writes to a registered person first. Still one conversation per person: when there
+     * already is one, this is simply a reply in it, so the history stays in one place.
+     *
+     * <p>Only a confirmed, non-admin account. An unconfirmed one cannot sign in and is deleted
+     * within 7 days, so the message would never be read; an admin has no chat link in the
+     * navbar (they answer here), so it would never be seen either. A guest cannot be reached at
+     * all: the only way to them is mail, and the chat never mails an account - starting a
+     * conversation with a guest would be an unsolicited mail to an address from a contact form.
+     */
+    @Transactional
+    public StartConversationResultDto start(UUID adminId, UUID userId, String rawBody) {
+        String body = requireBody(rawBody);
+        User person = userRepository.findById(userId)
+            .orElseThrow(() -> new LocalizedMessage.Rejected("contact.user.not.found"));
+        if (person.isAdmin()) throw new LocalizedMessage.Rejected("contact.user.admin");
+        if (!person.isEmailVerified()) throw new LocalizedMessage.Conflict("contact.user.unverified", person.getFullName());
+
+        ContactConversation existing = conversationRepository.findByUserId(userId).orElse(null);
+        if (existing != null) {
+            ReplyResultDto reply = reply(existing.getId(), adminId, body);
+            return new StartConversationResultDto(existing.getId(), reply.message());
+        }
+        User admin = userRepository.findById(adminId).orElseThrow();
+        Instant now = Instant.now();
+        ContactConversation conversation = conversationRepository.save(ContactConversation.startedByStaff(person, now));
+        ContactMessage first = messageRepository.save(
+            ContactMessage.reply(conversation, admin, body, person.getPreferredLanguage(), now));
+        return new StartConversationResultDto(conversation.getId(), AdminConversationMessageDto.from(first));
+    }
+
     @Transactional
     public ReplyResultDto reply(UUID conversationId, UUID adminId, String rawBody) {
         ContactConversation conversation = require(conversationId);
-        String body = StoredText.trimAndCap(rawBody, ContactMessage.MAX_BODY_LENGTH);
-        if (body == null) throw new LocalizedMessage.Rejected("contact.body.required");
+        String body = requireBody(rawBody);
         User admin = userRepository.findById(adminId).orElseThrow();
 
         User owner = conversation.getUser();
@@ -133,6 +191,7 @@ public class AdminContactService {
             email,
             c.isUnreadByStaff(),
             c.isAnswered(),
+            c.getLastActivityAt(),
             c.getLastInboundAt(),
             c.getLastReplyAt(),
             last != null ? preview(last.getBody()) : null,
@@ -140,6 +199,25 @@ public class AdminContactService {
             last != null ? last.getContextType() : null,
             last != null ? last.getCourseTitle() : null,
             last != null ? last.getContextDate() : null);
+    }
+
+    private static String requireBody(String rawBody) {
+        String body = StoredText.trimAndCap(rawBody, ContactMessage.MAX_BODY_LENGTH);
+        if (body == null) throw new LocalizedMessage.Rejected("contact.body.required");
+        return body;
+    }
+
+    /**
+     * A lower-cased {@code %…%} pattern for a search, or null for none. The LIKE wildcards a person
+     * might type are escaped away rather than honoured: "50%" is a search for "50%", and an
+     * underscore in an address is an underscore.
+     */
+    static @Nullable String likePattern(@Nullable String query) {
+        if (query == null) return null;
+        String trimmed = query.trim().toLowerCase(java.util.Locale.ROOT);
+        if (trimmed.isEmpty()) return null;
+        String escaped = trimmed.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     private static String preview(String body) {

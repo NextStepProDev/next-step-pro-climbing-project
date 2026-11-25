@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V108. Następna migracja: V109.** Wszystkie do V106 są na produkcji (deploy 4.74.0, 2026-10-23); V107 i V108 czekają na deploy.
+**Stan: V109. Następna migracja: V110.** Wszystkie do V106 są na produkcji (deploy 4.74.0, 2026-10-23); V107–V109 czekają na deploy.
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
@@ -304,6 +304,8 @@ Przy odrzuceniu użyć `findByIdWithUser` (JOIN FETCH) — mail leci async i czy
 - **Jedna rozmowa na osobę** (konto ALBO adres gościa, decyzja 2026-11-22); kontekst (kurs/dzień) niesie wiadomość, nie rozmowa. Kalendarz bez wybranego dnia = `CALENDAR` bez daty, nigdy „dziś”.
 - ⚠️ **Rozmowa gościa przechodzi na konto dopiero przy POTWIERDZENIU adresu** (`ContactConversationClaim` w `AccountConfirmation.confirm`), nigdy przy rejestracji — wpisanie cudzego adresu dawałoby wgląd w cudzą korespondencję. Ta sama reguła: usunięcie i eksport potwierdzonego konta obejmują rozmowę gościa pod jego adresem (`ContactConversationErasure`).
 - ⚠️ **Rozmowa kontowa to czat w aplikacji: zero maili w obie strony, także przy włączonych powiadomieniach** (2026-11-24). Sygnał = kropka (`unreadMessages`; u klienta ikona czatu w pasku i hamburger — admin jej nie ma). Mail tylko dla gościa; teksty pilnuje `accountChatCopy.test.ts`.
+- **Zespół może ZACZĄĆ rozmowę (V109), ale tylko z potwierdzonym kontem nie-admina** — gość jest osiągalny wyłącznie mailem, czyli byłby to nieproszony mail. ⚠️ Taka rozmowa ma `last_inbound_at` NULL, więc lista sortuje po `last_activity_at` (NULL pod `DESC` lądowałby na górze), a „nieprzeczytane” wymaga jawnego `IS NOT NULL`.
+- **Okno czatu (`useChatWindow` + `ChatScroller`, obie strony): strona 30 najnowszych, starsze przy scrollu, odpytanie co 5 s TYLKO o nowsze.** ⚠️ Kursor to para `(created_at, id)`, nigdy sam czas — remis na granicy strony gubiłby wiadomość. Działa, bo wiadomości są niezmienne; edycja albo kasowanie pojedynczej wymagałoby innego odpytywania. ⚠️ „Przeczytane/widziane” odpala się przy zmianie najnowszej wiadomości, nie samej flagi (flaga zostaje `true` między dwoma odpytaniami). Przewijanie: w dół tylko czytelnika na dole albo po własnej wiadomości, starsza porcja trzyma miejsce.
 - ⚠️ **Bez maila „dostaliśmy wiadomość” do piszącego** — publiczny formularz mailujący na dowolny adres to droga na blocklisty. Spam: honeypot + kubełek `contactsend` + godzinowy `ContactSendThrottle`.
 - Retencja rok (`ContactRetentionService.RETENTION`) jest wypisana w polityce prywatności PL i EN.
 

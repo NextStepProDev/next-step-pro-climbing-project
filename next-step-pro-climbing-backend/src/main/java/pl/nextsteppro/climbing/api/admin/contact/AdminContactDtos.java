@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.api.admin.contact;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.contact.ContactContextType;
@@ -14,8 +15,10 @@ import java.util.UUID;
 /**
  * One row of the admin list.
  *
- * @param userId  the account, or null for a guest known only by {@code email}
- * @param preview the newest message, cut short; who wrote it is {@code previewFromStaff}
+ * @param userId         the account, or null for a guest known only by {@code email}
+ * @param lastActivityAt the newest message in either direction - what the list is ordered by
+ * @param lastInboundAt  the person's newest message; null when only the team has written
+ * @param preview        the newest message, cut short; who wrote it is {@code previewFromStaff}
  */
 record ConversationSummaryDto(
     UUID id,
@@ -24,7 +27,8 @@ record ConversationSummaryDto(
     String email,
     boolean unread,
     boolean answered,
-    Instant lastInboundAt,
+    Instant lastActivityAt,
+    @Nullable Instant lastInboundAt,
     @Nullable Instant lastReplyAt,
     @Nullable String preview,
     boolean previewFromStaff,
@@ -57,7 +61,21 @@ record AdminConversationMessageDto(
     }
 }
 
-record ConversationDetailDto(ConversationSummaryDto summary, List<AdminConversationMessageDto> messages) {}
+/**
+ * The conversation as the chat window opens it: the newest page, oldest first.
+ *
+ * @param hasOlder whether scrolling up has more to load ({@code GET …/messages/older})
+ */
+record ConversationDetailDto(ConversationSummaryDto summary, List<AdminConversationMessageDto> messages, boolean hasOlder) {}
+
+/** One page above what the window already shows, oldest first. */
+record AdminMessagePageDto(List<AdminConversationMessageDto> messages, boolean hasOlder) {}
+
+/**
+ * A poll: only what arrived after the newest message the window has, plus the summary, whose
+ * unread flag the panel needs to mark a new message read while it is on screen.
+ */
+record AdminConversationUpdateDto(ConversationSummaryDto summary, List<AdminConversationMessageDto> messages) {}
 
 /**
  * @param mailed whether the reply went out by mail - true for a guest, false for an account
@@ -66,3 +84,18 @@ record ConversationDetailDto(ConversationSummaryDto summary, List<AdminConversat
 record ReplyResultDto(AdminConversationMessageDto message, boolean mailed) {}
 
 record ReplyRequest(@NotBlank @Size(max = ContactMessage.MAX_BODY_LENGTH) String body) {}
+
+/** The team writes first to a registered person (the message centre's "New conversation"). */
+record StartConversationRequest(
+    @NotNull UUID userId,
+    @NotBlank @Size(max = ContactMessage.MAX_BODY_LENGTH) String body
+) {}
+
+/**
+ * @param conversationId the new conversation, or the person's existing one the message went into
+ *                       (still one conversation per person)
+ */
+record StartConversationResultDto(UUID conversationId, AdminConversationMessageDto message) {}
+
+/** @param conversationId the account's conversation, or null when there is none yet */
+record ConversationLookupDto(@Nullable UUID conversationId) {}

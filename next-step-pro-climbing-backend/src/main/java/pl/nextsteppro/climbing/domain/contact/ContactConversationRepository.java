@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.domain.contact;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,28 +17,43 @@ public interface ContactConversationRepository extends JpaRepository<ContactConv
     @Query("SELECT c FROM ContactConversation c WHERE lower(c.guestEmail) = lower(:email)")
     Optional<ContactConversation> findByGuestEmail(String email);
 
-    /** The admin list: newest inbound first, the account loaded for its name in the same query. */
+    /**
+     * The admin list, ordered like a messenger: the newest message in either direction first, the
+     * id breaking ties so a page boundary never shows a row twice or skips one. The account is
+     * fetched in the same query for its name.
+     *
+     * <p>{@code pattern} is a lower-cased {@code %…%} LIKE pattern, or null for no search; it
+     * matches the account's name and address, or the guest's. Unread means "the person wrote
+     * something nobody on the team has read" - a conversation only the team wrote in never is
+     * (its inbound clock is null, and the comparison is spelled out rather than left to NULL
+     * semantics). The casts are not decoration: a null parameter reaches Postgres untyped.
+     */
     @Query(value = """
-        SELECT c FROM ContactConversation c LEFT JOIN FETCH c.user
-        ORDER BY c.lastInboundAt DESC
-        """,
-        countQuery = "SELECT count(c) FROM ContactConversation c")
-    Page<ContactConversation> findAllForStaff(Pageable pageable);
-
-    @Query(value = """
-        SELECT c FROM ContactConversation c LEFT JOIN FETCH c.user
-        WHERE c.staffReadAt IS NULL OR c.lastInboundAt > c.staffReadAt
-        ORDER BY c.lastInboundAt DESC
+        SELECT c FROM ContactConversation c LEFT JOIN FETCH c.user u
+        WHERE (:unreadOnly = false
+               OR (c.lastInboundAt IS NOT NULL AND (c.staffReadAt IS NULL OR c.lastInboundAt > c.staffReadAt)))
+          AND (cast(:pattern as String) IS NULL
+               OR lower(concat(u.firstName, ' ', u.lastName)) LIKE cast(:pattern as String)
+               OR lower(u.email) LIKE cast(:pattern as String)
+               OR lower(c.guestName) LIKE cast(:pattern as String)
+               OR lower(c.guestEmail) LIKE cast(:pattern as String))
+        ORDER BY c.lastActivityAt DESC, c.id
         """,
         countQuery = """
-        SELECT count(c) FROM ContactConversation c
-        WHERE c.staffReadAt IS NULL OR c.lastInboundAt > c.staffReadAt
+        SELECT count(c) FROM ContactConversation c LEFT JOIN c.user u
+        WHERE (:unreadOnly = false
+               OR (c.lastInboundAt IS NOT NULL AND (c.staffReadAt IS NULL OR c.lastInboundAt > c.staffReadAt)))
+          AND (cast(:pattern as String) IS NULL
+               OR lower(concat(u.firstName, ' ', u.lastName)) LIKE cast(:pattern as String)
+               OR lower(u.email) LIKE cast(:pattern as String)
+               OR lower(c.guestName) LIKE cast(:pattern as String)
+               OR lower(c.guestEmail) LIKE cast(:pattern as String))
         """)
-    Page<ContactConversation> findUnreadForStaff(Pageable pageable);
+    Page<ContactConversation> findForStaff(boolean unreadOnly, @Nullable String pattern, Pageable pageable);
 
     @Query("""
         SELECT count(c) FROM ContactConversation c
-        WHERE c.staffReadAt IS NULL OR c.lastInboundAt > c.staffReadAt
+        WHERE c.lastInboundAt IS NOT NULL AND (c.staffReadAt IS NULL OR c.lastInboundAt > c.staffReadAt)
         """)
     int countUnreadForStaff();
 

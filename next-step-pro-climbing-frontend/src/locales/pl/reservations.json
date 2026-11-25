@@ -118,6 +118,8 @@
     "reply": "Odpowiedz",
     "hint": "Odpowiemy tutaj — da znać czerwona kropka u góry strony.",
     "otherWays": "Inne formy kontaktu",
+    "loadOlder": "Wczytaj starsze wiadomości",
+    "newBelow": "Nowe wiadomości",
     "send": "Wyślij"
   }
 }

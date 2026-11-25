@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom'
 import { useThemeLogo } from '../hooks/useThemeLogo'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '24 listopada 2026'
-const LAST_UPDATED_EN = '24 November 2026'
+const LAST_UPDATED_PL = '25 listopada 2026'
+const LAST_UPDATED_EN = '25 November 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -151,13 +151,15 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               Formularz jest na stronie Kontakt, przy kursach i w kalendarzu. Można z niego korzystać bez konta.
               Wiadomość osoby bez konta trafia mailem do administratora oraz do panelu, z którego na nią
               odpowiada, a odpowiedź przychodzi na podany adres e-mail. Wiadomość osoby zalogowanej i odpowiedź
-              na nią są tylko w aplikacji (Czat) — nie wysyłamy ich mailem.
+              na nią są tylko w aplikacji (Czat) — nie wysyłamy ich mailem. Administrator może też sam
+              napisać w Czacie do osoby, która ma konto z potwierdzonym adresem; do osoby bez konta nie
+              piszemy z własnej inicjatywy.
             </p>
             <DataList items={[
               'Imię i adres e-mail — jeśli piszesz bez logowania; wiadomość zalogowanej osoby jest przypisana do jej konta',
               'Treść wiadomości i to, czego dotyczy (kurs albo dzień w kalendarzu)',
               'Język strony, z której wysłano wiadomość',
-              'Odpowiedzi administratora',
+              'Odpowiedzi administratora i wiadomości, które sam napisał w Czacie',
             ]} />
             <p className="text-surface-400 text-sm leading-relaxed mt-3">
               Jeśli później założysz konto na ten sam adres e-mail i go potwierdzisz, wcześniejsze wiadomości
@@ -709,13 +711,15 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               The form is on the Contact page, on course pages and in the calendar. It can be used without an
               account. A message from someone without an account reaches the administrator by e-mail and in the
               panel used to answer it, and the reply goes to the e-mail address given. A signed-in person’s
-              message and the reply to it stay in the app only (Chat) — we do not send them by e-mail.
+              message and the reply to it stay in the app only (Chat) — we do not send them by e-mail. The
+              administrator may also write first in Chat to someone with an account and a confirmed
+              address; we never write first to someone without an account.
             </p>
             <DataList items={[
               'Name and e-mail address — if you write without signing in; a signed-in person’s message is attached to their account',
               'The message and what it is about (a course or a day in the calendar)',
               'The language of the page the message was sent from',
-              'The administrator’s replies',
+              'The administrator’s replies, and messages they wrote first in Chat',
             ]} />
             <p className="text-surface-400 text-sm leading-relaxed mt-3">
               If you later create an account with the same e-mail address and confirm it, your earlier messages
