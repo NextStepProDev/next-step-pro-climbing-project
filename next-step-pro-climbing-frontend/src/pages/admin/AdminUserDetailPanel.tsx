@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, ShieldCheck, Dumbbell } from 'lucide-react'
+import { ArrowLeft, ShieldCheck, Dumbbell, MessageCircle } from 'lucide-react'
 import { adminUserHistoryApi } from '../../api/client'
 import { Avatar } from '../../components/ui/Avatar'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -123,6 +123,18 @@ export function AdminUserDetailPanel() {
                   <Dumbbell className="w-3 h-3" />
                   {t('users.detail.athleteBadge')}
                 </span>
+              )}
+              {/* Only where the chat can reach: not an admin (no chat link) and not an
+                  unconfirmed account (cannot sign in) — the server refuses both anyway */}
+              {user.role !== 'ADMIN' && user.emailVerified && (
+                <Link
+                  to={`/admin/messages?new=${userId}`}
+                  title={t('users.detail.writeHint')}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+                >
+                  <MessageCircle className="w-3 h-3" aria-hidden="true" />
+                  {t('users.detail.write')}
+                </Link>
               )}
               <UserDataExportButton userId={userId} fullName={fullName ?? ''} />
             </div>

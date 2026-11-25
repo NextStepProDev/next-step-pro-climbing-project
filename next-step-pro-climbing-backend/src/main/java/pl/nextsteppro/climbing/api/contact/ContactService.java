@@ -11,6 +11,7 @@ import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
+import pl.nextsteppro.climbing.domain.contact.MessageWindow;
 import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -131,10 +132,39 @@ public class ContactService {
     @Transactional(readOnly = true)
     public MyConversationDto getMine(UUID userId) {
         return conversationRepository.findByUserId(userId)
-            .map(c -> new MyConversationDto(
-                messageRepository.findByConversationId(c.getId()).stream().map(ConversationMessageDto::from).toList(),
+            .map(c -> {
+                MessageWindow window = messageRepository.latest(c.getId());
+                return new MyConversationDto(
+                    window.messages().stream().map(ConversationMessageDto::from).toList(),
+                    c.isUnseenByUser(), window.hasOlder());
+            })
+            .orElseGet(() -> new MyConversationDto(List.of(), false, false));
+    }
+
+    /**
+     * The page above (at, id) in the person's OWN conversation. The conversation comes from the
+     * token, never from the request: a cursor is only a position, so one copied from somebody
+     * else's chat still reads the caller's own messages and nothing of theirs.
+     */
+    @Transactional(readOnly = true)
+    public MyMessagePageDto olderMine(UUID userId, Instant at, UUID messageId) {
+        return conversationRepository.findByUserId(userId)
+            .map(c -> {
+                MessageWindow window = messageRepository.olderThan(c.getId(), at, messageId);
+                return new MyMessagePageDto(
+                    window.messages().stream().map(ConversationMessageDto::from).toList(), window.hasOlder());
+            })
+            .orElseGet(() -> new MyMessagePageDto(List.of(), false));
+    }
+
+    /** A poll: what arrived after (at, id), and whether an answer is still unseen. */
+    @Transactional(readOnly = true)
+    public MyConversationUpdateDto newerMine(UUID userId, Instant at, UUID messageId) {
+        return conversationRepository.findByUserId(userId)
+            .map(c -> new MyConversationUpdateDto(
+                messageRepository.newerThan(c.getId(), at, messageId).stream().map(ConversationMessageDto::from).toList(),
                 c.isUnseenByUser()))
-            .orElseGet(() -> new MyConversationDto(List.of(), false));
+            .orElseGet(() -> new MyConversationUpdateDto(List.of(), false));
     }
 
     @Transactional(readOnly = true)

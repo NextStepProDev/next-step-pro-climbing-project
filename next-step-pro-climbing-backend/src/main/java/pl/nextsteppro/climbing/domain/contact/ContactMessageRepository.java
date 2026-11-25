@@ -1,6 +1,8 @@
 package pl.nextsteppro.climbing.domain.contact;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,12 +14,63 @@ import java.util.UUID;
 
 public interface ContactMessageRepository extends JpaRepository<ContactMessage, UUID> {
 
+    /** Every message, oldest first; the id breaks a tie in time exactly as the paged reads do. */
     @Query("""
         SELECT m FROM ContactMessage m LEFT JOIN FETCH m.staffAuthor
         WHERE m.conversation.id = :conversationId
-        ORDER BY m.createdAt ASC
+        ORDER BY m.createdAt ASC, m.id ASC
         """)
     List<ContactMessage> findByConversationId(UUID conversationId);
+
+    // ---- the chat window: a page of the newest messages, then older on scroll, newer on poll ----
+    //
+    // The cursor is the (createdAt, id) PAIR of a message the reader already has, never the time
+    // alone: two messages can share a timestamp, and a time-only cursor would skip one of them for
+    // good. Messages never change once written (no edit, no delete of a single one), so "after the
+    // last one I have" is the whole of what a poll needs to ask.
+
+    @Query("""
+        SELECT m FROM ContactMessage m LEFT JOIN FETCH m.staffAuthor
+        WHERE m.conversation.id = :conversationId
+        ORDER BY m.createdAt DESC, m.id DESC
+        """)
+    List<ContactMessage> findNewestFirst(UUID conversationId, Pageable pageable);
+
+    @Query("""
+        SELECT m FROM ContactMessage m LEFT JOIN FETCH m.staffAuthor
+        WHERE m.conversation.id = :conversationId
+          AND (m.createdAt < :at OR (m.createdAt = :at AND m.id < :id))
+        ORDER BY m.createdAt DESC, m.id DESC
+        """)
+    List<ContactMessage> findOlderThan(UUID conversationId, Instant at, UUID id, Pageable pageable);
+
+    @Query("""
+        SELECT m FROM ContactMessage m LEFT JOIN FETCH m.staffAuthor
+        WHERE m.conversation.id = :conversationId
+          AND (m.createdAt > :at OR (m.createdAt = :at AND m.id > :id))
+        ORDER BY m.createdAt ASC, m.id ASC
+        """)
+    List<ContactMessage> findNewerThan(UUID conversationId, Instant at, UUID id, Pageable pageable);
+
+    /** The newest {@link MessageWindow#PAGE_SIZE} messages, oldest first, and whether more lie above. */
+    default MessageWindow latest(UUID conversationId) {
+        return MessageWindow.ofNewestFirst(
+            findNewestFirst(conversationId, PageRequest.of(0, MessageWindow.PAGE_SIZE + 1)));
+    }
+
+    /** The page just above the message at (at, id), oldest first. */
+    default MessageWindow olderThan(UUID conversationId, Instant at, UUID id) {
+        return MessageWindow.ofNewestFirst(
+            findOlderThan(conversationId, at, id, PageRequest.of(0, MessageWindow.PAGE_SIZE + 1)));
+    }
+
+    /**
+     * What arrived after the message at (at, id), oldest first. Capped, so a reader who comes back
+     * to a tab after a flood gets it in a few polls instead of one unbounded read.
+     */
+    default List<ContactMessage> newerThan(UUID conversationId, Instant at, UUID id) {
+        return findNewerThan(conversationId, at, id, PageRequest.of(0, MessageWindow.NEWER_CAP));
+    }
 
     /**
      * Everything a person wrote, in one read (the data export): their account's conversation, and

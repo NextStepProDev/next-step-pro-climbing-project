@@ -35,7 +35,9 @@ public class ContactConversation {
     @Nullable
     private String guestName;
 
-    @Column(name = "last_inbound_at", nullable = false)
+    /** The person's newest message; null while only the team has written (V109). */
+    @Column(name = "last_inbound_at")
+    @Nullable
     private Instant lastInboundAt;
 
     @Column(name = "last_reply_at")
@@ -50,33 +52,61 @@ public class ContactConversation {
     @Nullable
     private Instant userSeenAt;
 
+    /**
+     * The newest message in EITHER direction - what the admin list is ordered by, like a
+     * messenger. Kept by {@link #recordInbound} and {@link #recordReply}; never set directly.
+     */
+    @Column(name = "last_activity_at", nullable = false)
+    private Instant lastActivityAt;
+
+    /** When the person was last reminded by mail of an unseen answer (V110); one reminder per answer. */
+    @Column(name = "unseen_reminder_sent_at")
+    @Nullable
+    private Instant unseenReminderSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected ContactConversation() {}
 
     private ContactConversation(@Nullable User user, @Nullable String guestEmail, @Nullable String guestName,
-                                Instant now) {
+                                @Nullable Instant firstInbound, @Nullable Instant firstReply, Instant now) {
         this.user = user;
         this.guestEmail = guestEmail;
         this.guestName = guestName;
-        this.lastInboundAt = now;
+        this.lastInboundAt = firstInbound;
+        this.lastReplyAt = firstReply;
+        // The team's own first message is, like any reply, also reading (see recordReply).
+        this.staffReadAt = firstReply;
+        this.lastActivityAt = now;
         this.createdAt = now;
     }
 
+    /** The person writes first. */
     public static ContactConversation forUser(User user, Instant now) {
-        return new ContactConversation(user, null, null, now);
+        return new ContactConversation(user, null, null, now, null, now);
     }
 
     public static ContactConversation forGuest(String email, String name, Instant now) {
-        return new ContactConversation(null, email, name, now);
+        return new ContactConversation(null, email, name, now, null, now);
+    }
+
+    /**
+     * The team writes first, from the message centre. Only an account: a guest has no app to read
+     * it in, so starting one would mean an unsolicited mail to an address from a contact form.
+     * Both clocks are set at construction, so the row satisfies V109's "somebody wrote" check on
+     * its very first INSERT.
+     */
+    public static ContactConversation startedByStaff(User user, Instant now) {
+        return new ContactConversation(user, null, null, null, now, now);
     }
 
     /** A new message from the person: lights the coach's badge until somebody reads it. */
     public void recordInbound(Instant at) {
-        if (at.isAfter(lastInboundAt)) {
+        if (lastInboundAt == null || at.isAfter(lastInboundAt)) {
             lastInboundAt = at;
         }
+        touch(at);
     }
 
     /**
@@ -86,6 +116,13 @@ public class ContactConversation {
     public void recordReply(Instant at) {
         lastReplyAt = at;
         markReadByStaff(at);
+        touch(at);
+    }
+
+    private void touch(Instant at) {
+        if (at.isAfter(lastActivityAt)) {
+            lastActivityAt = at;
+        }
     }
 
     public void markReadByStaff(Instant at) {
@@ -94,6 +131,14 @@ public class ContactConversation {
 
     public void markSeenByUser(Instant at) {
         userSeenAt = at;
+    }
+
+    public void markUnseenReminderSent(Instant at) {
+        unseenReminderSentAt = at;
+    }
+
+    public @Nullable Instant getUnseenReminderSentAt() {
+        return unseenReminderSentAt;
     }
 
     public void renameGuest(String name) {
@@ -113,23 +158,30 @@ public class ContactConversation {
 
     /** Folds the clocks of a conversation merged into this one, so neither side loses an unread. */
     public void absorbClocks(ContactConversation other) {
-        recordInbound(other.lastInboundAt);
+        if (other.lastInboundAt != null) {
+            recordInbound(other.lastInboundAt);
+        }
         if (other.lastReplyAt != null && (lastReplyAt == null || other.lastReplyAt.isAfter(lastReplyAt))) {
             lastReplyAt = other.lastReplyAt;
         }
+        touch(other.lastActivityAt);
     }
 
+    /** Something from the person nobody on the team has read. A conversation only the team wrote in has none. */
     public boolean isUnreadByStaff() {
-        return staffReadAt == null || lastInboundAt.isAfter(staffReadAt);
+        return lastInboundAt != null && (staffReadAt == null || lastInboundAt.isAfter(staffReadAt));
     }
 
     public boolean isUnseenByUser() {
         return lastReplyAt != null && (userSeenAt == null || lastReplyAt.isAfter(userSeenAt));
     }
 
-    /** The last word is the team's - nothing is waiting for an answer. */
+    /**
+     * The last word is the team's - nothing is waiting for an answer. True for a conversation the
+     * team started and the person has not answered yet: the ball is in their court.
+     */
     public boolean isAnswered() {
-        return lastReplyAt != null && !lastReplyAt.isBefore(lastInboundAt);
+        return lastReplyAt != null && (lastInboundAt == null || !lastReplyAt.isBefore(lastInboundAt));
     }
 
     public UUID getId() {
@@ -148,8 +200,12 @@ public class ContactConversation {
         return guestName;
     }
 
-    public Instant getLastInboundAt() {
+    public @Nullable Instant getLastInboundAt() {
         return lastInboundAt;
+    }
+
+    public Instant getLastActivityAt() {
+        return lastActivityAt;
     }
 
     public @Nullable Instant getLastReplyAt() {

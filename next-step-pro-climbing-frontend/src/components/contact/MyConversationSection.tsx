@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { MessageSquare } from 'lucide-react'
 import clsx from 'clsx'
@@ -13,6 +13,13 @@ import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { QueryError } from '../ui/QueryError'
 import { ContextChip } from './ContextChip'
 import { CONTACT_BODY_MAX } from './ContactForm'
+import { ChatScroller } from './ChatScroller'
+import { useChatWindow } from './useChatWindow'
+import type { ChatMessage } from '../../utils/chatMessages'
+import type { ConversationMessage } from '../../types'
+
+/** In the person's chat, "own" is what they wrote: sending one scrolls down to it. */
+const isOwnMessage = (m: ChatMessage) => !(m as ConversationMessage).fromStaff
 
 /**
  * The signed-in person's one conversation with the team: every message they sent from the
@@ -25,24 +32,31 @@ export function MyConversationSection() {
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState('')
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['conversation'],
-    queryFn: contactApi.getConversation,
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
+  // A chat window: the newest page, older pages on scroll, and a 5 s poll for only what is new.
+  // The badge elsewhere keeps its minute.
+  const chat = useChatWindow({
+    latestKey: ['conversation'],
+    fetchLatest: contactApi.getConversation,
+    fetchOlder: contactApi.getOlder,
+    fetchNewer: contactApi.getNewer,
   })
+  const messages = chat.messages
 
   const seenMutation = useMutation({
     mutationFn: contactApi.markSeen,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversation', 'unseen'] }),
   })
-  // Showing an unseen answer IS seeing it. Fired from an effect on the data, not on mount: the
-  // conversation can arrive (or an answer can come in on a poll) while the tab is already open.
-  const unseen = data?.unseenReply ?? false
+  // Showing an unseen answer IS seeing it. Fired from an effect on the data, not on mount: an
+  // answer can come in on a poll while the tab is already open. ⚠️ Keyed on the team's newest
+  // message, not on the flag: a poll answered before the last mark-seen still says "unseen", and a
+  // new answer says it again — the flag alone never changes in between, so the dot would stay lit.
+  const unseen = chat.lastPoll?.unseenReply ?? chat.latest?.unseenReply ?? false
+  const newestFromTeam = [...messages].reverse().find((m) => m.fromStaff)?.id ?? 'unseen'
+  const unseenMarker = unseen ? newestFromTeam : null
   const { mutate: markSeen } = seenMutation
   useEffect(() => {
-    if (unseen) markSeen()
-  }, [unseen, markSeen])
+    if (unseenMarker) markSeen()
+  }, [unseenMarker, markSeen])
 
   const sendMutation = useMutation({
     mutationFn: () => contactApi.send({
@@ -53,14 +67,14 @@ export function MyConversationSection() {
     }),
     onSuccess: () => {
       setDraft('')
-      queryClient.invalidateQueries({ queryKey: ['conversation'] })
+      // The send endpoint does not echo the message (it serves the signed-out form too), so ask
+      // for news at once rather than waiting up to a poll for one's own words to appear.
+      chat.pollNow()
     },
   })
 
-  if (isLoading) return <div className="py-16 flex justify-center"><LoadingSpinner /></div>
-  if (isError) return <QueryError error={error} onRetry={() => refetch()} />
-
-  const messages = data?.messages ?? []
+  if (chat.isLoading) return <div className="py-16 flex justify-center"><LoadingSpinner /></div>
+  if (chat.isError) return <QueryError error={chat.error} onRetry={() => chat.refetch()} />
 
   return (
     <div className="space-y-6">
@@ -71,6 +85,20 @@ export function MyConversationSection() {
           <p className="text-sm text-surface-400 mt-1">{t('messages.emptyBody')}</p>
         </div>
       ) : (
+        <>
+        {chat.olderError != null && (
+          <p role="alert" className="text-sm text-rose-400">{getErrorMessage(chat.olderError)}</p>
+        )}
+        <ChatScroller
+          messages={messages}
+          hasOlder={chat.hasOlder}
+          loadingOlder={chat.loadingOlder}
+          onLoadOlder={chat.loadOlder}
+          isOwn={isOwnMessage}
+          loadOlderLabel={t('messages.loadOlder')}
+          newBelowLabel={t('messages.newBelow')}
+          className="max-h-[60vh] overflow-y-auto pr-1"
+        >
         <ol className="space-y-3" aria-label={t('messages.listLabel')}>
           {messages.map((m) => (
             <li key={m.id} className={clsx('flex', m.fromStaff ? 'justify-start' : 'justify-end')}>
@@ -97,6 +125,8 @@ export function MyConversationSection() {
             </li>
           ))}
         </ol>
+        </ChatScroller>
+        </>
       )}
 
       <form

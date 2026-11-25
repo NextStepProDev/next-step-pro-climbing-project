@@ -137,6 +137,12 @@ import type {
   AdminConversationPage,
   AdminConversationDetail,
   ContactReplyResult,
+  ContactStartResult,
+  ContactConversationLookup,
+  MyMessagePage,
+  MyConversationUpdate,
+  AdminMessagePage,
+  AdminConversationUpdate,
 } from '../types'
 import {
   getAccessToken,
@@ -561,6 +567,14 @@ export const trainingRequestApi = {
 }
 
 /**
+ * A chat cursor: the createdAt AND id of a message the window has. Both, because two messages can
+ * share a timestamp; the server pages on the pair. `at` goes back exactly as the server sent it.
+ */
+function cursorQuery(at: string, id: string): string {
+  return `at=${encodeURIComponent(at)}&id=${encodeURIComponent(id)}`
+}
+
+/**
  * "Write to us". `send` is open to guests; for a signed-in sender the token rides along and the
  * message goes into their one conversation. A POST, so `fetchApi` never repeats it after a timeout —
  * a repeat would be a second mail in the team's inbox.
@@ -572,7 +586,14 @@ export const contactApi = {
       body: JSON.stringify(data),
     }),
 
+  /** The newest page; older pages come from getOlder, new messages from getNewer. */
   getConversation: () => fetchApi<MyConversation>('/conversation'),
+
+  getOlder: (at: string, id: string) =>
+    fetchApi<MyMessagePage>(`/conversation/messages/older?${cursorQuery(at, id)}`),
+
+  getNewer: (at: string, id: string) =>
+    fetchApi<MyConversationUpdate>(`/conversation/messages/newer?${cursorQuery(at, id)}`),
 
   getUnseen: () => fetchApi<{ unseenReply: boolean }>('/conversation/unseen'),
 
@@ -1184,11 +1205,30 @@ export const adminUserHistoryApi = {
 
 // "Write to us" conversations, the team's side
 export const adminContactApi = {
-  list: (unreadOnly: boolean, page = 0, size = 20) =>
-    fetchApi<AdminConversationPage>(`/admin/contact/conversations?unread=${unreadOnly}&page=${page}&size=${size}`),
+  list: (unreadOnly: boolean, page = 0, size = 20, query = '') => {
+    const q = query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ''
+    return fetchApi<AdminConversationPage>(`/admin/contact/conversations?unread=${unreadOnly}&page=${page}&size=${size}${q}`)
+  },
 
+  /** The team writes first; goes into the person's existing conversation when there is one. */
+  start: (userId: string, body: string) =>
+    fetchApi<ContactStartResult>('/admin/contact/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ userId, body }),
+    }),
+
+  findForUser: (userId: string) =>
+    fetchApi<ContactConversationLookup>(`/admin/contact/conversations/by-user/${userId}`),
+
+  /** The newest page of the conversation; older pages come from `older`, new messages from `newer`. */
   get: (conversationId: string) =>
     fetchApi<AdminConversationDetail>(`/admin/contact/conversations/${conversationId}`),
+
+  older: (conversationId: string, at: string, id: string) =>
+    fetchApi<AdminMessagePage>(`/admin/contact/conversations/${conversationId}/messages/older?${cursorQuery(at, id)}`),
+
+  newer: (conversationId: string, at: string, id: string) =>
+    fetchApi<AdminConversationUpdate>(`/admin/contact/conversations/${conversationId}/messages/newer?${cursorQuery(at, id)}`),
 
   markRead: (conversationId: string) =>
     fetchApi<void>(`/admin/contact/conversations/${conversationId}/read`, { method: 'POST' }),

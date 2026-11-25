@@ -55,6 +55,17 @@ record ConversationMessageDto(
     }
 }
 
-record MyConversationDto(List<ConversationMessageDto> messages, boolean unseenReply) {}
+/**
+ * The chat as it opens: the newest page, oldest first.
+ *
+ * @param hasOlder whether scrolling up has more to load
+ */
+record MyConversationDto(List<ConversationMessageDto> messages, boolean unseenReply, boolean hasOlder) {}
+
+/** One page above what the chat already shows, oldest first. */
+record MyMessagePageDto(List<ConversationMessageDto> messages, boolean hasOlder) {}
+
+/** A poll: only what arrived after the newest message the chat has, and whether an answer is unseen. */
+record MyConversationUpdateDto(List<ConversationMessageDto> messages, boolean unseenReply) {}
 
 record UnseenReplyDto(boolean unseenReply) {}

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -24,10 +25,30 @@ public class MyConversationController {
         this.contactService = contactService;
     }
 
-    @Operation(summary = "My conversation with the team", description = "All messages, oldest first.")
+    @Operation(summary = "My conversation with the team", description = "The newest page of messages, oldest first.")
     @GetMapping
     public ResponseEntity<MyConversationDto> get(@Parameter(hidden = true) @CurrentUserId UUID userId) {
         return ResponseEntity.ok(contactService.getMine(userId));
+    }
+
+    @Operation(summary = "Older messages, for scrolling up",
+        description = "The page just above the message at (at, id), oldest first.")
+    @GetMapping("/messages/older")
+    public ResponseEntity<MyMessagePageDto> older(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Parameter(description = "createdAt of the oldest message the chat has") @RequestParam Instant at,
+            @Parameter(description = "id of that message") @RequestParam UUID id) {
+        return ResponseEntity.ok(contactService.olderMine(userId, at, id));
+    }
+
+    @Operation(summary = "New messages, for polling",
+        description = "Only what arrived after the message at (at, id), oldest first.")
+    @GetMapping("/messages/newer")
+    public ResponseEntity<MyConversationUpdateDto> newer(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Parameter(description = "createdAt of the newest message the chat has") @RequestParam Instant at,
+            @Parameter(description = "id of that message") @RequestParam UUID id) {
+        return ResponseEntity.ok(contactService.newerMine(userId, at, id));
     }
 
     @Operation(summary = "Is there an answer I have not seen", description = "Polled by the navbar badge.")

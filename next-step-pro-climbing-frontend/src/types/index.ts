@@ -1186,7 +1186,22 @@ export interface ConversationMessage {
   createdAt: string
 }
 
+/** The chat as it opens: the newest page, oldest first. */
 export interface MyConversation {
+  messages: ConversationMessage[]
+  unseenReply: boolean
+  /** Scrolling up has more to load. */
+  hasOlder: boolean
+}
+
+/** One page above what the chat already shows, oldest first. */
+export interface MyMessagePage {
+  messages: ConversationMessage[]
+  hasOlder: boolean
+}
+
+/** A poll: only what arrived after the newest message the chat has. */
+export interface MyConversationUpdate {
   messages: ConversationMessage[]
   unseenReply: boolean
 }
@@ -1199,7 +1214,10 @@ export interface AdminConversationSummary {
   email: string
   unread: boolean
   answered: boolean
-  lastInboundAt: string
+  /** The newest message in either direction — what the list is ordered by. */
+  lastActivityAt: string
+  /** The person's newest message; null when only the team has written (a conversation it started). */
+  lastInboundAt: string | null
   lastReplyAt: string | null
   preview: string | null
   previewFromStaff: boolean
@@ -1220,15 +1238,40 @@ export interface AdminConversationMessage extends ConversationMessage {
   language: string
 }
 
+/** A conversation as the chat window opens it: the newest page, oldest first. */
 export interface AdminConversationDetail {
+  summary: AdminConversationSummary
+  messages: AdminConversationMessage[]
+  /** Scrolling up has more to load. */
+  hasOlder: boolean
+}
+
+export interface AdminMessagePage {
+  messages: AdminConversationMessage[]
+  hasOlder: boolean
+}
+
+/** A poll: what arrived after the newest message the window has, plus the summary (its unread flag). */
+export interface AdminConversationUpdate {
   summary: AdminConversationSummary
   messages: AdminConversationMessage[]
 }
 
 export interface ContactReplyResult {
   message: AdminConversationMessage
-  /** False only for an account holder with mail notifications off — they see it in the app. */
+  /** True for a guest (mail is the only way to them); false for an account — the chat never mails. */
   mailed: boolean
+}
+
+/** The team wrote first. `conversationId` is the person's existing conversation when they had one. */
+export interface ContactStartResult {
+  conversationId: string
+  message: AdminConversationMessage
+}
+
+export interface ContactConversationLookup {
+  /** Null when the account has no conversation yet. */
+  conversationId: string | null
 }
 
 /** A booked client's request to move their term — the card in "My reservations". */

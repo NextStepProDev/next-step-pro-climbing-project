@@ -116,6 +116,8 @@
     "reply": "Responder",
     "hint": "Respondemos aquí — te avisará un punto rojo en la parte superior de la página.",
     "otherWays": "Otras formas de contacto",
+    "loadOlder": "Cargar mensajes anteriores",
+    "newBelow": "Mensajes nuevos",
     "send": "Enviar"
   }
 }

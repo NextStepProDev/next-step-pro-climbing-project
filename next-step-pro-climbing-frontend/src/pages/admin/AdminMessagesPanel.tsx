@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import clsx from 'clsx'
-import { ChevronLeft, ChevronRight, ExternalLink, Mail, MessageSquare, Trash2, User } from 'lucide-react'
-import { adminContactApi } from '../../api/client'
+import { ChevronLeft, ChevronRight, ExternalLink, Mail, MailWarning, MessageSquare, Plus, Search, Trash2, User, X } from 'lucide-react'
+import { adminApi, adminContactApi } from '../../api/client'
+import { matchesPersonQuery } from '../../utils/personSearch'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { getErrorMessage } from '../../utils/errors'
 import { Button } from '../../components/ui/Button'
@@ -14,35 +15,71 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { ContextChip } from '../../components/contact/ContextChip'
 import { CONTACT_BODY_MAX } from '../../components/contact/ContactForm'
-import type { AdminConversationSummary, ContactReplyResult } from '../../types'
+import type { AdminConversationMessage, AdminConversationSummary, ContactReplyResult } from '../../types'
+import type { ChatMessage } from '../../utils/chatMessages'
+import { ChatScroller } from '../../components/contact/ChatScroller'
+import { useChatWindow } from '../../components/contact/useChatWindow'
 
 type Filter = 'unread' | 'all'
 
 const PAGE_SIZE = 20
 
+/** In the team's window every staff message counts as "own": sending one scrolls down to it. */
+const isFromStaff = (m: ChatMessage) => (m as AdminConversationMessage).fromStaff
+
+/** Typing in the search waits this long before asking the server — one request per pause, not per key. */
+const SEARCH_DEBOUNCE_MS = 300
+
 /**
- * "Write to us" conversations: one per person (an account or a guest address), newest message
- * first. Opening a conversation marks it read for the whole team; a reply stays here and goes out
- * by mail only to a guest (an account holder's conversation is an in-app chat). `?conversation=`
- * is the deep link from the notification mail, which only a guest's message sends.
+ * The message centre: one conversation per person (an account or a guest address), ordered like a
+ * messenger — the newest message in EITHER direction on top. Opening a conversation marks it read
+ * for the whole team; a reply stays here and goes out by mail only to a guest (an account holder's
+ * conversation is an in-app chat).
+ *
+ * URL state: `?conversation=` is the open conversation (also the deep link from a guest's
+ * notification mail); `?new=1` opens "New conversation", `?new=<userId>` opens it for that person
+ * (the "Write" button on a user's card).
  */
 export function AdminMessagesPanel() {
   const { t } = useTranslation('admin')
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('conversation')
+  const newParam = searchParams.get('new')
+  const composing = newParam !== null && !selectedId
   const [filter, setFilter] = useState<Filter>('all')
   const [page, setPage] = useState(0)
+  const [searchInput, setSearchInput] = useState('')
+  const [query, setQuery] = useState('')
 
-  const select = (id: string | null) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(searchInput.trim())
+      setPage(0)
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  // `new` and `conversation` are two answers to "what is on the right" — setting one clears the other
+  const select = useCallback((id: string | null) => {
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current)
+      params.delete('new')
+      if (id) params.set('conversation', id)
+      else params.delete('conversation')
+      return params
+    }, { replace: !id })
+  }, [setSearchParams])
+
+  const startNew = () => {
     const params = new URLSearchParams(searchParams)
-    if (id) params.set('conversation', id)
-    else params.delete('conversation')
-    setSearchParams(params, { replace: !id })
+    params.delete('conversation')
+    params.set('new', '1')
+    setSearchParams(params)
   }
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['admin', 'contact', 'list', filter, page],
-    queryFn: () => adminContactApi.list(filter === 'unread', page, PAGE_SIZE),
+    queryKey: ['admin', 'contact', 'list', filter, page, query],
+    queryFn: () => adminContactApi.list(filter === 'unread', page, PAGE_SIZE, query),
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
   })
@@ -50,7 +87,27 @@ export function AdminMessagesPanel() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6">
       {/* The list stays on screen next to the conversation from lg up; below that one replaces the other */}
-      <section className={clsx('space-y-4', selectedId && 'max-lg:hidden')} aria-label={t('contactMessages.listLabel')}>
+      <section className={clsx('space-y-4', (selectedId || composing) && 'max-lg:hidden')} aria-label={t('contactMessages.listLabel')}>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t('contactMessages.searchPlaceholder')}
+              aria-label={t('contactMessages.searchLabel')}
+              className="w-full pl-9 pr-3 py-2 bg-surface-900 border border-surface-700 rounded-lg text-sm text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <Button type="button" size="sm" onClick={startNew} className="shrink-0">
+            <span className="inline-flex items-center gap-1.5">
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              {t('contactMessages.newConversation')}
+            </span>
+          </Button>
+        </div>
+
         <div className="flex gap-2">
           {(['all', 'unread'] as const).map((f) => (
             <button
@@ -75,7 +132,9 @@ export function AdminMessagesPanel() {
           <QueryError error={error} onRetry={() => refetch()} />
         ) : !data || data.content.length === 0 ? (
           <div className="bg-surface-900 border border-surface-800 rounded-xl p-6 text-center text-sm text-surface-400">
-            {filter === 'unread' ? t('contactMessages.emptyUnread') : t('contactMessages.empty')}
+            {query
+              ? t('contactMessages.emptySearch', { query })
+              : filter === 'unread' ? t('contactMessages.emptyUnread') : t('contactMessages.empty')}
           </div>
         ) : (
           <>
@@ -113,10 +172,18 @@ export function AdminMessagesPanel() {
         )}
       </section>
 
-      <section className={clsx(!selectedId && 'max-lg:hidden')}>
+      <section className={clsx(!selectedId && !composing && 'max-lg:hidden')}>
         {selectedId ? (
           // Keyed by id: a half-written reply must never carry over to another person's conversation
           <ConversationDetail key={selectedId} conversationId={selectedId} onBack={() => select(null)} />
+        ) : composing ? (
+          // Keyed by the person: "Write" on another card must start clean, not inherit this draft
+          <NewConversation
+            key={newParam}
+            preselectedUserId={newParam === '1' ? null : newParam}
+            onOpen={select}
+            onCancel={() => select(null)}
+          />
         ) : (
           <div className="h-full min-h-48 bg-surface-900 border border-dashed border-surface-700 rounded-xl flex flex-col items-center justify-center gap-2 text-sm text-surface-500 p-6">
             <MessageSquare className="w-8 h-8 text-surface-600" aria-hidden="true" />
@@ -167,8 +234,10 @@ function ConversationRow({ summary, active, onSelect }: {
           <p className="text-xs text-surface-500 truncate">{summary.email}</p>
         </div>
         <span className="text-[11px] text-surface-500 shrink-0">
-          {format(new Date(summary.lastReplyAt && summary.previewFromStaff ? summary.lastReplyAt : summary.lastInboundAt),
-            'd MMM, HH:mm', { locale })}
+          {/* The ordering clock: the newest message either way. The inbound clock is null in a
+              conversation the team started, and `new Date(null)` is 1 January 1970 — the row
+              would quietly show "1 Jan, 01:00" instead of when anything was written. */}
+          {format(new Date(summary.lastActivityAt), 'd MMM, HH:mm', { locale })}
         </span>
       </div>
       {summary.preview && (
@@ -204,36 +273,48 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
   const [lastResult, setLastResult] = useState<ContactReplyResult | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['admin', 'contact', 'conversation', conversationId],
-    queryFn: () => adminContactApi.get(conversationId),
-    // Detail-by-id: opening another conversation must never show this one's messages under that name.
-    placeholderData: undefined,
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
+  // A chat window: the newest page, older pages on scroll, and a 5 s poll for only what is new.
+  const fetchLatest = useCallback(() => adminContactApi.get(conversationId), [conversationId])
+  const fetchOlder = useCallback(
+    (at: string, id: string) => adminContactApi.older(conversationId, at, id), [conversationId])
+  const fetchNewer = useCallback(
+    (at: string, id: string) => adminContactApi.newer(conversationId, at, id), [conversationId])
+  const chat = useChatWindow({
+    latestKey: ['admin', 'contact', 'conversation', conversationId],
+    fetchLatest,
+    fetchOlder,
+    fetchNewer,
   })
+  const summary = chat.lastPoll?.summary ?? chat.latest?.summary
 
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'contact'] })
+  // The list and the badges, never this conversation's own window: the window keeps itself
+  // current by polling, and re-reading its newest page would only repeat what it already shows.
+  const invalidateAround = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'contact', 'list'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
   }
 
   // Showing an unread conversation IS reading it — the badge is about what nobody has looked at.
-  const unread = data?.summary.unread ?? false
+  // ⚠️ Keyed on the person's newest message, not on the flag alone: a poll answered before the
+  // last mark-read still says "unread", and a new message after it says "unread" again — the flag
+  // never changes in between, so an effect on it would leave the second message lit for good.
+  const unreadMarker = summary?.unread ? (summary.lastInboundAt ?? 'unread') : null
   const { mutate: markRead } = useMutation({
     mutationFn: () => adminContactApi.markRead(conversationId),
-    onSuccess: invalidateAll,
+    onSuccess: invalidateAround,
   })
   useEffect(() => {
-    if (unread) markRead()
-  }, [unread, markRead])
+    if (unreadMarker) markRead()
+  }, [unreadMarker, markRead])
 
+  const { addMessage } = chat
   const replyMutation = useMutation({
     mutationFn: () => adminContactApi.reply(conversationId, draft.trim()),
     onSuccess: (result) => {
       setDraft('')
       setLastResult(result)
-      invalidateAll()
+      addMessage(result.message)
+      invalidateAround()
     },
   })
 
@@ -250,10 +331,10 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
     },
   })
 
-  if (isLoading) return <div className="py-12 flex justify-center"><LoadingSpinner /></div>
-  if (isError || !data) return <QueryError error={error} onRetry={() => refetch()} />
+  if (chat.isLoading) return <div className="py-12 flex justify-center"><LoadingSpinner /></div>
+  if (chat.isError || !summary) return <QueryError error={chat.error} onRetry={() => chat.refetch()} />
 
-  const { summary, messages } = data
+  const messages = chat.messages
 
   return (
     <div className="bg-surface-900 border border-surface-800 rounded-xl">
@@ -303,7 +384,21 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
         <p role="alert" className="mx-4 mt-4 text-sm text-rose-400">{getErrorMessage(deleteMutation.error)}</p>
       )}
 
-      <ol className="p-4 space-y-3 max-h-[60vh] overflow-y-auto" aria-label={t('contactMessages.messagesLabel')}>
+      {chat.olderError != null && (
+        <p role="alert" className="mx-4 mt-4 text-sm text-rose-400">{getErrorMessage(chat.olderError)}</p>
+      )}
+
+      <ChatScroller
+        messages={messages}
+        hasOlder={chat.hasOlder}
+        loadingOlder={chat.loadingOlder}
+        onLoadOlder={chat.loadOlder}
+        isOwn={isFromStaff}
+        loadOlderLabel={t('contactMessages.loadOlder')}
+        newBelowLabel={t('contactMessages.newBelow')}
+        className="p-4 max-h-[60vh] overflow-y-auto"
+      >
+      <ol className="space-y-3" aria-label={t('contactMessages.messagesLabel')}>
         {messages.map((m) => (
           <li key={m.id} className={clsx('flex', m.fromStaff ? 'justify-end' : 'justify-start')}>
             <div
@@ -330,6 +425,7 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
           </li>
         ))}
       </ol>
+      </ChatScroller>
 
       <form
         onSubmit={(e) => {
@@ -376,6 +472,207 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
         title={t('contactMessages.deleteTitle')}
         message={t('contactMessages.deleteMessage', { name: summary.name })}
         confirmText={t('contactMessages.delete')}
+        variant="danger"
+      />
+    </div>
+  )
+}
+
+/**
+ * The team writes first. Only to a confirmed, non-admin account: an unconfirmed one cannot sign in,
+ * an admin has no chat link, and a guest could only be reached by mail. The server refuses all
+ * three; this only keeps them from being offered.
+ *
+ * Still one conversation per person: picking somebody who already has one OPENS it instead.
+ */
+function NewConversation({ preselectedUserId, onOpen, onCancel }: {
+  preselectedUserId: string | null
+  onOpen: (conversationId: string) => void
+  onCancel: () => void
+}) {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
+  const [pickedId, setPickedId] = useState<string | null>(preselectedUserId)
+  const [draft, setDraft] = useState('')
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    // The panel-wide user list — the same key as the invitation picker and the users table
+    queryKey: ['admin', 'users'],
+    queryFn: adminApi.getAllUsers,
+  })
+  const picked = pickedId ? users.find((u) => u.id === pickedId) ?? null : null
+  const pickedReachable = !!picked && picked.role !== 'ADMIN' && picked.emailVerified
+
+  const lookup = useQuery({
+    queryKey: ['admin', 'contact', 'byUser', pickedId],
+    queryFn: () => adminContactApi.findForUser(pickedId!),
+    enabled: pickedReachable,
+    placeholderData: undefined,
+  })
+  const existingId = lookup.data?.conversationId ?? null
+  useEffect(() => {
+    if (existingId) onOpen(existingId)
+  }, [existingId, onOpen])
+
+  const results = useMemo(() => {
+    if (!search.trim()) return []
+    return users
+      .filter((u) => u.role !== 'ADMIN')
+      .filter((u) => matchesPersonQuery(u, search))
+      .slice(0, 8)
+  }, [search, users])
+
+  const startMutation = useMutation({
+    mutationFn: () => adminContactApi.start(pickedId!, draft.trim()),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'contact'] })
+      onOpen(result.conversationId)
+    },
+  })
+
+  const cancel = () => {
+    if (draft.trim()) setConfirmDiscard(true)
+    else onCancel()
+  }
+
+  const canSend = pickedReachable && lookup.isSuccess && !existingId && !!draft.trim() && !startMutation.isPending
+
+  return (
+    <div className="bg-surface-900 border border-surface-800 rounded-xl">
+      <div className="p-4 border-b border-surface-800 flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-surface-100">{t('contactMessages.newTitle')}</h2>
+        <button
+          type="button"
+          onClick={cancel}
+          className="p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800"
+          aria-label={t('contactMessages.cancel')}
+          title={t('contactMessages.cancel')}
+        >
+          <X className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (canSend) startMutation.mutate()
+        }}
+        className="p-4 space-y-4"
+      >
+        <div>
+          <label htmlFor="admin-contact-new-person" className="block text-sm font-medium text-surface-300 mb-1">
+            {t('contactMessages.pickLabel')}
+          </label>
+          {pickedId && usersLoading ? (
+            <div className="py-3"><LoadingSpinner /></div>
+          ) : picked ? (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-surface-700 bg-surface-800 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-surface-100 truncate">{picked.firstName} {picked.lastName}</p>
+                <p className="text-xs text-surface-400 truncate">{picked.email}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setPickedId(null); setSearch('') }}
+                className="text-xs text-primary-400 hover:text-primary-300 shrink-0"
+              >
+                {t('contactMessages.change')}
+              </button>
+            </div>
+          ) : (
+            <>
+              {pickedId && !usersLoading && (
+                <p role="alert" className="mb-2 text-sm text-amber-400">{t('contactMessages.personGone')}</p>
+              )}
+              <input
+                id="admin-contact-new-person"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('contactMessages.pickPlaceholder')}
+                autoComplete="off"
+                className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-sm text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              {search.trim() && (
+                results.length === 0 ? (
+                  <p className="mt-2 text-sm text-surface-500">{t('contactMessages.noPeople')}</p>
+                ) : (
+                  <ul aria-label={t('contactMessages.pickResults')} className="mt-2 border border-surface-700 rounded-lg divide-y divide-surface-800 overflow-hidden">
+                    {results.map((u) => (
+                      <li key={u.id}>
+                        <button
+                          type="button"
+                          disabled={!u.emailVerified}
+                          title={u.emailVerified ? undefined : t('users.unverifiedHint')}
+                          onClick={() => { setPickedId(u.id); setSearch('') }}
+                          className="w-full text-left px-3 py-2 hover:bg-surface-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="flex items-center gap-2 text-sm text-surface-100">
+                            <span className="truncate">{u.firstName} {u.lastName}</span>
+                            {!u.emailVerified && (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 shrink-0">
+                                <MailWarning className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                {t('users.unverifiedBadge')}
+                              </span>
+                            )}
+                          </span>
+                          <span className="block text-xs text-surface-400 truncate">{u.email}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              )}
+            </>
+          )}
+          {picked && !pickedReachable && (
+            <p role="alert" className="mt-2 text-sm text-amber-400">
+              {picked.role === 'ADMIN' ? t('contactMessages.cannotAdmin') : t('users.unverifiedHint')}
+            </p>
+          )}
+          {existingId && (
+            <p role="status" className="mt-2 text-sm text-surface-400">{t('contactMessages.openingExisting')}</p>
+          )}
+          {lookup.isError && (
+            <p role="alert" className="mt-2 text-sm text-rose-400">{getErrorMessage(lookup.error)}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="admin-contact-new-body" className="block text-sm font-medium text-surface-300 mb-1">
+            {t('contactMessages.firstMessage')}
+          </label>
+          <textarea
+            id="admin-contact-new-body"
+            rows={5}
+            maxLength={CONTACT_BODY_MAX}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
+          />
+        </div>
+
+        {startMutation.isError && (
+          <p role="alert" className="text-sm text-rose-400">{getErrorMessage(startMutation.error)}</p>
+        )}
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-xs text-surface-500">{t('contactMessages.pickHint')}</p>
+          <Button type="submit" loading={startMutation.isPending} disabled={!canSend}>
+            {t('contactMessages.start')}
+          </Button>
+        </div>
+      </form>
+
+      <ConfirmModal
+        isOpen={confirmDiscard}
+        onClose={() => setConfirmDiscard(false)}
+        onConfirm={onCancel}
+        title={t('contactMessages.discardTitle')}
+        message={t('contactMessages.discardMessage')}
+        confirmText={t('contactMessages.discardConfirm')}
         variant="danger"
       />
     </div>

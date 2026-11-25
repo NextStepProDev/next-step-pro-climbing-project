@@ -3,16 +3,21 @@ package pl.nextsteppro.climbing.api.admin.contact;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import pl.nextsteppro.climbing.api.contact.ContactConversationClaim;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
 import pl.nextsteppro.climbing.domain.contact.ContactMessageRepository;
+import pl.nextsteppro.climbing.domain.contact.MessageWindow;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRole;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 import pl.nextsteppro.climbing.infrastructure.mail.ContactMailService;
 import pl.nextsteppro.climbing.integration.BaseIntegrationTest;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,6 +31,7 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
     @Autowired private AdminContactService adminContactService;
     @Autowired private ContactConversationRepository conversationRepository;
     @Autowired private ContactMessageRepository messageRepository;
+    @Autowired private ContactConversationClaim conversationClaim;
 
     @MockitoBean private ContactMailService contactMailService;
 
@@ -97,7 +103,7 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
         adminContactService.markRead(read.getId());
         conversationRepository.flush();
 
-        var page = adminContactService.list(true, 0, 100);
+        var page = adminContactService.list(true, null, 0, 100);
 
         assertTrue(page.content().stream().anyMatch(c -> c.id().equals(unread.getId())));
         assertTrue(page.content().stream().noneMatch(c -> c.id().equals(read.getId())));
@@ -113,6 +119,258 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
 
         assertTrue(conversationRepository.findById(conversation.getId()).isEmpty());
         assertTrue(messageRepository.findByConversationId(conversation.getId()).isEmpty());
+    }
+
+    // ---- message centre: the team starts a conversation, messenger ordering, search ----
+
+    @Test
+    void shouldStartAConversationThatTheTeamHasNotGotToReadAndThePersonSeesInTheApp() {
+        User admin = admin();
+        User client = verifiedClient("Ewa", "Nowak");
+        int unreadBefore = conversationRepository.countUnreadForStaff();
+
+        StartConversationResultDto result = adminContactService.start(admin.getId(), client.getId(), "  Cześć, mamy wolne miejsce w sobotę.  ");
+        conversationRepository.flush();
+
+        ContactConversation conversation = conversationRepository.findById(result.conversationId()).orElseThrow();
+        assertNull(conversation.getLastInboundAt(), "the person has not written anything yet");
+        assertEquals("Cześć, mamy wolne miejsce w sobotę.", result.message().body());
+        assertTrue(result.message().fromStaff());
+        ConversationSummaryDto summary = adminContactService.get(conversation.getId()).summary();
+        assertFalse(summary.unread(), "nothing from the person, so nothing for the team to read");
+        assertTrue(summary.answered(), "the ball is in the person's court");
+        assertEquals(unreadBefore, conversationRepository.countUnreadForStaff(), "the Admin badge must not light");
+        assertTrue(conversation.isUnseenByUser(), "the person's chat dot lights");
+        verify(contactMailService, never()).sendReply(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void shouldWriteIntoThePersonsExistingConversationRatherThanOpenASecond() {
+        User admin = admin();
+        User client = verifiedClient("Jan", "Kowalski");
+        ContactConversation existing = conversationRepository.save(ContactConversation.forUser(client, Instant.now()));
+        messageRepository.save(ContactMessage.general(existing, "Pytanie", "pl", Instant.now()));
+
+        StartConversationResultDto result = adminContactService.start(admin.getId(), client.getId(), "Odpowiadam tutaj");
+
+        assertEquals(existing.getId(), result.conversationId());
+        assertEquals(2, messageRepository.findByConversationId(existing.getId()).size());
+        assertEquals(existing.getId(), adminContactService.findForUser(client.getId()).conversationId());
+    }
+
+    @Test
+    void shouldLetThePersonAnswerAStartedConversationAndLightTheTeamsBadge() {
+        User admin = admin();
+        User client = verifiedClient("Ola", "Wiśniewska");
+        UUID id = adminContactService.start(admin.getId(), client.getId(), "Dzień dobry").conversationId();
+        ContactConversation conversation = conversationRepository.findById(id).orElseThrow();
+
+        Instant later = Instant.now().plusSeconds(5);
+        messageRepository.save(ContactMessage.general(conversation, "Dziękuję!", "pl", later));
+        conversation.recordInbound(later);
+
+        ConversationSummaryDto summary = adminContactService.get(id).summary();
+        assertTrue(summary.unread());
+        assertFalse(summary.answered());
+        assertEquals(later, summary.lastActivityAt());
+    }
+
+    @Test
+    void shouldRefuseToStartAConversationNobodyWouldRead() {
+        User admin = admin();
+        User unconfirmed = userRepository.save(new User(uniqueEmail(), "Nie", "Potwierdzony", "+48123456789", nick()));
+        User otherAdmin = admin();
+
+        var unconfirmedRefusal = assertThrows(LocalizedMessage.Conflict.class,
+            () -> adminContactService.start(admin.getId(), unconfirmed.getId(), "Hej"));
+        assertEquals("contact.user.unverified", unconfirmedRefusal.messageKey());
+        var adminRefusal = assertThrows(LocalizedMessage.Rejected.class,
+            () -> adminContactService.start(admin.getId(), otherAdmin.getId(), "Hej"));
+        assertEquals("contact.user.admin", adminRefusal.messageKey());
+        var selfRefusal = assertThrows(LocalizedMessage.Rejected.class,
+            () -> adminContactService.start(admin.getId(), admin.getId(), "Hej"));
+        assertEquals("contact.user.admin", selfRefusal.messageKey());
+        var unknownRefusal = assertThrows(LocalizedMessage.Rejected.class,
+            () -> adminContactService.start(admin.getId(), UUID.randomUUID(), "Hej"));
+        assertEquals("contact.user.not.found", unknownRefusal.messageKey());
+        var blankRefusal = assertThrows(LocalizedMessage.Rejected.class,
+            () -> adminContactService.start(admin.getId(), verifiedClient("A", "B").getId(), "   "));
+        assertEquals("contact.body.required", blankRefusal.messageKey());
+        assertTrue(conversationRepository.findByUserId(unconfirmed.getId()).isEmpty());
+    }
+
+    @Test
+    void shouldPutTheConversationWithTheNewestMessageInEitherDirectionOnTop() {
+        User admin = admin();
+        Instant now = Instant.now();
+        ContactConversation older = guestConversationAt(now.minus(2, ChronoUnit.HOURS));
+        ContactConversation newer = guestConversationAt(now.minus(1, ChronoUnit.HOURS));
+        conversationRepository.flush();
+        assertTrue(position(newer) < position(older));
+
+        // Answering the older one is activity too: it moves to the top, like a messenger.
+        adminContactService.reply(older.getId(), admin.getId(), "Już odpowiadam");
+        conversationRepository.flush();
+
+        assertTrue(position(older) < position(newer));
+    }
+
+    // The trap V109 avoids: ordering by the inbound clock puts a NULL first under DESC, so every
+    // conversation the team started would be pinned above all the others.
+    @Test
+    void shouldNotPinAConversationTheTeamStartedAboveNewerOnes() {
+        User client = verifiedClient("Piotr", "Zieliński");
+        Instant now = Instant.now();
+        ContactConversation started = conversationRepository.save(
+            ContactConversation.startedByStaff(client, now.minus(3, ChronoUnit.HOURS)));
+        messageRepository.save(ContactMessage.reply(started, admin(), "Stara wiadomość", "pl", now.minus(3, ChronoUnit.HOURS)));
+        ContactConversation newer = guestConversationAt(now.minus(1, ChronoUnit.HOURS));
+        conversationRepository.flush();
+
+        assertTrue(position(newer) < position(started));
+    }
+
+    @Test
+    void shouldNeverListAConversationOnlyTheTeamWroteInAsUnread() {
+        User admin = admin();
+        UUID started = adminContactService.start(admin.getId(), verifiedClient("Kasia", "Lis").getId(), "Hej").conversationId();
+        conversationRepository.flush();
+
+        var unread = adminContactService.list(true, null, 0, 100);
+
+        assertTrue(unread.content().stream().noneMatch(c -> c.id().equals(started)));
+    }
+
+    @Test
+    void shouldFindConversationsByTheNameOrAddressOfAnAccountOrAGuest() {
+        User admin = admin();
+        User client = verifiedClient("Bartłomiej", "Szukany");
+        UUID accountConversation = adminContactService.start(admin.getId(), client.getId(), "Hej").conversationId();
+        ContactConversation guest = guestConversation("pl");
+        conversationRepository.flush();
+
+        assertEquals(List.of(accountConversation), ids(adminContactService.list(false, "  bartłomiej szuk ", 0, 100)));
+        assertEquals(List.of(accountConversation), ids(adminContactService.list(false, client.getEmail().toUpperCase(), 0, 100)));
+        assertEquals(List.of(guest.getId()), ids(adminContactService.list(false, guest.getGuestEmail(), 0, 100)));
+    }
+
+    // A typed % or _ is a character to find, not a wildcard that turns a search into "everything".
+    @Test
+    void shouldSearchForAWildcardLiterally() {
+        guestConversation("pl");
+        conversationRepository.flush();
+
+        assertTrue(adminContactService.list(false, "%", 0, 100).content().isEmpty());
+        assertTrue(adminContactService.list(false, "_", 0, 100).content().isEmpty());
+        assertEquals("%50\\%%", AdminContactService.likePattern(" 50% "));
+        assertNull(AdminContactService.likePattern("   "));
+    }
+
+    @Test
+    void shouldReportNoConversationForAPersonWhoHasNone() {
+        assertNull(adminContactService.findForUser(verifiedClient("Bez", "Rozmowy").getId()).conversationId());
+    }
+
+    // A guest who confirms an account the team has already written to: the two conversations merge,
+    // and the merged one must not keep the "nobody wrote" clock of the started one.
+    @Test
+    void shouldMergeAGuestConversationIntoOneTheTeamStarted() {
+        User admin = admin();
+        User client = verifiedClient("Marta", "Gość");
+        UUID started = adminContactService.start(admin.getId(), client.getId(), "Witamy!").conversationId();
+        Instant guestWrote = Instant.now().plusSeconds(10);
+        ContactConversation guest = conversationRepository.save(ContactConversation.forGuest(client.getEmail(), "Marta", guestWrote));
+        messageRepository.save(ContactMessage.general(guest, "Pisałam bez logowania", "pl", guestWrote));
+        conversationRepository.flush();
+
+        conversationClaim.claimFor(client);
+        conversationRepository.flush();
+
+        ContactConversation merged = conversationRepository.findById(started).orElseThrow();
+        assertEquals(guestWrote, merged.getLastInboundAt());
+        assertEquals(guestWrote, merged.getLastActivityAt());
+        assertTrue(merged.isUnreadByStaff());
+        assertEquals(2, messageRepository.findByConversationId(started).size());
+        assertTrue(conversationRepository.findById(guest.getId()).isEmpty());
+    }
+
+    // ---- the chat window, team side: open on the newest page, page up, poll only what is new ----
+
+    @Test
+    void shouldOpenAConversationOnTheNewestPageAndPageUpToTheRest() {
+        ContactConversation conversation = conversationRepository.save(
+            ContactConversation.forGuest(uniqueEmail(), "Ola", Instant.now().minus(1, ChronoUnit.DAYS)));
+        Instant start = Instant.now().minus(1, ChronoUnit.DAYS);
+        int total = MessageWindow.PAGE_SIZE + 4;
+        for (int i = 0; i < total; i++) {
+            messageRepository.save(ContactMessage.general(conversation, "w" + i, "pl", start.plusSeconds(i)));
+        }
+        conversationRepository.flush();
+
+        ConversationDetailDto opened = adminContactService.get(conversation.getId());
+        assertEquals(MessageWindow.PAGE_SIZE, opened.messages().size());
+        assertTrue(opened.hasOlder());
+        assertEquals("w" + (total - 1), opened.summary().preview(), "the preview is still the newest message");
+
+        AdminConversationMessageDto oldest = opened.messages().getFirst();
+        AdminMessagePageDto older = adminContactService.older(conversation.getId(), oldest.createdAt(), oldest.id());
+        assertEquals(List.of("w0", "w1", "w2", "w3"), older.messages().stream().map(AdminConversationMessageDto::body).toList());
+        assertFalse(older.hasOlder());
+    }
+
+    // The panel marks a conversation read when it shows an unread message - so a poll that brings a
+    // new message from the person must also bring the unread flag, or the badge never goes out.
+    @Test
+    void shouldPollNewMessagesTogetherWithTheUnreadFlag() {
+        User admin = admin();
+        ContactConversation conversation = guestConversation("pl");
+        adminContactService.reply(conversation.getId(), admin.getId(), "Odpowiedź");
+        conversationRepository.flush();
+        AdminConversationMessageDto newest = adminContactService.get(conversation.getId()).messages().getLast();
+
+        AdminConversationUpdateDto idle = adminContactService.newer(conversation.getId(), newest.createdAt(), newest.id());
+        assertTrue(idle.messages().isEmpty());
+        assertFalse(idle.summary().unread());
+        assertEquals("Odpowiedź", idle.summary().preview(), "an idle poll still knows the newest message");
+
+        Instant later = Instant.now().plusSeconds(5);
+        messageRepository.save(ContactMessage.general(conversation, "A w niedzielę?", "pl", later));
+        conversation.recordInbound(later);
+        conversationRepository.flush();
+
+        AdminConversationUpdateDto update = adminContactService.newer(conversation.getId(), newest.createdAt(), newest.id());
+        assertEquals(List.of("A w niedzielę?"), update.messages().stream().map(AdminConversationMessageDto::body).toList());
+        assertTrue(update.summary().unread());
+    }
+
+    @Test
+    void shouldRefuseToPageAConversationThatDoesNotExist() {
+        var refusal = assertThrows(LocalizedMessage.Rejected.class,
+            () -> adminContactService.newer(UUID.randomUUID(), Instant.now(), UUID.randomUUID()));
+        assertEquals("contact.conversation.not.found", refusal.messageKey());
+    }
+
+    private int position(ContactConversation conversation) {
+        List<UUID> order = ids(adminContactService.list(false, null, 0, 100));
+        int index = order.indexOf(conversation.getId());
+        assertTrue(index >= 0, "conversation missing from the list");
+        return index;
+    }
+
+    private static List<UUID> ids(ConversationPageDto page) {
+        return page.content().stream().map(ConversationSummaryDto::id).toList();
+    }
+
+    private ContactConversation guestConversationAt(Instant at) {
+        ContactConversation conversation = conversationRepository.save(ContactConversation.forGuest(uniqueEmail(), "Ola", at));
+        messageRepository.save(ContactMessage.general(conversation, "Pytanie", "pl", at));
+        return conversation;
+    }
+
+    private User verifiedClient(String firstName, String lastName) {
+        User user = new User(uniqueEmail(), firstName, lastName, "+48123456789", nick());
+        user.setEmailVerified(true);
+        return userRepository.save(user);
     }
 
     private ContactConversation guestConversation(String language) {

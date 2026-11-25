@@ -4,11 +4,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @RestController
@@ -23,16 +25,52 @@ public class AdminContactController {
         this.contactService = contactService;
     }
 
-    @Operation(summary = "Conversations, newest message first")
+    @Operation(summary = "Conversations, newest message in either direction first")
     @GetMapping("/conversations")
     public ResponseEntity<ConversationPageDto> list(
             @Parameter(description = "Only conversations with an unread message") @RequestParam(defaultValue = "false") boolean unread,
+            @Parameter(description = "Search the person's name or e-mail address") @RequestParam(required = false) @Nullable String q,
             @Parameter(description = "Page number (from 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(contactService.list(unread, page, size));
+        return ResponseEntity.ok(contactService.list(unread, q, page, size));
     }
 
-    @Operation(summary = "One conversation with all its messages")
+    @Operation(summary = "Start a conversation with a registered person",
+        description = "When the person already has a conversation, the message goes into it. No mail: the person sees it in the app.")
+    @PostMapping("/conversations")
+    public ResponseEntity<StartConversationResultDto> start(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @Valid @RequestBody StartConversationRequest request) {
+        return ResponseEntity.ok(contactService.start(adminId, request.userId(), request.body()));
+    }
+
+    @Operation(summary = "The account's conversation, if it has one")
+    @GetMapping("/conversations/by-user/{userId}")
+    public ResponseEntity<ConversationLookupDto> findForUser(@PathVariable UUID userId) {
+        return ResponseEntity.ok(contactService.findForUser(userId));
+    }
+
+    @Operation(summary = "Older messages, for scrolling up",
+        description = "The page just above the message at (at, id), oldest first. The cursor is that message's createdAt and id.")
+    @GetMapping("/conversations/{conversationId}/messages/older")
+    public ResponseEntity<AdminMessagePageDto> older(
+            @PathVariable UUID conversationId,
+            @Parameter(description = "createdAt of the oldest message the window has") @RequestParam Instant at,
+            @Parameter(description = "id of that message") @RequestParam UUID id) {
+        return ResponseEntity.ok(contactService.older(conversationId, at, id));
+    }
+
+    @Operation(summary = "New messages, for polling",
+        description = "Only what arrived after the message at (at, id), oldest first, with the conversation's summary.")
+    @GetMapping("/conversations/{conversationId}/messages/newer")
+    public ResponseEntity<AdminConversationUpdateDto> newer(
+            @PathVariable UUID conversationId,
+            @Parameter(description = "createdAt of the newest message the window has") @RequestParam Instant at,
+            @Parameter(description = "id of that message") @RequestParam UUID id) {
+        return ResponseEntity.ok(contactService.newer(conversationId, at, id));
+    }
+
+    @Operation(summary = "One conversation: the newest page of messages")
     @GetMapping("/conversations/{conversationId}")
     public ResponseEntity<ConversationDetailDto> get(@PathVariable UUID conversationId) {
         return ResponseEntity.ok(contactService.get(conversationId));
@@ -45,7 +83,7 @@ public class AdminContactController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Reply", description = "Saved in the conversation and mailed to the person.")
+    @Operation(summary = "Reply", description = "Saved in the conversation; mailed only to a guest, an account holder sees it in the app.")
     @PostMapping("/conversations/{conversationId}/replies")
     public ResponseEntity<ReplyResultDto> reply(
             @PathVariable UUID conversationId,

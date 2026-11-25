@@ -116,6 +116,8 @@
     "reply": "Reply",
     "hint": "We reply here — a red dot at the top of the page will tell you.",
     "otherWays": "Other ways to reach us",
+    "loadOlder": "Load older messages",
+    "newBelow": "New messages",
     "send": "Send"
   }
 }

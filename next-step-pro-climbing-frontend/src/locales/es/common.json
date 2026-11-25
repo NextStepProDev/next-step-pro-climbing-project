@@ -232,7 +232,7 @@
     "consent": "Entiendo que mi nombre, mi correo y mi mensaje se usarán para responderme. Detalles en la <1>política de privacidad</1>.",
     "send": "Enviar mensaje",
     "sentTitle": "¡Gracias, mensaje enviado!",
-    "sentInApp": "La respuesta aparecerá en el Chat — te avisará un punto rojo en la parte superior de la página. No la enviamos por correo.",
+    "sentInApp": "La respuesta aparecerá en el Chat — te avisará un punto rojo en la parte superior de la página. No la enviamos por correo; si no entras en 2 días, te enviamos un recordatorio por correo.",
     "sentGuest": "Responderemos al correo que nos has indicado.",
     "openConversation": "Ir a la conversación",
     "writeAnother": "Escribir otro mensaje",

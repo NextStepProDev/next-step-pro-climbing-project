@@ -232,7 +232,7 @@
     "consent": "Wiem, że moje imię, adres e-mail i treść wiadomości posłużą do udzielenia odpowiedzi. Szczegóły w <1>polityce prywatności</1>.",
     "send": "Wyślij wiadomość",
     "sentTitle": "Dzięki, wiadomość wysłana!",
-    "sentInApp": "Odpowiedź pojawi się w Czacie — da znać czerwona kropka u góry strony. Nie wysyłamy jej mailem.",
+    "sentInApp": "Odpowiedź pojawi się w Czacie — da znać czerwona kropka u góry strony. Nie wysyłamy jej mailem; jeśli nie zajrzysz przez 2 dni, przypomnimy mailem.",
     "sentGuest": "Odpowiemy na podany adres e-mail.",
     "openConversation": "Przejdź do rozmowy",
     "writeAnother": "Napisz kolejną wiadomość",

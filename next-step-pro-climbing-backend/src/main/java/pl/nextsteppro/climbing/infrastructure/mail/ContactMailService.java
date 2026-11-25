@@ -121,6 +121,33 @@ public class ContactMailService {
         mailDispatcher.sendHtml(to, subject, html);
     }
 
+    /**
+     * An account holder has not opened an answer from the team for 48 h. Deliberately WITHOUT the
+     * answer: the chat stays in the app, and what people discuss there (health, money) does not
+     * end up in a mailbox. A button to the chat, and where to turn these mails off.
+     */
+    @Async("mailExecutor")
+    public void sendUnseenReminder(String to, String firstName, String language) {
+        String subject = msg.getForLang("email.contact.unseen.subject", language);
+        String html = page("""
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        <p style="color: #333; font-size: 15px;">%s</p>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
+                        </div>
+                        <p style="margin-top: 20px; color: #6b7280; font-size: 13px;">%s</p>
+                        <p style="color: #666; font-size: 14px; margin-top: 20px;">%s</p>
+            """.formatted(
+            esc(msg.getForLang("email.contact.unseen.greeting", language, firstName)),
+            esc(msg.getForLang("email.contact.unseen.body", language)),
+            siteUrl + "/my-reservations?tab=messages",
+            esc(msg.getForLang("email.contact.unseen.cta", language)),
+            esc(msg.getForLang("email.contact.unseen.hint", language)),
+            esc(msg.getForLang("email.reservation.team", language))
+        ));
+        mailDispatcher.sendHtml(to, subject, html);
+    }
+
     private String subjectTag(Context context) {
         return switch (context.type()) {
             case "COURSE" -> msg.getForLang("email.contact.tag.course", ADMIN_LANG, nullToEmpty(context.courseTitle()));
