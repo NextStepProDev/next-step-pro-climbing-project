@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import clsx from 'clsx'
 import { Bold, Italic, Underline, Strikethrough, Heading, List, ListOrdered, Eye, Pencil } from 'lucide-react'
 import { BULLET_MARKER, LIST_PREFIX_RE, continueList, normalizeBulletMarker } from '../../utils/richTextInput'
 import { renderRichText } from '../../utils/renderRichText'
@@ -67,6 +68,12 @@ interface RichTextEditorProps {
   inputClassName?: string
   /** The textarea's id, so a `<label htmlFor>` names the field for a screen reader. */
   id?: string
+  /**
+   * Grow the field with the text, from `rows` up to 40% of the viewport, instead of scrolling
+   * inside a fixed box. For short composers (the chat): a phone's 4-line box hid every new line
+   * below its edge, and iOS Safari does not keep the caret in view inside a scrolled textarea.
+   */
+  autoGrow?: boolean
 }
 
 interface ToolbarButtonProps {
@@ -111,6 +118,7 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
   autoFocus,
   inputClassName,
   id,
+  autoGrow = false,
 }, forwardedRef) {
   const { t } = useTranslation('common')
   // Writing happens in a plain textarea, so the markers stay literal until you ask to see the
@@ -189,6 +197,29 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
     ta.focus()
     ta.setSelectionRange(pending.start, pending.end)
   })
+
+  // Auto-grow: measure the content and size the box to it; the CSS max-height caps it, and past
+  // the cap the field scrolls. Layout effect, so the new height lands before the browser paints
+  // (no flash of a too-short box). Writing at the end - the common case - also pins the scroll to
+  // the bottom, because a capped field otherwise leaves the newest line under its edge on iOS.
+  useLayoutEffect(() => {
+    if (!autoGrow || previewing) return
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = 'auto'
+    const borders = ta.offsetHeight - ta.clientHeight
+    ta.style.height = `${ta.scrollHeight + borders}px`
+    if (document.activeElement !== ta || ta.selectionEnd < ta.value.length) return
+    ta.scrollTop = ta.scrollHeight
+    // The box grew downwards after the browser had already scrolled the page to the caret, so
+    // the newest line can sit below the screen. Bring the field's bottom back into view - measured
+    // against the VISUAL viewport, which on iOS excludes the on-screen keyboard (the layout
+    // viewport does not, and would leave the line under the keys).
+    const viewport = window.visualViewport
+    const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight
+    const overflow = ta.getBoundingClientRect().bottom - visibleBottom + 8
+    if (overflow > 0) window.scrollBy(0, overflow)
+  }, [autoGrow, previewing, value, textareaRef])
 
   /** Applies a computed edit and puts the caret where the rule said it belongs. */
   const applyEdit = useCallback((newValue: string, caret: number) => {
@@ -373,7 +404,11 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
         maxLength={maxLength}
         autoFocus={autoFocus}
         placeholder={placeholder}
-        className={inputClassName ?? 'w-full bg-surface-700 border border-surface-600 rounded-b px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 resize-y min-h-0 text-sm'}
+        className={inputClassName ?? clsx(
+          'w-full bg-surface-700 border border-surface-600 rounded-b px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 min-h-0 text-sm',
+          // A grown field sizes itself; a drag handle would be undone by the next keystroke
+          autoGrow ? 'resize-none max-h-[40vh] overflow-y-auto' : 'resize-y',
+        )}
       />
       )}
     </div>

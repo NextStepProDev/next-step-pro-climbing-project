@@ -474,7 +474,8 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
         </label>
         <RichTextEditor
           id="admin-contact-reply"
-          rows={4}
+          rows={6}
+          autoGrow
           maxLength={CONTACT_BODY_MAX}
           value={draft}
           onChange={(value) => { setDraft(value); setLastResult(null) }}
@@ -694,7 +695,8 @@ function NewConversation({ preselectedUserId, onOpen, onCancel }: {
           </label>
           <RichTextEditor
             id="admin-contact-new-body"
-            rows={5}
+            rows={6}
+            autoGrow
             maxLength={CONTACT_BODY_MAX}
             value={draft}
             onChange={setDraft}
