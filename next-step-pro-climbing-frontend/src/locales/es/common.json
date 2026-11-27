@@ -72,6 +72,15 @@
     "discard": "Descartar cambios",
     "keep": "Volver a editar"
   },
+  "unsentMessage": {
+    "leaveTitle": "Tu mensaje no se ha enviado",
+    "leaveMessage": "Si sales ahora, se perderán el texto escrito y los archivos adjuntos.",
+    "leave": "Salir",
+    "stay": "Quedarme",
+    "clear": "Borrar",
+    "clearTitle": "¿Borrar el mensaje?",
+    "clearMessage": "Se eliminarán el texto escrito y los archivos adjuntos."
+  },
   "draft": {
     "found": "Tienes un borrador sin guardar del {{time}}.",
     "stale": "Desde entonces se ha guardado una versión más reciente: restaurar el borrador la sobrescribirá.",

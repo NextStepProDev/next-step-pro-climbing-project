@@ -72,6 +72,15 @@
     "discard": "Discard changes",
     "keep": "Back to editing"
   },
+  "unsentMessage": {
+    "leaveTitle": "Your message has not been sent",
+    "leaveMessage": "If you leave now, the text you wrote and any attached files will be lost.",
+    "leave": "Leave",
+    "stay": "Stay",
+    "clear": "Clear",
+    "clearTitle": "Clear the message?",
+    "clearMessage": "The text you wrote and any attached files will be removed."
+  },
   "draft": {
     "found": "You have an unsaved draft from {{time}}.",
     "stale": "A newer version has been saved since — restoring the draft will overwrite it.",

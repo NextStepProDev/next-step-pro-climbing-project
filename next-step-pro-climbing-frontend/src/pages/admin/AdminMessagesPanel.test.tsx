@@ -183,9 +183,35 @@ describe('AdminMessagesPanel', () => {
 
     await user.type(await screen.findByLabelText('contactMessages.reply'), 'Do Oli')
     await user.click(screen.getByText('Jan Kowalski'))
+    // An unsent reply is asked about first; leaving drops it rather than carrying it over
+    await user.click(screen.getByRole('button', { name: 'unsentMessage.leave' }))
     await screen.findByText('Wiadomość od Jan Kowalski')
 
     expect(screen.getByLabelText('contactMessages.reply')).toHaveValue('')
+  })
+
+  it('keeps the unsent reply and the conversation when the admin chooses to stay', async () => {
+    const user = userEvent.setup()
+    renderPanel('/admin/messages?conversation=c-guest')
+
+    await user.type(await screen.findByLabelText('contactMessages.reply'), 'Do Oli')
+    await user.click(screen.getByText('Jan Kowalski'))
+    expect(screen.getByText('unsentMessage.leaveTitle')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'unsentMessage.stay' }))
+
+    expect(screen.queryByText('unsentMessage.leaveTitle')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('contactMessages.reply')).toHaveValue('Do Oli')
+    expect(screen.queryByText('Wiadomość od Jan Kowalski')).not.toBeInTheDocument()
+  })
+
+  it('switches conversations without a question when nothing is written', async () => {
+    const user = userEvent.setup()
+    renderPanel('/admin/messages?conversation=c-guest')
+
+    await screen.findByLabelText('contactMessages.reply')
+    await user.click(screen.getByText('Jan Kowalski'))
+    expect(await screen.findByText('Wiadomość od Jan Kowalski')).toBeInTheDocument()
+    expect(screen.queryByText('unsentMessage.leaveTitle')).not.toBeInTheDocument()
   })
 
   it('does not ask for a conversation again once it is deleted', async () => {

@@ -17,6 +17,7 @@ import { ChatScroller } from './ChatScroller'
 import { useChatWindow } from './useChatWindow'
 import { useStagedChatFiles } from './useStagedChatFiles'
 import { ChatAttachPicker, ChatMessageFiles } from './ChatAttachments'
+import { ClearMessageButton } from './UnsentMessage'
 import { RichTextEditor } from '../ui/RichTextEditor'
 import { renderRichText } from '../../utils/renderRichText'
 import type { ChatMessage } from '../../utils/chatMessages'
@@ -30,7 +31,10 @@ const isOwnMessage = (m: ChatMessage) => !(m as ConversationMessage).fromStaff
  * contact page, a course or the calendar, and every answer, in order. Writing here goes into the
  * same conversation as the forms do.
  */
-export function MyConversationSection() {
+export function MyConversationSection({ onDirtyChange }: {
+  /** Reported during render (see useChildDirty): the page asks before a tab switch drops it. */
+  onDirtyChange?: (dirty: boolean) => void
+} = {}) {
   const { t, i18n } = useTranslation('reservations')
   const locale = useDateLocale()
   const queryClient = useQueryClient()
@@ -90,7 +94,9 @@ export function MyConversationSection() {
     onSuccess: (_, fileId) => hideFile(fileId),
   })
 
-  const canSend = (draft.trim().length > 0 || attachments.staged.length > 0) && !attachments.picking
+  const hasWriting = draft.trim().length > 0 || attachments.staged.length > 0
+  const canSend = hasWriting && !attachments.picking
+  onDirtyChange?.(hasWriting)
 
   if (chat.isLoading) return <div className="py-16 flex justify-center"><LoadingSpinner /></div>
   if (chat.isError) return <QueryError error={chat.error} onRetry={() => chat.refetch()} />
@@ -193,9 +199,20 @@ export function MyConversationSection() {
             {t('messages.hint')}{' '}
             <Link to="/kontakt" className="underline hover:text-surface-300">{t('messages.otherWays')}</Link>
           </p>
-          <Button type="submit" loading={sendMutation.isPending} disabled={!canSend}>
-            {t('messages.send')}
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            {hasWriting && (
+              <ClearMessageButton
+                disabled={sendMutation.isPending}
+                onClear={() => {
+                  setDraft('')
+                  attachments.clear()
+                }}
+              />
+            )}
+            <Button type="submit" loading={sendMutation.isPending} disabled={!canSend}>
+              {t('messages.send')}
+            </Button>
+          </div>
         </div>
       </form>
     </div>
