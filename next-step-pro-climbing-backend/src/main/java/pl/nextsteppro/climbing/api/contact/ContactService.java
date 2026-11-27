@@ -140,9 +140,10 @@ public class ContactService {
         return conversationRepository.findByUserId(userId)
             .map(c -> {
                 MessageWindow window = messageRepository.latest(c.getId());
-                return new MyConversationDto(toDtos(window.messages()), c.isUnseenByUser(), window.hasOlder());
+                return new MyConversationDto(toDtos(window.messages()), c.isUnseenByUser(), window.hasOlder(),
+                    c.getStaffReadAt());
             })
-            .orElseGet(() -> new MyConversationDto(List.of(), false, false));
+            .orElseGet(() -> new MyConversationDto(List.of(), false, false, null));
     }
 
     /**
@@ -165,8 +166,9 @@ public class ContactService {
     public MyConversationUpdateDto newerMine(UUID userId, Instant at, UUID messageId) {
         return conversationRepository.findByUserId(userId)
             .map(c -> new MyConversationUpdateDto(
-                toDtos(messageRepository.newerThan(c.getId(), at, messageId)), c.isUnseenByUser()))
-            .orElseGet(() -> new MyConversationUpdateDto(List.of(), false));
+                toDtos(messageRepository.newerThan(c.getId(), at, messageId)), c.isUnseenByUser(),
+                c.getStaffReadAt()))
+            .orElseGet(() -> new MyConversationUpdateDto(List.of(), false, null));
     }
 
     /**

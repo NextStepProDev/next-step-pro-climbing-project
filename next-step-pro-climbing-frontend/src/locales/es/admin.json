@@ -1440,6 +1440,8 @@
     "discardMessage": "El texto que has escrito se perderá.",
     "discardConfirm": "Descartar",
     "loadOlder": "Cargar mensajes anteriores",
-    "newBelow": "Mensajes nuevos"
+    "newBelow": "Mensajes nuevos",
+    "readByPerson": "Leído · {{time}}",
+    "notReadYet": "Aún no leído"
   }
 }

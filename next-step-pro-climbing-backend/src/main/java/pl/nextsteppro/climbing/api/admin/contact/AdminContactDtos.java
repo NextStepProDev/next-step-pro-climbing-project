@@ -22,6 +22,8 @@ import java.util.UUID;
  * @param lastActivityAt the newest message in either direction - what the list is ordered by
  * @param lastInboundAt  the person's newest message; null when only the team has written
  * @param preview        the newest message, cut short; who wrote it is {@code previewFromStaff}
+ * @param userSeenAt     when the person last had the chat open with a team answer on screen - the
+ *                       team's "read" mark; null for a guest, who reads the answer by mail
  */
 record ConversationSummaryDto(
     UUID id,
@@ -39,7 +41,8 @@ record ConversationSummaryDto(
     boolean previewFromStaff,
     @Nullable ContactContextType previewContextType,
     @Nullable String previewCourseTitle,
-    @Nullable LocalDate previewDate
+    @Nullable LocalDate previewDate,
+    @Nullable Instant userSeenAt
 ) {}
 
 record ConversationPageDto(List<ConversationSummaryDto> content, long totalElements, int totalPages, int page) {}

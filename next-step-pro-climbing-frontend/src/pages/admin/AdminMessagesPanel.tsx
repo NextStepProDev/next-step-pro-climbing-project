@@ -16,7 +16,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { ContextChip } from '../../components/contact/ContextChip'
 import { CONTACT_BODY_MAX } from '../../components/contact/ContactForm'
 import type { AdminConversationMessage, AdminConversationSummary, ContactReplyResult } from '../../types'
-import type { ChatMessage } from '../../utils/chatMessages'
+import { readReceipt, type ChatMessage } from '../../utils/chatMessages'
 import { ChatScroller } from '../../components/contact/ChatScroller'
 import { useChatWindow } from '../../components/contact/useChatWindow'
 import { useStagedChatFiles } from '../../components/contact/useStagedChatFiles'
@@ -390,6 +390,8 @@ function ConversationDetail({ conversationId, onBack, onDeleted, onDirtyChange }
   if (chat.isError || !summary) return <QueryError error={chat.error} onRetry={() => chat.refetch()} />
 
   const messages = chat.messages
+  // Only an account has a chat to look at; a guest reads the answer by mail, where nobody can tell
+  const receipt = summary.userId ? readReceipt(messages, isFromStaff, summary.userSeenAt) : null
 
   return (
     <div className="bg-surface-900 border border-surface-800 rounded-xl">
@@ -455,7 +457,7 @@ function ConversationDetail({ conversationId, onBack, onDeleted, onDirtyChange }
       >
       <ol className="space-y-3" aria-label={t('contactMessages.messagesLabel')}>
         {messages.map((m) => (
-          <li key={m.id} className={clsx('flex', m.fromStaff ? 'justify-end' : 'justify-start')}>
+          <li key={m.id} className={clsx('flex flex-col', m.fromStaff ? 'items-end' : 'items-start')}>
             <div
               className={clsx(
                 'max-w-[85%] rounded-2xl px-4 py-3 border',
@@ -484,6 +486,13 @@ function ConversationDetail({ conversationId, onBack, onDeleted, onDirtyChange }
               )}
               <ChatMessageFiles files={m.files} onDelete={(fileId) => deleteFileMutation.mutate(fileId)} />
             </div>
+            {receipt?.messageId === m.id && (
+              <p className="mt-1 text-[11px] text-surface-500">
+                {receipt.read && summary.userSeenAt
+                  ? t('contactMessages.readByPerson', { time: format(new Date(summary.userSeenAt), 'd MMM yyyy, HH:mm', { locale }) })
+                  : t('contactMessages.notReadYet')}
+              </p>
+            )}
           </li>
         ))}
       </ol>

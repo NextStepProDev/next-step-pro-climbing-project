@@ -120,6 +120,8 @@
     "otherWays": "Inne formy kontaktu",
     "loadOlder": "Wczytaj starsze wiadomości",
     "newBelow": "Nowe wiadomości",
+    "readByTeam": "Odczytane przez zespół · {{time}}",
+    "notReadYet": "Jeszcze nieodczytane",
     "send": "Wyślij"
   }
 }

@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom'
 import { useThemeLogo } from '../hooks/useThemeLogo'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '25 listopada 2026'
-const LAST_UPDATED_EN = '25 November 2026'
+const LAST_UPDATED_PL = '27 listopada 2026'
+const LAST_UPDATED_EN = '27 November 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -157,7 +157,10 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               jedno przypomnienie mailem (między 9 a 20) — bez treści wiadomości, tylko z linkiem do Czatu.
               Kolejne przyjdzie dopiero po tym, jak zajrzysz do Czatu i znów zostawisz odpowiedź
               nieprzeczytaną. Takie
-              przypomnienia wyłącza się w ustawieniach konta, w sekcji Powiadomienia email.
+              przypomnienia wyłącza się w ustawieniach konta, w sekcji Powiadomienia email. Pod ostatnią
+              wiadomością w Czacie każda strona widzi, czy i kiedy druga otworzyła rozmowę: Ty widzisz, że
+              odczytał ją zespół (bez informacji, kto konkretnie), a administrator — datę Twojego ostatniego
+              wejścia do rozmowy.
             </p>
             <DataList items={[
               'Imię i adres e-mail — jeśli piszesz bez logowania; wiadomość zalogowanej osoby jest przypisana do jej konta',
@@ -722,7 +725,9 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               for 2 days, we send one reminder by e-mail (between 9 am and 8 pm, Polish time) — without the
               message, only a link to Chat. Another comes only after you have looked into Chat and left a
               reply unread again. These
-              reminders are turned off in account settings, under Email notifications.
+              reminders are turned off in account settings, under Email notifications. Under the newest
+              message in Chat, each side sees whether and when the other opened the conversation: you see
+              that the team has read it (not which person), and the administrator sees when you opened it.
             </p>
             <DataList items={[
               'Name and e-mail address — if you write without signing in; a signed-in person’s message is attached to their account',

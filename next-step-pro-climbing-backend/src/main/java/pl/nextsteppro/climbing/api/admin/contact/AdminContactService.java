@@ -239,7 +239,9 @@ public class AdminContactService {
             last != null && last.isFromStaff(),
             last != null ? last.getContextType() : null,
             last != null ? last.getCourseTitle() : null,
-            last != null ? last.getContextDate() : null);
+            last != null ? last.getContextDate() : null,
+            // A guest reads the team's answer in their mailbox, where nobody can tell
+            owner != null ? c.getUserSeenAt() : null);
     }
 
     private static String requireBody(String rawBody) {

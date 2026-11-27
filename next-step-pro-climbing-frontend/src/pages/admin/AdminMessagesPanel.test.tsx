@@ -80,6 +80,7 @@ function summary(over: Partial<AdminConversationSummary>): AdminConversationSumm
     previewContextType: 'GENERAL',
     previewCourseTitle: null,
     previewDate: null,
+    userSeenAt: null,
     ...over,
   }
 }
@@ -463,5 +464,50 @@ describe('AdminMessagesPanel — files', () => {
 
     const row = (await screen.findByText('Jan Kowalski')).closest('button')!
     expect(row).toHaveTextContent('contactMessages.previewFile')
+  })
+})
+
+describe('AdminMessagesPanel — read mark', () => {
+  const withReply = (s: AdminConversationSummary): AdminConversationDetail => ({
+    ...detail(s),
+    messages: [...detail(s).messages, staffMessage(`${s.id}-r1`, 'Odpowiedź trenera')],
+  })
+
+  it('shows "not read yet" under the team\'s last reply, then "read" once a poll brings the person\'s look', async () => {
+    get.mockResolvedValue(withReply(CLIENT))
+    newer
+      .mockResolvedValueOnce({ summary: CLIENT, messages: [] })
+      .mockResolvedValue({ summary: { ...CLIENT, userSeenAt: '2026-11-22T11:30:00Z' }, messages: [] })
+    renderPanel('/admin/messages?conversation=c-user')
+
+    expect(await screen.findByText('contactMessages.notReadYet')).toBeInTheDocument()
+    expect(await screen.findByText('contactMessages.readByPerson', {}, { timeout: 12_000 })).toBeInTheDocument()
+    expect(screen.queryByText('contactMessages.notReadYet')).not.toBeInTheDocument()
+  }, 15_000)
+
+  it('does not call a look from before the reply a read', async () => {
+    const seenEarlier = { ...CLIENT, userSeenAt: '2026-11-22T10:30:00Z' }
+    get.mockResolvedValue(withReply(seenEarlier))
+    newer.mockResolvedValue({ summary: seenEarlier, messages: [] })
+    renderPanel('/admin/messages?conversation=c-user')
+
+    expect(await screen.findByText('contactMessages.notReadYet')).toBeInTheDocument()
+  })
+
+  it('shows no mark when the person wrote last — their message already answers it', async () => {
+    renderPanel('/admin/messages?conversation=c-user')
+    await screen.findByText('Wiadomość od Jan Kowalski')
+
+    expect(screen.queryByText('contactMessages.notReadYet')).not.toBeInTheDocument()
+    expect(screen.queryByText('contactMessages.readByPerson')).not.toBeInTheDocument()
+  })
+
+  it('shows no mark in a guest conversation, answered by mail where nobody can tell', async () => {
+    get.mockResolvedValue(withReply(GUEST))
+    renderPanel('/admin/messages?conversation=c-guest')
+    await screen.findByText('Odpowiedź trenera')
+
+    expect(screen.queryByText('contactMessages.notReadYet')).not.toBeInTheDocument()
+    expect(screen.queryByText('contactMessages.readByPerson')).not.toBeInTheDocument()
   })
 })

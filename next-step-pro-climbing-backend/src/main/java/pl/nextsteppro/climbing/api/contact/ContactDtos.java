@@ -70,14 +70,22 @@ record ConversationMessageDto(
 /**
  * The chat as it opens: the newest page, oldest first.
  *
- * @param hasOlder whether scrolling up has more to load
+ * @param hasOlder   whether scrolling up has more to load
+ * @param teamReadAt when somebody on the team last had the conversation open (a reply counts too) -
+ *                   the person's "read" mark. Shared by the team on purpose: WHICH admin read it is
+ *                   not the person's business, as with the author of an answer.
  */
-record MyConversationDto(List<ConversationMessageDto> messages, boolean unseenReply, boolean hasOlder) {}
+record MyConversationDto(List<ConversationMessageDto> messages, boolean unseenReply, boolean hasOlder,
+                         @Nullable Instant teamReadAt) {}
 
 /** One page above what the chat already shows, oldest first. */
 record MyMessagePageDto(List<ConversationMessageDto> messages, boolean hasOlder) {}
 
-/** A poll: only what arrived after the newest message the chat has, and whether an answer is unseen. */
-record MyConversationUpdateDto(List<ConversationMessageDto> messages, boolean unseenReply) {}
+/**
+ * A poll: only what arrived after the newest message the chat has, whether an answer is unseen,
+ * and the team's read mark - which moves while the chat stays open, so it travels with every poll.
+ */
+record MyConversationUpdateDto(List<ConversationMessageDto> messages, boolean unseenReply,
+                               @Nullable Instant teamReadAt) {}
 
 record UnseenReplyDto(boolean unseenReply) {}

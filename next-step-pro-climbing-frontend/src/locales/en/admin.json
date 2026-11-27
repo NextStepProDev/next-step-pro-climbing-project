@@ -1434,6 +1434,8 @@
     "discardMessage": "The text you wrote will be lost.",
     "discardConfirm": "Discard",
     "loadOlder": "Load older messages",
-    "newBelow": "New messages"
+    "newBelow": "New messages",
+    "readByPerson": "Read · {{time}}",
+    "notReadYet": "Not read yet"
   }
 }
