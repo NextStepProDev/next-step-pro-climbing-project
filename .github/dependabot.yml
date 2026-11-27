@@ -1,5 +1,9 @@
 version: 2
-# Monthly rhythm + strong grouping, so the first run does not bury us in an avalanche of PRs.
+# Every Monday at 06:00 Warsaw time, the same slot in all of the owner's projects, so the
+# week's dependency PRs from every repo land together and get cleared in one sitting. `time`
+# is not decoration: without it Dependabot picks a random hour per repo. Fresh releases wait
+# out Dependabot's default 3-day cooldown (security updates do not), so a weekly run never
+# offers a package published the night before.
 # Small ones (minor/patch) go grouped into one PR per ecosystem; majors separately,
 # so the incompatible ones (e.g. pinned by a framework) can be rejected — except packages
 # that must move together, which have their own groups (see the frontend entry).
@@ -8,7 +12,10 @@ updates:
   - package-ecosystem: npm
     directory: /next-step-pro-climbing-frontend
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     open-pull-requests-limit: 5
     # Packages that only work at matching versions come as ONE PR, majors included. Dependabot
     # puts an update into the first group that matches, so these sit above minor-and-patch.
@@ -39,7 +46,10 @@ updates:
   - package-ecosystem: gradle
     directory: /next-step-pro-climbing-backend
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
@@ -51,7 +61,10 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     groups:
       github-actions:
         patterns:
@@ -61,7 +74,10 @@ updates:
   - package-ecosystem: docker
     directory: /next-step-pro-climbing-frontend
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     # ⚠️ The image is `nginx:alpine` and no longer contains node — the node version lives in
     # .nvmrc (see ci-frontend.yml). This ignore stays as a guard should a node stage ever return:
     # node's odd majors (25, 27) NEVER become LTS and die in about seven months, so merging one
@@ -73,10 +89,15 @@ updates:
   - package-ecosystem: docker
     directory: /next-step-pro-climbing-backend
     schedule:
-      interval: monthly
-    # ⚠️ A JDK image major is a coordinated change, not a tag bump: build.gradle has
-    # `toolchain { languageVersion = 25 }`, so an image with only JDK 26 leaves Gradle looking
-    # for a 25 that is not there. Both numbers change together or not at all.
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    # ⚠️ A JDK image major is a coordinated change, not a tag bump. The image is a bare JRE that
+    # runs the jar CI built, so JRE 26 would still start — the problem is the line, not the
+    # build: 25 is the LTS, 26-28 are non-LTS releases supported for about six months each, and
+    # build.gradle (`languageVersion = 25`) and setup-java in ci-backend.yml stay on 25. All
+    # three numbers change together, as a decision, or not at all.
     ignore:
       - dependency-name: eclipse-temurin
         update-types: ["version-update:semver-major"]
@@ -90,7 +111,10 @@ updates:
   - package-ecosystem: docker-compose
     directory: /next-step-pro-climbing-hub
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     # ⚠️ A Postgres major is NOT a tag bump — it is a data migration, and this block exists
     # because 17 → 18 came in here as an ordinary PR and got merged. A data directory from one
     # major does not start under the next, and 18 also moved PGDATA, so the container comes up
