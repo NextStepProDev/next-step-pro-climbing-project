@@ -223,14 +223,14 @@ public class UserController {
             <p>%s</p>
             <form method="post" action="/api/user/unsubscribe">
             <input type="hidden" name="token" value="%s">
-            <button type="submit" style="font:inherit;cursor:pointer;padding:12px 28px;margin:8px 0 24px;border:0;border-radius:6px;background:#3b82f6;color:#fff;">%s</button>
+            <button type="submit" style="font:inherit;cursor:pointer;padding:12px 28px;margin:8px 0 24px;border:1px solid #475569;border-radius:6px;background:#334155;color:#fff;">%s</button>
             </form>
             """.formatted(
                 msg.getForLang("newsletter.unsubscribe.confirm.text", lang),
                 escapeHtmlAttribute(token),
                 msg.getForLang("newsletter.unsubscribe.confirm.button", lang));
 
-        return ResponseEntity.ok().contentType(HTML).body(page(lang, "#3b82f6",
+        return ResponseEntity.ok().contentType(HTML).body(page(lang, "#94a3b8",
             msg.getForLang("newsletter.unsubscribe.confirm.title", lang), body));
     }
 
@@ -248,7 +248,7 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return invalidLinkPage();
         }
-        return ResponseEntity.ok().contentType(HTML).body(page(lang, "#3b82f6",
+        return ResponseEntity.ok().contentType(HTML).body(page(lang, "#94a3b8",
             msg.getForLang("newsletter.unsubscribe.done.title", lang),
             "<p>" + msg.getForLang("newsletter.unsubscribe.done.text", lang) + "</p>"));
     }
@@ -273,7 +273,7 @@ public class UserController {
             <body style="font-family:Arial,sans-serif;text-align:center;padding:60px;background:#1a1816;color:#e0e0e0;">
             <h2 style="color:%s;">%s</h2>
             %s
-            <p><a href="%s" style="color:#3b82f6;">%s</a></p>
+            <p><a href="%s" style="color:#94a3b8;">%s</a></p>
             </body></html>
             """.formatted(lang, headingColor, heading, bodyHtml, siteUrl,
                 msg.getForLang("newsletter.unsubscribe.home", lang));

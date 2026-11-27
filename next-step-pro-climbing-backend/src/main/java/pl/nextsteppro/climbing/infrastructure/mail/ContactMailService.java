@@ -78,10 +78,10 @@ public class ContactMailService {
                             <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 13px;">%s · %s</p>
                             %s
                         </div>
-                        <div style="margin-top: 16px; padding: 16px; border-left: 3px solid #7c3aed; color: #333;">%s</div>
+                        <div style="margin-top: 16px; padding: 16px; border-left: 3px solid #334155; color: #333;">%s</div>
                         <p style="margin-top: 16px; color: #6b7280; font-size: 13px;">%s</p>
                         <div style="margin-top: 20px; text-align: center;">
-                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
+                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #334155; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
                         </div>
             """.formatted(
             esc(msg.getForLang("email.contact.admin.title", ADMIN_LANG)),
@@ -113,7 +113,7 @@ public class ContactMailService {
         String subject = msg.getForLang("email.contact.reply.subject", language);
         String html = page("""
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
-                        <div style="padding: 16px; border-left: 3px solid #7c3aed; color: #333;">%s</div>
+                        <div style="padding: 16px; border-left: 3px solid #334155; color: #333;">%s</div>
                         <p style="margin-top: 16px; color: #6b7280; font-size: 13px;">%s</p>
                         <p style="color: #666; font-size: 14px; margin-top: 20px;">%s</p>
             """.formatted(
@@ -137,7 +137,7 @@ public class ContactMailService {
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333; font-size: 15px;">%s</p>
                         <div style="margin-top: 20px; text-align: center;">
-                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
+                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #334155; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
                         </div>
                         <p style="margin-top: 20px; color: #6b7280; font-size: 13px;">%s</p>
                         <p style="color: #666; font-size: 14px; margin-top: 20px;">%s</p>
@@ -168,7 +168,7 @@ public class ContactMailService {
             case "COURSE" -> {
                 String title = esc(context.courseTitle());
                 String linked = context.courseId() != null
-                    ? "<a href=\"%s\" style=\"color: #7c3aed;\">%s</a>".formatted(siteUrl + "/kursy/" + context.courseId(), title)
+                    ? "<a href=\"%s\" style=\"color: #334155;\">%s</a>".formatted(siteUrl + "/kursy/" + context.courseId(), title)
                     : title;
                 yield "<p style=\"margin: 0;\"><strong>%s</strong> %s %s</p>".formatted(label,
                     esc(msg.getForLang("email.contact.about.course", ADMIN_LANG)), linked);
@@ -176,11 +176,11 @@ public class ContactMailService {
             case "CALENDAR" -> {
                 LocalDate day = context.day();
                 if (day == null) {
-                    yield "<p style=\"margin: 0;\"><strong>%s</strong> <a href=\"%s\" style=\"color: #7c3aed;\">%s</a></p>"
+                    yield "<p style=\"margin: 0;\"><strong>%s</strong> <a href=\"%s\" style=\"color: #334155;\">%s</a></p>"
                         .formatted(label, siteUrl + "/calendar",
                             esc(msg.getForLang("email.contact.about.calendarAny", ADMIN_LANG)));
                 }
-                String linked = "<a href=\"%s\" style=\"color: #7c3aed;\">%s</a>"
+                String linked = "<a href=\"%s\" style=\"color: #334155;\">%s</a>"
                     .formatted(siteUrl + "/calendar?date=" + day, day.format(DATE_FORMAT));
                 yield "<p style=\"margin: 0;\"><strong>%s</strong> %s %s</p>".formatted(label,
                     esc(msg.getForLang("email.contact.about.calendar", ADMIN_LANG)), linked);
