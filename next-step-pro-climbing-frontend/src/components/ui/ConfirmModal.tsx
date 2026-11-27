@@ -17,6 +17,8 @@ interface ConfirmModalProps {
   details?: ReactNode
   confirmText?: string
   saveText?: string
+  /** The way back out, when "Cancel" would misname it (e.g. "Stay" on a leave prompt). */
+  cancelText?: string
   variant?: 'danger' | 'primary'
 }
 
@@ -30,6 +32,7 @@ export function ConfirmModal({
   details,
   confirmText,
   saveText,
+  cancelText,
   variant = 'danger',
 }: ConfirmModalProps) {
   const { t } = useTranslation('common')
@@ -75,7 +78,7 @@ export function ConfirmModal({
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="ghost" size="sm" onClick={onClose}>
-              {t('cancel')}
+              {cancelText ?? t('cancel')}
             </Button>
             <Button
               variant={variant === 'danger' ? 'danger' : 'primary'}

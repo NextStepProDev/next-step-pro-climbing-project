@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -146,6 +146,49 @@ describe('MyConversationSection', () => {
 
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ body: 'Dziękuję!', contextType: 'GENERAL' }))
     await waitFor(() => expect(box).toHaveValue(''))
+  })
+
+  it('offers "clear" only once something is written, and empties the box after a confirmation', async () => {
+    const user = userEvent.setup()
+    renderSection({ messages: [message({ body: 'Hej', fromStaff: true })], unseenReply: false })
+    await screen.findByText('Hej')
+    expect(screen.queryByRole('button', { name: 'unsentMessage.clear' })).not.toBeInTheDocument()
+
+    const box = screen.getByLabelText('messages.reply')
+    await user.type(box, 'Długa wiadomość')
+    await user.click(screen.getByRole('button', { name: 'unsentMessage.clear' }))
+    // Asked first: nothing is gone yet
+    expect(box).toHaveValue('Długa wiadomość')
+    expect(screen.getByText('unsentMessage.clearTitle')).toBeInTheDocument()
+
+    const dialog = screen.getByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'unsentMessage.clear' }))
+    expect(box).toHaveValue('')
+    expect(send).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'unsentMessage.clear' })).not.toBeInTheDocument()
+  })
+
+  it('reports an unsent message to the page, and a clean box once it is sent', async () => {
+    const user = userEvent.setup()
+    const reports: boolean[] = []
+    getConversation.mockResolvedValue({ hasOlder: false, messages: [message({ body: 'Hej', fromStaff: true })], unseenReply: false })
+    getNewer.mockResolvedValue({ messages: [], unseenReply: false })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <MyConversationSection onDirtyChange={(d) => reports.push(d)} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await screen.findByText('Hej')
+    expect(reports.at(-1)).toBe(false)
+
+    await user.type(screen.getByLabelText('messages.reply'), 'x')
+    expect(reports.at(-1)).toBe(true)
+
+    await user.click(screen.getByText('messages.send'))
+    await waitFor(() => expect(reports.at(-1)).toBe(false))
   })
 })
 

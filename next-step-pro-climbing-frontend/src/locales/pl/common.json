@@ -72,6 +72,15 @@
     "discard": "Odrzuć zmiany",
     "keep": "Wróć do edycji"
   },
+  "unsentMessage": {
+    "leaveTitle": "Wiadomość nie została wysłana",
+    "leaveMessage": "Jeśli teraz wyjdziesz, napisany tekst i dołączone pliki przepadną.",
+    "leave": "Wyjdź",
+    "stay": "Zostań",
+    "clear": "Wyczyść",
+    "clearTitle": "Wyczyścić wiadomość?",
+    "clearMessage": "Napisany tekst i dołączone pliki zostaną usunięte."
+  },
   "draft": {
     "found": "Masz niezapisany szkic z {{time}}.",
     "stale": "Od tego czasu zapisano nowszą wersję — przywrócenie szkicu ją nadpisze.",

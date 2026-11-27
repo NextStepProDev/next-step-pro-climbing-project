@@ -21,6 +21,9 @@ import { ChatScroller } from '../../components/contact/ChatScroller'
 import { useChatWindow } from '../../components/contact/useChatWindow'
 import { useStagedChatFiles } from '../../components/contact/useStagedChatFiles'
 import { ChatAttachPicker, ChatMessageFiles } from '../../components/contact/ChatAttachments'
+import { ClearMessageButton, UnsentLeaveDialog } from '../../components/contact/UnsentMessage'
+import { useChildDirty } from '../../hooks/useChildDirty'
+import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import { renderRichText, toPlainText } from '../../utils/renderRichText'
 
@@ -81,6 +84,11 @@ export function AdminMessagesPanel() {
     setSearchParams(params)
   }
 
+  // An unsent reply or first message: asked about before another conversation, "back", a link or
+  // a refresh drops it. Both composers report into the one flag (only one is mounted at a time).
+  const [isComposerDirty, reportComposerDirty] = useChildDirty(!!selectedId || composing)
+  const leaveGuard = useLeaveGuard(isComposerDirty)
+
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'contact', 'list', filter, page, query],
     queryFn: () => adminContactApi.list(filter === 'unread', page, PAGE_SIZE, query),
@@ -104,7 +112,7 @@ export function AdminMessagesPanel() {
               className="w-full pl-9 pr-3 py-2 bg-surface-900 border border-surface-700 rounded-lg text-sm text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-          <Button type="button" size="sm" onClick={startNew} className="shrink-0">
+          <Button type="button" size="sm" onClick={() => { if (!composing) leaveGuard.guard(startNew) }} className="shrink-0">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="w-4 h-4" aria-hidden="true" />
               {t('contactMessages.newConversation')}
@@ -145,7 +153,7 @@ export function AdminMessagesPanel() {
             <ul className="space-y-2">
               {data.content.map((c) => (
                 <li key={c.id}>
-                  <ConversationRow summary={c} active={c.id === selectedId} onSelect={() => select(c.id)} />
+                  <ConversationRow summary={c} active={c.id === selectedId} onSelect={() => { if (c.id !== selectedId) leaveGuard.guard(() => select(c.id)) }} />
                 </li>
               ))}
             </ul>
@@ -179,14 +187,23 @@ export function AdminMessagesPanel() {
       <section className={clsx(!selectedId && !composing && 'max-lg:hidden')}>
         {selectedId ? (
           // Keyed by id: a half-written reply must never carry over to another person's conversation
-          <ConversationDetail key={selectedId} conversationId={selectedId} onBack={() => select(null)} />
+          <ConversationDetail
+            key={selectedId}
+            conversationId={selectedId}
+            onBack={() => leaveGuard.guard(() => select(null))}
+            // After a delete there is no conversation left to keep writing to — no question
+            onDeleted={() => select(null)}
+            onDirtyChange={reportComposerDirty}
+          />
         ) : composing ? (
           // Keyed by the person: "Write" on another card must start clean, not inherit this draft
           <NewConversation
             key={newParam}
             preselectedUserId={newParam === '1' ? null : newParam}
             onOpen={select}
+            // Its own cancel already asks "discard the message?" — asking twice would be noise
             onCancel={() => select(null)}
+            onDirtyChange={reportComposerDirty}
           />
         ) : (
           <div className="h-full min-h-48 bg-surface-900 border border-dashed border-surface-700 rounded-xl flex flex-col items-center justify-center gap-2 text-sm text-surface-500 p-6">
@@ -195,6 +212,8 @@ export function AdminMessagesPanel() {
           </div>
         )}
       </section>
+
+      <UnsentLeaveDialog isOpen={leaveGuard.asking} onStay={leaveGuard.stay} onLeave={leaveGuard.leave} />
     </div>
   )
 }
@@ -274,7 +293,13 @@ function ConversationRow({ summary, active, onSelect }: {
   )
 }
 
-function ConversationDetail({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
+function ConversationDetail({ conversationId, onBack, onDeleted, onDirtyChange }: {
+  conversationId: string
+  onBack: () => void
+  onDeleted: () => void
+  /** Reported during render (see useChildDirty), so the panel can ask before the reply is dropped. */
+  onDirtyChange: (dirty: boolean) => void
+}) {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
   const queryClient = useQueryClient()
@@ -344,7 +369,9 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
     },
   })
 
-  const canReply = (draft.trim().length > 0 || attachments.staged.length > 0) && !attachments.picking
+  const hasWriting = draft.trim().length > 0 || attachments.staged.length > 0
+  const canReply = hasWriting && !attachments.picking
+  onDirtyChange(hasWriting)
 
   const deleteMutation = useMutation({
     mutationFn: () => adminContactApi.delete(conversationId),
@@ -353,7 +380,7 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
       // Only the list and the badge — never this conversation's own query: it is still mounted
       // until the URL change re-renders, and invalidating it would refetch a conversation that no
       // longer exists (400). It goes inactive on unmount and is garbage-collected from there.
-      onBack()
+      onDeleted()
       queryClient.invalidateQueries({ queryKey: ['admin', 'contact', 'list'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
     },
@@ -508,9 +535,20 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
           <p className="text-xs text-surface-500">
             {summary.userId ? t('contactMessages.replyHintUser') : t('contactMessages.replyHintGuest')}
           </p>
-          <Button type="submit" loading={replyMutation.isPending} disabled={!canReply}>
-            {t('contactMessages.send')}
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            {hasWriting && (
+              <ClearMessageButton
+                disabled={replyMutation.isPending}
+                onClear={() => {
+                  setDraft('')
+                  attachments.clear()
+                }}
+              />
+            )}
+            <Button type="submit" loading={replyMutation.isPending} disabled={!canReply}>
+              {t('contactMessages.send')}
+            </Button>
+          </div>
         </div>
       </form>
 
@@ -534,10 +572,12 @@ function ConversationDetail({ conversationId, onBack }: { conversationId: string
  *
  * Still one conversation per person: picking somebody who already has one OPENS it instead.
  */
-function NewConversation({ preselectedUserId, onOpen, onCancel }: {
+function NewConversation({ preselectedUserId, onOpen, onCancel, onDirtyChange }: {
   preselectedUserId: string | null
   onOpen: (conversationId: string) => void
   onCancel: () => void
+  /** Reported during render (see useChildDirty), so the panel can ask before the message is dropped. */
+  onDirtyChange: (dirty: boolean) => void
 }) {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
@@ -545,6 +585,7 @@ function NewConversation({ preselectedUserId, onOpen, onCancel }: {
   const [pickedId, setPickedId] = useState<string | null>(preselectedUserId)
   const [draft, setDraft] = useState('')
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+  onDirtyChange(draft.trim().length > 0)
 
   const { data: users = [], isLoading: usersLoading } = useQuery({
     // The panel-wide user list — the same key as the invitation picker and the users table
@@ -709,9 +750,14 @@ function NewConversation({ preselectedUserId, onOpen, onCancel }: {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-xs text-surface-500">{t('contactMessages.pickHint')}</p>
-          <Button type="submit" loading={startMutation.isPending} disabled={!canSend}>
-            {t('contactMessages.start')}
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            {draft.trim() && (
+              <ClearMessageButton disabled={startMutation.isPending} onClear={() => setDraft('')} />
+            )}
+            <Button type="submit" loading={startMutation.isPending} disabled={!canSend}>
+              {t('contactMessages.start')}
+            </Button>
+          </div>
         </div>
       </form>
 

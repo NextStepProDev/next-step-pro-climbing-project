@@ -7,6 +7,9 @@ import { useDateLocale } from '../utils/dateFnsLocale'
 import { Calendar, CalendarClock, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
 import { reservationApi, calendarApi, trainingRequestApi, trainingCalendarApi, contactApi } from '../api/client'
 import { MyConversationSection } from '../components/contact/MyConversationSection'
+import { UnsentLeaveDialog } from '../components/contact/UnsentMessage'
+import { useChildDirty } from '../hooks/useChildDirty'
+import { useLeaveGuard } from '../hooks/useLeaveGuard'
 import { useAuth } from '../context/AuthContext'
 import { athleteAdapter } from '../components/training/trainingCalendarAdapter'
 import { athleteAscentAdapter } from '../components/ascents/ascentAdapter'
@@ -59,7 +62,16 @@ export function MyReservationsPage() {
       : (isAthlete && tabParam === 'calendar') ? 'calendar'
         : 'reservations'
 
+  // An unsent chat message: asked about before a tab switch, a link or a refresh drops it
+  const [isChatDirty, reportChatDirty] = useChildDirty(activeTab === 'messages')
+  const leaveGuard = useLeaveGuard(isChatDirty)
+
   const switchTab = (tab: MyTab) => {
+    if (tab === activeTab) return
+    leaveGuard.guard(() => applyTab(tab))
+  }
+
+  const applyTab = (tab: MyTab) => {
     const params = new URLSearchParams(searchParams)
     if (tab === 'reservations') params.delete('tab')
     else params.set('tab', tab)
@@ -329,7 +341,7 @@ export function MyReservationsPage() {
             {activeTab === 'calendar'
               ? <TrainingCalendarSection api={athleteAdapter} scopeKey="me" />
               : activeTab === 'messages'
-                ? <MyConversationSection />
+                ? <MyConversationSection onDirtyChange={reportChatDirty} />
                 : <AscentsSection api={athleteAscentAdapter} scopeKey="me" />}
           </Suspense>
         )
@@ -466,6 +478,8 @@ export function MyReservationsPage() {
         isOpen={!!selectedEventId}
         onClose={handleEventModalClose}
       />
+
+      <UnsentLeaveDialog isOpen={leaveGuard.asking} onStay={leaveGuard.stay} onLeave={leaveGuard.leave} />
     </div>
   )
 }
