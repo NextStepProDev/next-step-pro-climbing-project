@@ -168,7 +168,8 @@ export function MyConversationSection() {
         </label>
         <RichTextEditor
           id="conversation-reply"
-          rows={4}
+          rows={6}
+          autoGrow
           maxLength={CONTACT_BODY_MAX}
           value={draft}
           onChange={setDraft}

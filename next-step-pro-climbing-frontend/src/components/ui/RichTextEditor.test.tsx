@@ -78,3 +78,51 @@ describe('RichTextEditor — preview', () => {
     expect(screen.getByText('richText.previewEmpty')).toBeInTheDocument()
   })
 })
+
+// jsdom lays nothing out, so the content height and the field's place on screen are stood in for.
+describe('RichTextEditor — auto-grow (the chat composer)', () => {
+  function GrowHarness({ autoGrow }: { autoGrow: boolean }) {
+    const [value, setValue] = useState('')
+    return <RichTextEditor value={value} onChange={setValue} rows={6} placeholder="pisz" autoGrow={autoGrow} />
+  }
+
+  function standIn(contentHeight: number, fieldBottom: number) {
+    vi.spyOn(HTMLTextAreaElement.prototype, 'scrollHeight', 'get').mockReturnValue(contentHeight)
+    vi.spyOn(HTMLTextAreaElement.prototype, 'getBoundingClientRect').mockReturnValue({ bottom: fieldBottom } as DOMRect)
+    return vi.spyOn(window, 'scrollBy').mockImplementation(() => {})
+  }
+
+  it('sizes the field to its text, so a new line never hides under the edge', async () => {
+    const user = userEvent.setup()
+    standIn(240, 100)
+    render(<GrowHarness autoGrow />)
+
+    await user.type(screen.getByPlaceholderText('pisz'), 'a')
+
+    expect(screen.getByPlaceholderText('pisz').style.height).toBe('240px')
+    vi.restoreAllMocks()
+  })
+
+  it('brings the line being written back on screen when the grown field reaches below it', async () => {
+    const user = userEvent.setup()
+    const scrollBy = standIn(240, window.innerHeight + 50)
+    render(<GrowHarness autoGrow />)
+
+    await user.type(screen.getByPlaceholderText('pisz'), 'a')
+
+    expect(scrollBy).toHaveBeenCalledWith(0, 58)
+    vi.restoreAllMocks()
+  })
+
+  it('leaves a fixed field alone where the option is off (articles, plans)', async () => {
+    const user = userEvent.setup()
+    const scrollBy = standIn(240, window.innerHeight + 50)
+    render(<GrowHarness autoGrow={false} />)
+
+    await user.type(screen.getByPlaceholderText('pisz'), 'a')
+
+    expect(screen.getByPlaceholderText('pisz').style.height).toBe('')
+    expect(scrollBy).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
+})
