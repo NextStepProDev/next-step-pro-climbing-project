@@ -126,9 +126,9 @@ public class RescheduleMailService {
                             <p style="margin: 0 0 12px 0;"><strong>%s</strong> %s</p>
                             %s
                         </div>
-                        <div style="margin-top: 16px; padding: 14px 20px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; text-align: center;">
-                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #0369a1; font-weight: bold;">%s</p>
-                            <a href="%s" target="_blank" style="display: inline-block; padding: 8px 20px; background: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">Google Calendar</a>
+                        <div style="margin-top: 16px; padding: 14px 20px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #334155; font-weight: bold;">%s</p>
+                            <a href="%s" target="_blank" style="display: inline-block; padding: 8px 20px; background: #334155; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">Google Calendar</a>
                             <p style="margin: 10px 0 0 0; font-size: 12px; color: #64748b;">%s</p>
                         </div>
                         <p style="margin-top: 20px; color: #333;">%s</p>

@@ -82,12 +82,12 @@ public class NewsletterMailService {
                         <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                        <h1 style="color: #3b82f6; margin-top: 16px; margin-bottom: 20px; font-size: 24px; line-height: 1.3;">
-                            <a href="%s" style="color: #3b82f6; text-decoration: none;">%s</a>
+                        <h1 style="color: #94a3b8; margin-top: 16px; margin-bottom: 20px; font-size: 24px; line-height: 1.3;">
+                            <a href="%s" style="color: #94a3b8; text-decoration: none;">%s</a>
                         </h1>
                         %s
                         %s
-                        <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                        <hr style="border: none; border-top: 1px solid #475569; margin: 30px 0;">
                         <p style="font-size: 12px; color: #6b7280; text-align: center; line-height: 1.6;">
                             %s<br>%s
                         </p>
@@ -183,7 +183,7 @@ public class NewsletterMailService {
                 %s
                 </tr></table>
                 %s
-                <p style="margin: 12px 0 0;"><a href="%s" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-size: 14px;">%s</a></p>
+                <p style="margin: 12px 0 0;"><a href="%s" style="display: inline-block; background-color: #334155; border: 1px solid #475569; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-size: 14px;">%s</a></p>
             </div>
             """.formatted(
                 escapeHtml(gallery.albumName()),

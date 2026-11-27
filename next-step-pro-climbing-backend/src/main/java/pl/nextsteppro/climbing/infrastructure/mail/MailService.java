@@ -336,11 +336,11 @@ public class MailService {
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         %s
-                        <div style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 20px; border-radius: 8px;">
+                        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px;">
                             %s
                         </div>
                         <div style="margin-top: 20px; text-align: center;">
-                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
+                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #334155; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
                         </div>
                         %s
                         <p style="margin-top: 20px; color: #333;">%s</p>
@@ -375,7 +375,7 @@ public class MailService {
             : "";
         String windowBadge = inWindow
             ? """
-              <div style="margin-bottom: 16px; padding: 10px 14px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px; color: #0f766e; font-size: 14px; font-weight: bold;">%s</div>
+              <div style="margin-bottom: 16px; padding: 10px 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; font-size: 14px; font-weight: bold;">%s</div>
               """.formatted(msg.getForLang("email.admin.training.request.window.badge", ADMIN_LANG))
             : "";
         return """
@@ -399,7 +399,7 @@ public class MailService {
                             %s
                         </div>
                         <div style="margin-top: 20px; text-align: center;">
-                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
+                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #334155; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
                         </div>
                     </div>
                 </div>
@@ -567,9 +567,9 @@ public class MailService {
 
     private String buildCalendarSection(String lang, String googleCalendarUrl) {
         return """
-                        <div style="margin-top: 16px; padding: 14px 20px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; text-align: center;">
-                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #0369a1; font-weight: bold;">%s</p>
-                            <a href="%s" target="_blank" style="display: inline-block; padding: 8px 20px; background: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">📅 Google Calendar</a>
+                        <div style="margin-top: 16px; padding: 14px 20px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #334155; font-weight: bold;">%s</p>
+                            <a href="%s" target="_blank" style="display: inline-block; padding: 8px 20px; background: #334155; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">📅 Google Calendar</a>
                             <p style="margin: 10px 0 0 0; font-size: 12px; color: #64748b;">%s</p>
                         </div>
             """.formatted(
@@ -587,7 +587,7 @@ public class MailService {
                     <strong>%s:</strong>
                     <span style="color: #6b7280; text-decoration: line-through; margin-left: 6px;">%s</span>
                     <span style="margin: 0 6px; color: #374151;">→</span>
-                    <span style="color: #1d4ed8; font-weight: bold;">%s</span>
+                    <span style="color: #1e293b; font-weight: bold;">%s</span>
                 </div>
                 """.formatted(msg.getForLang(change.labelKey(), lang), esc(change.oldValue()), esc(change.newValue())));
         }
@@ -609,11 +609,11 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
+                        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px;">
                             %s
                             <p style="margin: 0 0 6px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0 0 16px 0;"><strong>%s</strong> %s – %s</p>
-                            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e40af;">%s</p>
+                            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e293b;">%s</p>
                             %s
                         </div>
                         <p style="margin-top: 20px; color: #333;">%s</p>
@@ -647,9 +647,9 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
+                        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 16px 0;"><strong>%s</strong> %s</p>
-                            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e40af;">%s</p>
+                            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e293b;">%s</p>
                             %s
                         </div>
                         <p style="margin-top: 20px; color: #333;">%s</p>
@@ -692,7 +692,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
+                        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px;">
                             %s
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
@@ -821,7 +821,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
+                        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                             %s

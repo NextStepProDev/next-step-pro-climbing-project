@@ -178,14 +178,14 @@ public class AuthMailService {
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <h1 style="color: #94a3b8; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
-                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <hr style="border: none; border-top: 1px solid #475569; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
                         %s<br>
                         %s
@@ -213,14 +213,14 @@ public class AuthMailService {
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <h1 style="color: #94a3b8; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
                     <p style="font-size: 16px; line-height: 1.6; color: #f87171;">
                         %s
                     </p>
-                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <hr style="border: none; border-top: 1px solid #475569; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
                         %s<br>
                         %s
@@ -256,7 +256,7 @@ public class AuthMailService {
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <h1 style="color: #94a3b8; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
@@ -265,7 +265,7 @@ public class AuthMailService {
                     </p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="%s"
-                           style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                           style="background: #334155; border: 1px solid #475569;
                                   color: white;
                                   padding: 14px 32px;
                                   text-decoration: none;
@@ -279,7 +279,7 @@ public class AuthMailService {
                     <p style="font-size: 14px; color: #9ca3af;">
                         %s
                     </p>
-                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <hr style="border: none; border-top: 1px solid #475569; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
                         %s<br>
                         %s
@@ -310,7 +310,7 @@ public class AuthMailService {
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <h1 style="color: #94a3b8; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
@@ -319,7 +319,7 @@ public class AuthMailService {
                     </p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="%s"
-                           style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                           style="background: #334155; border: 1px solid #475569;
                                   color: white;
                                   padding: 14px 32px;
                                   text-decoration: none;
@@ -336,7 +336,7 @@ public class AuthMailService {
                     <p style="font-size: 14px; color: #9ca3af;">
                         %s
                     </p>
-                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <hr style="border: none; border-top: 1px solid #475569; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
                         %s<br>
                         %s
@@ -368,7 +368,7 @@ public class AuthMailService {
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <h1 style="color: #94a3b8; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
@@ -377,7 +377,7 @@ public class AuthMailService {
                     </p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="%s"
-                           style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                           style="background: #334155; border: 1px solid #475569;
                                   color: white;
                                   padding: 14px 32px;
                                   text-decoration: none;
@@ -394,7 +394,7 @@ public class AuthMailService {
                     <p style="font-size: 14px; color: #9ca3af;">
                         %s
                     </p>
-                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <hr style="border: none; border-top: 1px solid #475569; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
                         %s<br>
                         %s
@@ -426,14 +426,14 @@ public class AuthMailService {
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <h1 style="color: #94a3b8; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
                     <p style="font-size: 16px; line-height: 1.6;">
                         %s
                     </p>
-                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <hr style="border: none; border-top: 1px solid #475569; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
                         %s<br>
                         %s
