@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.api.contact;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import pl.nextsteppro.climbing.api.admin.contact.AdminContactService;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
@@ -32,6 +33,7 @@ class ContactChatWindowIntegrationTest extends BaseIntegrationTest {
     @Autowired private ContactService contactService;
     @Autowired private ContactConversationRepository conversationRepository;
     @Autowired private ContactMessageRepository messageRepository;
+    @Autowired private AdminContactService adminContactService;
 
     @MockitoBean private ContactMailService contactMailService;
 
@@ -150,6 +152,32 @@ class ContactChatWindowIntegrationTest extends BaseIntegrationTest {
         assertTrue(contactService.getMine(user.getId()).messages().isEmpty());
         assertFalse(contactService.olderMine(user.getId(), Instant.now(), UUID.randomUUID()).hasOlder());
         assertTrue(contactService.newerMine(user.getId(), Instant.now(), UUID.randomUUID()).messages().isEmpty());
+    }
+
+    // The person's read mark is the team's last look - opening the conversation in the panel, or
+    // answering it. It moves while the chat stays open, so every poll carries it too.
+    @Test
+    void shouldCarryTheTeamsLookAtTheConversationAsThePersonsReadMark() {
+        User user = verifiedUser();
+        ContactConversation conversation = conversationOf(user);
+        ContactMessage mine = write(conversation, "Pytanie", Instant.now().minus(1, ChronoUnit.MINUTES));
+        conversationRepository.flush();
+        assertNull(contactService.getMine(user.getId()).teamReadAt(), "the team has not looked yet");
+
+        adminContactService.markRead(conversation.getId());
+        conversationRepository.flush();
+
+        Instant read = contactService.getMine(user.getId()).teamReadAt();
+        assertNotNull(read);
+        assertFalse(read.isBefore(mine.getCreatedAt()));
+        assertEquals(read, contactService.newerMine(user.getId(), mine.getCreatedAt(), mine.getId()).teamReadAt());
+    }
+
+    @Test
+    void shouldGiveNoReadMarkToSomebodyWithoutAConversation() {
+        User user = verifiedUser();
+        assertNull(contactService.getMine(user.getId()).teamReadAt());
+        assertNull(contactService.newerMine(user.getId(), Instant.now(), UUID.randomUUID()).teamReadAt());
     }
 
     private List<UUID> allIds(ContactConversation conversation) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { compareInstants, mergeChatMessages } from './chatMessages'
+import { compareInstants, mergeChatMessages, readReceipt } from './chatMessages'
 
 const m = (id: string, createdAt: string) => ({ id, createdAt })
 
@@ -39,5 +39,36 @@ describe('mergeChatMessages', () => {
     const same = '2026-11-25T10:00:00Z'
     const merged = mergeChatMessages([m('0b000000-0000-0000-0000-000000000000', same)], [m('0a000000-0000-0000-0000-000000000000', same)])
     expect(merged.map((x) => x.id)).toEqual(['0a000000-0000-0000-0000-000000000000', '0b000000-0000-0000-0000-000000000000'])
+  })
+})
+
+describe('readReceipt', () => {
+  const own = (id: string, createdAt: string) => ({ id, createdAt, own: true })
+  const theirs = (id: string, createdAt: string) => ({ id, createdAt, own: false })
+  const isOwn = (x: { own: boolean }) => x.own
+
+  it('should mark the own newest message unread until the other side looks', () => {
+    expect(readReceipt([own('a', '2026-11-27T10:00:00Z')], isOwn, null)).toEqual({ messageId: 'a', read: false })
+    expect(readReceipt([own('a', '2026-11-27T10:00:00Z')], isOwn, '2026-11-27T09:59:59Z'))
+      .toEqual({ messageId: 'a', read: false })
+  })
+
+  it('should mark it read once the other side had the chat open at or after it', () => {
+    expect(readReceipt([own('a', '2026-11-27T10:00:00Z')], isOwn, '2026-11-27T10:05:00Z'))
+      .toEqual({ messageId: 'a', read: true })
+  })
+
+  it('should compare to the microsecond, not to the millisecond', () => {
+    // Seen 300 µs BEFORE the message: Date.parse would call these equal, and so "read"
+    expect(readReceipt([own('a', '2026-11-27T10:00:00.000500Z')], isOwn, '2026-11-27T10:00:00.000200Z'))
+      .toEqual({ messageId: 'a', read: false })
+  })
+
+  it('should put the mark only under the newest message, and none when that one is the other side\'s', () => {
+    const older = own('a', '2026-11-27T10:00:00Z')
+    expect(readReceipt([older, own('b', '2026-11-27T10:01:00Z')], isOwn, '2026-11-27T10:00:30Z'))
+      .toEqual({ messageId: 'b', read: false })
+    expect(readReceipt([older, theirs('c', '2026-11-27T10:02:00Z')], isOwn, null)).toBeNull()
+    expect(readReceipt([], isOwn, null)).toBeNull()
   })
 })

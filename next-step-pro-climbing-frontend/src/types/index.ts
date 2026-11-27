@@ -1208,6 +1208,8 @@ export interface MyConversation {
   unseenReply: boolean
   /** Scrolling up has more to load. */
   hasOlder: boolean
+  /** When somebody on the team last had the conversation open — the "read" mark (team-wide, never which admin). */
+  teamReadAt: string | null
 }
 
 /** One page above what the chat already shows, oldest first. */
@@ -1220,6 +1222,7 @@ export interface MyMessagePage {
 export interface MyConversationUpdate {
   messages: ConversationMessage[]
   unseenReply: boolean
+  teamReadAt: string | null
 }
 
 export interface AdminConversationSummary {
@@ -1242,6 +1245,8 @@ export interface AdminConversationSummary {
   previewContextType: ContactContextType | null
   previewCourseTitle: string | null
   previewDate: string | null
+  /** When the person last had the chat open with an answer on screen — the "read" mark; null for a guest. */
+  userSeenAt: string | null
 }
 
 export interface AdminConversationPage {

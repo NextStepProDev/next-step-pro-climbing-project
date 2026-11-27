@@ -118,6 +118,8 @@
     "otherWays": "Otras formas de contacto",
     "loadOlder": "Cargar mensajes anteriores",
     "newBelow": "Mensajes nuevos",
+    "readByTeam": "Leído por el equipo · {{time}}",
+    "notReadYet": "Aún no leído",
     "send": "Enviar"
   }
 }

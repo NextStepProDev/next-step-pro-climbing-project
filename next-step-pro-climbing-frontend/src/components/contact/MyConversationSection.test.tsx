@@ -58,11 +58,13 @@ function message(over: Partial<ConversationMessage>): ConversationMessage {
   }
 }
 
-function renderSection(opened: Omit<MyConversation, 'hasOlder'> & { hasOlder?: boolean }) {
-  const conversation: MyConversation = { hasOlder: false, ...opened }
+function renderSection(
+  opened: Omit<MyConversation, 'hasOlder' | 'teamReadAt'> & { hasOlder?: boolean; teamReadAt?: string | null },
+) {
+  const conversation: MyConversation = { hasOlder: false, teamReadAt: null, ...opened }
   getConversation.mockResolvedValue(conversation)
-  // An idle poll by default: nothing new, the same unseen state as the page that opened
-  getNewer.mockResolvedValue({ messages: [], unseenReply: conversation.unseenReply })
+  // An idle poll by default: nothing new, the same unseen and read state as the page that opened
+  getNewer.mockResolvedValue({ messages: [], unseenReply: conversation.unseenReply, teamReadAt: conversation.teamReadAt })
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
@@ -311,5 +313,31 @@ describe('MyConversationSection — files', () => {
     expect(deleteFile).toHaveBeenCalledWith('f-1')
     await waitFor(() => expect(screen.queryByAltText('pomylka.jpg')).not.toBeInTheDocument())
     expect(screen.getByText('Zostaje')).toBeInTheDocument()
+  })
+})
+
+describe('MyConversationSection — read mark', () => {
+  const mine = message({ id: 'mine-1', body: 'Moje pytanie', createdAt: '2026-11-22T10:00:00Z' })
+
+  it('shows "not read yet" under the person\'s last message until the team looks', async () => {
+    renderSection({ messages: [mine], unseenReply: false, teamReadAt: '2026-11-22T09:00:00Z' })
+    expect(await screen.findByText('messages.notReadYet')).toBeInTheDocument()
+  })
+
+  it('turns to "read by the team" when a poll brings the team\'s look, without reopening', async () => {
+    renderSection({ messages: [mine], unseenReply: false })
+    expect(await screen.findByText('messages.notReadYet')).toBeInTheDocument()
+
+    getNewer.mockResolvedValue({ messages: [], unseenReply: false, teamReadAt: '2026-11-22T10:05:00Z' })
+    expect(await screen.findByText('messages.readByTeam', {}, { timeout: 12_000 })).toBeInTheDocument()
+    expect(screen.queryByText('messages.notReadYet')).not.toBeInTheDocument()
+  }, 15_000)
+
+  it('shows no mark when the team wrote last', async () => {
+    renderSection({ messages: [mine, message({ fromStaff: true, body: 'Odpowiedź', createdAt: '2026-11-22T11:00:00Z' })], unseenReply: false })
+    await screen.findByText('Odpowiedź')
+
+    expect(screen.queryByText('messages.notReadYet')).not.toBeInTheDocument()
+    expect(screen.queryByText('messages.readByTeam')).not.toBeInTheDocument()
   })
 })

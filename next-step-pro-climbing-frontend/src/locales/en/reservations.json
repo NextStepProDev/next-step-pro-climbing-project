@@ -118,6 +118,8 @@
     "otherWays": "Other ways to reach us",
     "loadOlder": "Load older messages",
     "newBelow": "New messages",
+    "readByTeam": "Read by the team · {{time}}",
+    "notReadYet": "Not read yet",
     "send": "Send"
   }
 }

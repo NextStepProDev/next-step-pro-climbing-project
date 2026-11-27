@@ -20,7 +20,7 @@ import { ChatAttachPicker, ChatMessageFiles } from './ChatAttachments'
 import { ClearMessageButton } from './UnsentMessage'
 import { RichTextEditor } from '../ui/RichTextEditor'
 import { renderRichText } from '../../utils/renderRichText'
-import type { ChatMessage } from '../../utils/chatMessages'
+import { readReceipt, type ChatMessage } from '../../utils/chatMessages'
 import type { ConversationMessage } from '../../types'
 
 /** In the person's chat, "own" is what they wrote: sending one scrolls down to it. */
@@ -49,6 +49,9 @@ export function MyConversationSection({ onDirtyChange }: {
     fetchNewer: contactApi.getNewer,
   })
   const messages = chat.messages
+  // The newest poll knows best: the mark moves while the chat stays open
+  const teamReadAt = chat.lastPoll ? chat.lastPoll.teamReadAt : chat.latest?.teamReadAt
+  const receipt = readReceipt(messages, isOwnMessage, teamReadAt)
 
   const seenMutation = useMutation({
     mutationFn: contactApi.markSeen,
@@ -126,7 +129,7 @@ export function MyConversationSection({ onDirtyChange }: {
         >
         <ol className="space-y-3" aria-label={t('messages.listLabel')}>
           {messages.map((m) => (
-            <li key={m.id} className={clsx('flex', m.fromStaff ? 'justify-start' : 'justify-end')}>
+            <li key={m.id} className={clsx('flex flex-col', m.fromStaff ? 'items-start' : 'items-end')}>
               <div
                 className={clsx(
                   'max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 border',
@@ -155,6 +158,13 @@ export function MyConversationSection({ onDirtyChange }: {
                 )}
                 <ChatMessageFiles files={m.files} onDelete={(fileId) => deleteFileMutation.mutate(fileId)} />
               </div>
+              {receipt?.messageId === m.id && (
+                <p className="mt-1 text-[11px] text-surface-500">
+                  {receipt.read && teamReadAt
+                    ? t('messages.readByTeam', { time: format(new Date(teamReadAt), 'd MMM yyyy, HH:mm', { locale }) })
+                    : t('messages.notReadYet')}
+                </p>
+              )}
             </li>
           ))}
         </ol>

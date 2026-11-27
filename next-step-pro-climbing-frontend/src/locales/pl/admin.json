@@ -1458,6 +1458,8 @@
     "discardMessage": "Napisany tekst zniknie.",
     "discardConfirm": "Odrzuć",
     "loadOlder": "Wczytaj starsze wiadomości",
-    "newBelow": "Nowe wiadomości"
+    "newBelow": "Nowe wiadomości",
+    "readByPerson": "Odczytano · {{time}}",
+    "notReadYet": "Jeszcze nieodczytane"
   }
 }

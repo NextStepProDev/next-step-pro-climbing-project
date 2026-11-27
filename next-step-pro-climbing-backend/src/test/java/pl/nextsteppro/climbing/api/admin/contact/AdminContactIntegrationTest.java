@@ -7,6 +7,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.contact.ContactConversationClaim;
 import pl.nextsteppro.climbing.api.contact.ContactFileSupport;
+import pl.nextsteppro.climbing.api.contact.ContactService;
 import pl.nextsteppro.climbing.domain.contact.ContactConversation;
 import pl.nextsteppro.climbing.domain.contact.ContactConversationRepository;
 import pl.nextsteppro.climbing.domain.contact.ContactMessage;
@@ -38,6 +39,7 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
     @Autowired private ContactConversationRepository conversationRepository;
     @Autowired private ContactMessageRepository messageRepository;
     @Autowired private ContactConversationClaim conversationClaim;
+    @Autowired private ContactService contactService;
     @Autowired private ContactMessageFileRepository fileRepository;
     @Autowired private FileStorageService storage;
 
@@ -349,6 +351,40 @@ class AdminContactIntegrationTest extends BaseIntegrationTest {
         AdminConversationUpdateDto update = adminContactService.newer(conversation.getId(), newest.createdAt(), newest.id());
         assertEquals(List.of("A w niedzielę?"), update.messages().stream().map(AdminConversationMessageDto::body).toList());
         assertTrue(update.summary().unread());
+    }
+
+    // The team's read mark is the person's last look at the chat - opened, on the first read, and
+    // on every poll, since it moves while the panel stays open.
+    @Test
+    void shouldCarryThePersonsLookAtTheChatAsTheTeamsReadMark() {
+        User admin = admin();
+        User client = verifiedClient("Jan", "Kowalski");
+        ContactConversation conversation = conversationRepository.save(ContactConversation.forUser(client, Instant.now()));
+        messageRepository.save(ContactMessage.general(conversation, "Pytanie", "pl", Instant.now()));
+        adminContactService.reply(conversation.getId(), admin.getId(), "Odpowiedź");
+        conversationRepository.flush();
+        assertNull(adminContactService.get(conversation.getId()).summary().userSeenAt(), "not looked yet");
+
+        contactService.markSeen(client.getId());
+        conversationRepository.flush();
+
+        ConversationDetailDto opened = adminContactService.get(conversation.getId());
+        Instant seen = opened.summary().userSeenAt();
+        assertNotNull(seen);
+        AdminConversationMessageDto newest = opened.messages().getLast();
+        assertFalse(seen.isBefore(newest.createdAt()), "the look came after the answer it saw");
+        assertEquals(seen, adminContactService.newer(conversation.getId(), newest.createdAt(), newest.id())
+            .summary().userSeenAt());
+    }
+
+    @Test
+    void shouldGiveNoReadMarkForAGuestWhoReadsTheAnswerByMail() {
+        ContactConversation conversation = guestConversation("pl");
+        // Whatever the column says, a guest has no chat it could describe
+        conversation.markSeenByUser(Instant.now());
+        conversationRepository.flush();
+
+        assertNull(adminContactService.get(conversation.getId()).summary().userSeenAt());
     }
 
     @Test

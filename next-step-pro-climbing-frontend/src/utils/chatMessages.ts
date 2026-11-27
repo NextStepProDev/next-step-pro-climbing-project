@@ -50,5 +50,25 @@ export function mergeChatMessages<M extends ChatMessage>(...pieces: ReadonlyArra
   return [...byId.values()].sort(compareChatMessages)
 }
 
+/**
+ * The read mark under the reader's own newest message, as in a messenger: `read` once the other
+ * side had the chat open at or after it was sent. Null when the newest message is the other
+ * side's — their answer already says they read what came before, and a mark under an older
+ * message of one's own would only repeat that.
+ *
+ * `otherSideSeenAt` is the other side's last look at the chat, which the server sets only when it
+ * was on screen (see markSeen / markRead) — so "read" means "was shown", not "was understood".
+ */
+export function readReceipt<M extends ChatMessage>(
+  messages: readonly M[],
+  isOwn: (m: M) => boolean,
+  otherSideSeenAt: string | null | undefined,
+): { messageId: string; read: boolean } | null {
+  const last = messages.at(-1)
+  if (!last || !isOwn(last)) return null
+  const read = otherSideSeenAt != null && compareInstants(otherSideSeenAt, last.createdAt) >= 0
+  return { messageId: last.id, read }
+}
+
 /** The cursor for "anything new" when the window has nothing yet: before every message. */
 export const BEFORE_EVERYTHING = { createdAt: '1970-01-01T00:00:00Z', id: '00000000-0000-0000-0000-000000000000' }
