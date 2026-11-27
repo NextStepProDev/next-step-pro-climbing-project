@@ -24,7 +24,7 @@
     "@zxcvbn-ts/language-common": "^4.2.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "i18next": "^27.2.2",
+    "i18next": "^27.2.7",
     "i18next-browser-languagedetector": "^8.3.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.9",
