@@ -1,7 +1,7 @@
 package pl.nextsteppro.climbing.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.StaticMessageSource;
@@ -38,8 +38,8 @@ class RateLimitFilterTest {
 
         assertEquals(429, response.getStatus());
         JsonNode json = objectMapper.readTree(response.getContentAsString());
-        assertEquals("TOO_MANY_REQUESTS", json.get("code").asText());
-        assertTrue(json.get("message").asText().contains("Zbyt wiele"));
+        assertEquals("TOO_MANY_REQUESTS", json.get("code").asString());
+        assertTrue(json.get("message").asString().contains("Zbyt wiele"));
         assertNotNull(json.get("timestamp"));
     }
 
@@ -50,7 +50,7 @@ class RateLimitFilterTest {
 
         assertEquals(429, response.getStatus());
         JsonNode json = objectMapper.readTree(response.getContentAsString());
-        assertEquals("Too many requests. Please try again in a minute.", json.get("message").asText());
+        assertEquals("Too many requests. Please try again in a minute.", json.get("message").asString());
     }
 
     @Test
@@ -60,7 +60,7 @@ class RateLimitFilterTest {
 
         assertEquals(429, response.getStatus());
         JsonNode json = objectMapper.readTree(response.getContentAsString());
-        assertTrue(json.get("message").asText().contains("Demasiadas"));
+        assertTrue(json.get("message").asString().contains("Demasiadas"));
     }
 
     @Test
@@ -100,7 +100,7 @@ class RateLimitFilterTest {
         MockHttpServletResponse response = exhaustRateLimit(request);
 
         JsonNode json = objectMapper.readTree(response.getContentAsString());
-        assertTrue(json.get("message").asText().contains("Zbyt wiele"));
+        assertTrue(json.get("message").asString().contains("Zbyt wiele"));
     }
 
     /**

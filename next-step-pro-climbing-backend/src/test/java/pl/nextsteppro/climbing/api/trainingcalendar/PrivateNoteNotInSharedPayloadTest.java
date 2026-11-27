@@ -1,7 +1,6 @@
 package pl.nextsteppro.climbing.api.trainingcalendar;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -88,7 +87,7 @@ class PrivateNoteNotInSharedPayloadTest extends BaseIntegrationTest {
             : calendarService.getMyRange(athlete.getId(),
                 LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
 
-        return new ObjectMapper().registerModule(new JavaTimeModule()).writeValueAsString(range);
+        return new ObjectMapper().writeValueAsString(range);
     }
 
     @Test

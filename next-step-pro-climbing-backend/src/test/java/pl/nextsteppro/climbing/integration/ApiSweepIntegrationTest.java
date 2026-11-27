@@ -1,7 +1,7 @@
 package pl.nextsteppro.climbing.integration;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,13 +99,12 @@ class ApiSweepIntegrationTest {
 
         List<String> serverErrors = new ArrayList<>();
         int calls = 0;
-        for (Iterator<Map.Entry<String, JsonNode>> paths = spec.get("paths").fields(); paths.hasNext(); ) {
-            Map.Entry<String, JsonNode> entry = paths.next();
+        for (Map.Entry<String, JsonNode> entry : spec.get("paths").properties()) {
             String path = entry.getKey();
             if (SKIPPED_PREFIXES.stream().anyMatch(path::startsWith)) continue;
             boolean addressed = path.contains("{");
-            for (Iterator<String> methods = entry.getValue().fieldNames(); methods.hasNext(); ) {
-                String method = methods.next().toUpperCase();
+            for (String name : entry.getValue().propertyNames()) {
+                String method = name.toUpperCase();
                 if (!Set.of("GET", "POST", "PUT", "PATCH", "DELETE").contains(method)) continue;
                 boolean write = !method.equals("GET");
                 if (write && !addressed && method.equals("DELETE")) continue;

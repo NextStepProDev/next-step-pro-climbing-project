@@ -11,10 +11,10 @@
 # Dependabot supports the Gradle version catalog format directly, so versions are still in
 # one file and the tools can see them. Do not go back to "${...}" in build.gradle.
 [versions]
-spring-boot = "4.1.2"
+spring-boot = "4.2.0"
 dependency-management = "1.1.7"
 jspecify = "1.0.1"
-springdoc = "3.2.0"
+springdoc = "3.2.1"
 jjwt = "0.13.0"
 testcontainers = "1.21.4"
 thumbnailator = "0.4.21"

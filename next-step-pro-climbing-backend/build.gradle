@@ -24,30 +24,6 @@ repositories {
     mavenCentral()
 }
 
-// ⚠️ Overriding a version managed by the Spring Boot BOM, not a whim.
-//
-// Trivy scans app.jar on every build and reported three CRITICAL vulnerabilities in
-// tomcat-embed-core 11.0.22 (CVE-2026-65182, -65905, -68525), patched only in 11.0.25. Spring
-// Boot 4.1.1 raises Tomcat only to 11.0.24, so bumping Boot alone does NOT close them — it has
-// to be said explicitly. Postgres needs no override: 4.1.1 brings 42.7.13, and the patch for
-// CVE-2026-54291 is in 42.7.12.
-//
-// This line goes once Spring Boot manages 11.0.25 or newer — left in, it would then pin us to
-// an older version than the BOM brings. Check on every Boot bump:
-// spring-boot-dependencies-<version>.pom, key <tomcat.version>.
-ext['tomcat.version'] = '11.0.25'
-
-// Jackson, for the same reason and in the same way. Spring Boot 4.1.1 manages 3.1.5 (tools.jackson)
-// and 2.21.5 (com.fasterxml, pulled in by third-party libraries), and three jackson-databind
-// advisories — including a DoS when parsing Duration/XMLGregorianCalendar — are patched in 3.1.6 and 2.21.6.
-// ⚠️ Dependabot CANNOT do this by itself: a security update for a BOM-managed dependency fails
-// red without a PR ("Dependabot encountered 1 error"), because there is nothing to bump in any file.
-// The red "Dependabot Updates" jobs for jackson-databind are exactly this case.
-//
-// Goes once the Boot BOM brings jackson-bom ≥ 3.1.6 and jackson-2-bom ≥ 2.21.6 (keys in the same pom).
-ext['jackson-bom.version'] = '3.1.7'
-ext['jackson-2-bom.version'] = '2.21.7'
-
 dependencies {
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

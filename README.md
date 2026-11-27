@@ -84,7 +84,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 ## Tech Stack
 
 ### Backend
-- **Java 25** + **Spring Boot 4.1**
+- **Java 25** + **Spring Boot 4.2**
 - Spring Security + JWT + OAuth2 (Google)
 - Spring Data JPA + **PostgreSQL 18**
 - **Flyway** (versioned migrations)
