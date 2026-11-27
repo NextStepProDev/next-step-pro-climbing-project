@@ -1,7 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.userexport;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -126,7 +125,6 @@ class UserDataExportIntegrationTest extends BaseIntegrationTest {
 
     private String exportJson() throws Exception {
         return new ObjectMapper()
-            .registerModule(new JavaTimeModule())
             .writeValueAsString(service.export(user.getId(), admin.getId()).orElseThrow());
     }
 
@@ -290,7 +288,6 @@ class UserDataExportIntegrationTest extends BaseIntegrationTest {
         service.export(user.getId(), admin.getId()).orElseThrow();
 
         String json = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
             .writeValueAsString(service.export(admin.getId(), admin.getId()).orElseThrow());
 
         assertFalse(json.contains("eksport@example.com"),

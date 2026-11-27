@@ -13,7 +13,7 @@ Wersja: plik `VERSION` → `@version@` w `application.yml`. Bump **w tym samym c
 
 ## Stack
 
-**Backend:** Java 25 · Spring Boot 4.1 · Spring Security 7 + JWT (jjwt) · Spring Data JPA · PostgreSQL 18 · Flyway · Caffeine cache · Spring Mail · Actuator · JSpecify (`@NullMarked`) · springdoc-openapi · Testcontainers + JUnit 5.
+**Backend:** Java 25 · Spring Boot 4.2 · Spring Security 7 + JWT (jjwt) · Spring Data JPA · PostgreSQL 18 · Flyway · Caffeine cache · Spring Mail · Actuator · JSpecify (`@NullMarked`) · springdoc-openapi · Testcontainers + JUnit 5.
 
 **Frontend:** React 19 · TypeScript 6 · Vite 8 · Tailwind 4 · TanStack Query 5 · React Router 7 · i18next (PL/EN/ES) · date-fns · lucide-react · Vitest + Playwright.
 

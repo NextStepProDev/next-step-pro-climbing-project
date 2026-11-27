@@ -1,7 +1,6 @@
 package pl.nextsteppro.climbing.api.calendar;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,7 +56,7 @@ class SettlementNotInSharedPayloadTest extends BaseIntegrationTest {
     @Autowired private CalendarService calendarService;
     @Autowired private JdbcTemplate jdbc;
 
-    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private User client;
     private User admin;
